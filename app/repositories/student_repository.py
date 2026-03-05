@@ -20,14 +20,26 @@ class StudentRepository:
     def _row_to_student(row: sqlite3.Row) -> Student:
         """Converts a database row tuple into a Student Pydantic model."""
         return Student.model_validate(dict(row))
-        # return Student(**row)
 
     # --- CRUD Operations --- #
 
     def add(self, student: Student, conn: Connection) -> Student:
         """Add a new student to the database."""
         query = """
-        INSERT INTO students (active, last_name, first_name, phone1, phone2, phone3, teacher, book, course, school, year, monthly_fee)
+        INSERT INTO students (
+            active,
+            last_name,
+            first_name,
+            phone1,
+            phone2,
+            phone3,
+            teacher,
+            book,
+            course,
+            school,
+            year,
+            monthly_fee
+        )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?)
     """
 
@@ -135,10 +147,10 @@ class StudentRepository:
         """Search students by teacher name."""
         search_pattern = f"%{teacher_name}%"
         query = f"""
-            SELECT e.{STUDENT_COLUMNS}
-            FROM students e
-            WHERE LOWER(e.teacher) LIKE LOWER(?)
-            ORDER BY e.last_name, e.first_name"""
+            SELECT {STUDENT_COLUMNS}
+            FROM students
+            WHERE LOWER(teacher) LIKE LOWER(?)
+            ORDER BY last_name, first_name"""
         cursor = conn.execute(query, (search_pattern,))
         return [self._row_to_student(row) for row in cursor.fetchall()]
 
@@ -147,9 +159,9 @@ class StudentRepository:
     def get_all(self, conn: Connection) -> list[Student]:
         """Retrieve all students from the database."""
         query = f"""
-            SELECT e.{STUDENT_COLUMNS}
-            FROM students e
-            ORDER BY e.last_name, e.first_name
+            SELECT {STUDENT_COLUMNS}
+            FROM students
+            ORDER BY last_name, first_name
         """
         cursor = conn.execute(query)
         return [self._row_to_student(row) for row in cursor.fetchall()]
@@ -157,9 +169,9 @@ class StudentRepository:
     def get_by_id(self, student_id: int, conn: Connection) -> Student:
         """Retrieve a specific student by ID efficiently."""
         query = f"""
-            SELECT e.{STUDENT_COLUMNS}
-            FROM students e
-            WHERE e.id=?
+            SELECT {STUDENT_COLUMNS}
+            FROM students
+            WHERE id=?
         """
         cursor = conn.execute(query, (student_id,))
         row = cursor.fetchone()
@@ -171,12 +183,12 @@ class StudentRepository:
     def get_debtors(self, conn: Connection) -> list[Student]:
         """Gets all students with balance < 0"""
         query = f"""
-        SELECT e.{STUDENT_COLUMNS}
-        FROM students e
-        WHERE e.active = 1
-        AND (SELECT COALESCE(SUM(m.amount), 0)
-             FROM movements m
-             WHERE m.student_id = e.id) < 0;"""
+        SELECT {STUDENT_COLUMNS}
+        FROM students
+        WHERE active = 1
+        AND (SELECT COALESCE(SUM(amount), 0)
+             FROM movements
+             WHERE student_id = id) < 0;"""
 
         cursor = conn.execute(query)
         return [self._row_to_student(row) for row in cursor.fetchall()]
@@ -190,8 +202,10 @@ class StudentRepository:
     def get_all_active_students(self, conn: Connection) -> list[Student]:
         query = f"""
         SELECT {STUDENT_COLUMNS}
-        FROM students WHERE active = 1
-        ORDER BY last_name, first_name"""
+        FROM students
+        WHERE active = 1
+        ORDER BY last_name, first_name
+        """
         cursor = conn.execute(query)
         return [self._row_to_student(row) for row in cursor.fetchall()]
 
@@ -200,7 +214,8 @@ class StudentRepository:
         query = """
         SELECT COUNT(*)
         FROM students
-        WHERE monthly_fee = ?"""
+        WHERE monthly_fee = ? AND active = 1
+        """
 
         cursor = conn.execute(
             query,

@@ -2,10 +2,16 @@ import sqlite3
 from datetime import datetime
 from sqlite3.dbapi2 import Connection
 
+from app.database.connection import DatabaseManager
 from app.models.exceptions import BusinessRuleError, NotFound
 from app.models.models import Movement
 
 MOVEMENT_COLUMNS = "id, student_id, reference_id, type, amount, month, year, created_at"
+
+EFFECTIVE_MOVEMENT_FILTER = """
+m.reference_id IS NULL
+AND r.id IS NULL
+"""
 
 # IMPORTANT:
 # Movements are immutable.
@@ -13,21 +19,23 @@ MOVEMENT_COLUMNS = "id, student_id, reference_id, type, amount, month, year, cre
 
 
 class MovementRepository:
-    def __init__(self, db_manager):
+    def __init__(self, db_manager: DatabaseManager):
         self.db_manager = db_manager
-
-    def save(self, movement, conn):
-        conn.execute(...)
 
     @staticmethod
     def _row_to_movement(row: sqlite3.Row) -> Movement:
         return Movement.model_validate(dict(row))
-        # return Movement(**row)
 
     def add(self, movement: Movement, conn: Connection) -> Movement:
         query = """
-        INSERT INTO movements
-        (student_id, reference_id, type, amount, month, year)
+        INSERT INTO movements(
+            student_id,
+            reference_id,
+            type,
+            amount,
+            month,
+            year
+        )
         VALUES (?, ?, ?, ?, ?, ?)
         RETURNING id, created_at
         """
@@ -44,39 +52,39 @@ class MovementRepository:
             ),
         )
         row = cursor.fetchone()
-        movement_id, created_at_str = row
-        created_at = datetime.fromisoformat(created_at_str)
+        movement_id = row["id"]
+        created_at = datetime.fromisoformat(row["created_at"])
         return movement.model_copy(update={"id": movement_id, "created_at": created_at})
 
     # Getters
 
     def get_all(self, conn: Connection) -> list[Movement]:
-        query = (
-            f"SELECT {MOVEMENT_COLUMNS} FROM movements ORDER BY year DESC, month DESC, id DESC"
-            ""
-        )
+        query = f"""
+        SELECT {MOVEMENT_COLUMNS}
+        FROM movements
+        ORDER BY year DESC, month DESC, id DESC
+        """
+
         cursor = conn.execute(query)
         return [self._row_to_movement(row) for row in cursor.fetchall()]
 
     def get_effective_payments(self, conn: Connection) -> list[Movement]:
-        query = """SELECT m.*
+        query = f"""SELECT m.*
         FROM movements m
         LEFT JOIN movements r
             ON r.reference_id = m.id
-        WHERE m.reference_id IS NULL
-        AND r.id IS NULL
+        WHERE {EFFECTIVE_MOVEMENT_FILTER}
         AND m.type = 'PAYMENT'
         ORDER BY m.year DESC, m.month DESC, m.id DESC"""
         cursor = conn.execute(query)
         return [self._row_to_movement(row) for row in cursor.fetchall()]
 
     def get_effective_fees(self, conn: Connection) -> list[Movement]:
-        query = """SELECT m.*
+        query = f"""SELECT m.*
         FROM movements m
         LEFT JOIN movements r
             ON r.reference_id = m.id
-        WHERE m.reference_id IS NULL
-        AND r.id IS NULL
+        WHERE {EFFECTIVE_MOVEMENT_FILTER}
         AND m.type = 'FEE'
         ORDER BY m.year DESC, m.month DESC, m.id DESC"""
         cursor = conn.execute(query)
@@ -85,12 +93,11 @@ class MovementRepository:
     def get_effective_movements_by_id(
         self, student_id: int, conn: Connection
     ) -> list[Movement]:
-        query = """SELECT m.*
+        query = f"""SELECT m.*
         FROM movements m
         LEFT JOIN movements r
             ON r.reference_id = m.id
-        WHERE m.reference_id IS NULL
-        AND r.id IS NULL
+        WHERE {EFFECTIVE_MOVEMENT_FILTER}
         AND m.student_id = ?
         ORDER BY m.year DESC, m.month DESC, m.id DESC"""
         cursor = conn.execute(query, (student_id,))
@@ -105,15 +112,10 @@ class MovementRepository:
         return self._row_to_movement(row)
 
     def get_balance(self, student_id: int, conn: Connection) -> int:
-        # query = """
-        #    SELECT COALESCE(SUM(amount), 0)
-        #    FROM movements
-        #    WHERE student_id = ?"""
-        query = """SELECT COALESCE(SUM(m.amount), 0)
+        query = f"""SELECT COALESCE(SUM(m.amount), 0)
         FROM movements m
         LEFT JOIN movements r ON r.reference_id = m.id
-        WHERE m.reference_id IS NULL
-        AND r.id IS NULL
+        WHERE {EFFECTIVE_MOVEMENT_FILTER}
         AND m.student_id = ?"""
         cursor = conn.execute(query, (student_id,))
         return cursor.fetchone()[0]
@@ -133,10 +135,10 @@ class MovementRepository:
     def get_student_last_payment(
         self, student_id: int, conn: Connection
     ) -> Movement | None:
-        query = """
+        query = f"""
             SELECT m.* FROM movements m
             LEFT JOIN movements r ON r.reference_id = m.id
-            WHERE m.reference_id IS NULL AND r.id IS NULL
+            WHERE {EFFECTIVE_MOVEMENT_FILTER}
             AND m.student_id = ? AND m.type = 'PAYMENT'
             ORDER BY m.year DESC, m.month DESC, m.id DESC
             LIMIT 1"""
@@ -157,11 +159,12 @@ class MovementRepository:
         query = (
             "SELECT 1 FROM movements WHERE type='FEE' AND month=? AND year=? LIMIT 1"
         )
-        cursor = conn.execute(query, (month, year))
-        row = cursor.fetchone()
-        if not row:
-            return True
-        return row[0] == 0
+        return conn.execute(query, (month, year)).fetchone() is None
+        # cursor = conn.execute(query, (month, year))
+        # row = cursor.fetchone()
+        # if not row:
+        #    return True
+        # return row[0] == 0
 
     def get_month_balance(
         self, student_id: int, month: int, year: int, conn: Connection
@@ -171,8 +174,7 @@ class MovementRepository:
         SELECT COALESCE(SUM(m.amount),0)
         FROM movements m
         LEFT JOIN movements r ON r.reference_id = m.id
-        WHERE m.reference_id IS NULL
-        AND r.id IS NULL
+        WHERE m.reference_id IS NULL AND r.id IS NULL
         AND m.student_id=? AND m.month=? AND m.year=?"""
         cursor = conn.execute(query, (student_id, month, year))
         return cursor.fetchone()[0]
