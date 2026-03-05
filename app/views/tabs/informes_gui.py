@@ -2,10 +2,10 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.widgets.tableview import Tableview
 
+from app.services.application_service import ApplicationService
 from app.utils.helpers import currency_format
 from app.views.toast import show_toast
 
-from ...controllers.main_controller import AppController
 from ...utils.constantes import FONT_BODY, PAD_X, PAD_Y, TEACHERS
 from ..helpers_gui import (
     create_label_combobox,
@@ -14,11 +14,11 @@ from ..helpers_gui import (
 
 
 class ReportsTab:
-    def __init__(self, parent: ttk.Notebook, controller: AppController):
-        self.controller: AppController = controller
+    def __init__(self, parent: ttk.Notebook, controller: ApplicationService):
+        self.main_service: ApplicationService = controller
         self.frame = ttk.Frame(parent)
 
-        self.controller.subscribe(self.refresh_student_list)
+        self.main_service.subscribe(self.refresh_student_list)
 
         self._create_widgets()
         self._create_results_table()
@@ -67,7 +67,7 @@ class ReportsTab:
             self.frame.update()  # Force UI update
 
             # Get clean data from controller
-            report = self.controller.get_salary_report(prof_name)
+            report = self.main_service.get_salary_report(prof_name)
 
             # 1. Update Summary Text
             summary = (

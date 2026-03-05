@@ -1,8 +1,9 @@
 import ttkbootstrap as ttk
+from ttkbootstrap.dialogs import Messagebox
 
-from app.controllers.main_controller import AppController
-from app.models.exceptions import AppValidationError
+from app.models.exceptions import AppValidationError, ConflictError
 from app.models.models import Student
+from app.services.application_service import ApplicationService
 from app.utils.constantes import BOOKS, ICON_ADD, PAD_X, PAD_Y, TEACHERS
 from app.views.base_tab import BaseFormTab
 from app.views.toast import show_toast
@@ -107,7 +108,7 @@ FORM_LAYOUT = [
 
 
 class AddStudentTab(BaseFormTab):
-    def __init__(self, parent: ttk.Notebook, controller: AppController):
+    def __init__(self, parent: ttk.Notebook, controller: ApplicationService):
         super().__init__(
             parent=parent,
             form_title="Nuevo Estudiante",
@@ -115,7 +116,7 @@ class AddStudentTab(BaseFormTab):
             model_class=Student,
         )
 
-        self.controller = controller
+        self.main_service = controller
         self.main_frame.pack(fill="both")
 
         self.form_frame.pack(fill="both", padx=PAD_X, pady=PAD_Y)
@@ -146,20 +147,22 @@ class AddStudentTab(BaseFormTab):
             self.validate_form()
 
             self.add_button.config(text="Guardando...", state="disabled")
-            result: Student | None = self._run_action(
-                lambda: self.controller.add_student(data),
+            _ = self._run_action(
+                lambda: self.main_service.add_student(data),
                 f"Se agrego al estudiante {data['first_name']} {data['last_name']}",
             )
 
-            if result:
-                self.clear_form()
-                self.clear_form_styles()
-                self.form_fields["teacher"].set("")
-                self.form_fields["book"].set("")
-                self.form_fields["last_name"].focus_set()
+            self.clear_form()
+            self.clear_form_styles()
+            self.form_fields["teacher"].set("")
+            self.form_fields["book"].set("")
+            self.form_fields["last_name"].focus_set()
 
-        except AppValidationError as e:
+        except (AppValidationError, ConflictError) as e:
             show_toast(self.frame, str(e), "error")
+
+        except Exception as e:
+            Messagebox.show_error(f"Error inesperado: {e}", "Error critico")
 
         finally:
             self.add_button.config(text="Agregar Estudiante", state="normal")

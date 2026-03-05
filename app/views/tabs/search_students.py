@@ -5,8 +5,8 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs.message import Messagebox
 from ttkbootstrap.widgets.tableview import Tableview
 
-from app.controllers.main_controller import AppController
 from app.models.models import Movement, Student
+from app.services.application_service import ApplicationService
 from app.utils.constantes import ICON_SEARCH, NUM_TO_MONTH, PAD_X, PAD_Y, TEACHERS
 from app.utils.helpers import currency_format
 from app.views.helpers_gui import (
@@ -19,11 +19,9 @@ from app.views.toast import show_toast
 
 
 class SearchStudentTab:
-    def __init__(self, parent: ttk.Notebook, controller: AppController):
-        self.controller = controller
-
+    def __init__(self, parent: ttk.Notebook, controller: ApplicationService):
+        self.main_service = controller
         self.frame = ttk.Frame(parent)
-
         self.logger = logging.getLogger(__name__)
 
         self._create_widgets()
@@ -52,15 +50,6 @@ class SearchStudentTab:
         self.teacher_filter_entry = create_label_combobox(
             search_frame, "Profesor", 1, 0, TEACHERS
         )
-        teacher_name = ttk.Button(
-            search_frame,
-            text="Buscar",
-            image=self.image,
-            compound="right",
-            command=self.search_by_teacher,
-        )
-        teacher_name.grid(row=1, column=2, padx=PAD_X, pady=PAD_Y)
-        self.teacher_filter_entry.bind("<<ComboboxSelected>>", self.search_by_teacher)
 
         # --- Separator --- #
         ttk.Separator(search_frame, orient="horizontal").grid(
@@ -89,14 +78,14 @@ class SearchStudentTab:
         self.teacher_filter_entry.set("")
         name = get_str(self.name_filter_entry)
         self._run_search(
-            lambda: self.controller.search_student_by_name(name),
+            lambda: self.main_service.search_student_by_name(name),
             "No se encontraron estudiantes con ese nombre o apellido",
         )
 
     def search_by_teacher(self, event):
         self.name_filter_entry.delete(0, "end")
         self._run_search(
-            lambda: self.controller.search_student_by_teacher(
+            lambda: self.main_service.search_student_by_teacher(
                 self.teacher_filter_entry.get()
             ),
             "No se encontraron alumnos con ese profesor",
@@ -111,7 +100,7 @@ class SearchStudentTab:
                 self.table.insert_row("end", ["No se encontraron estudiantes"])
 
         except Exception as e:
-            self.logger.info(e)
+            self.logger.error(e)
             show_toast(self.frame, "Error buscando estudiantes", "error")
 
     def show_debtors(self):
@@ -119,7 +108,7 @@ class SearchStudentTab:
         self.teacher_filter_entry.set("")
 
         self._run_search(
-            self.controller.get_students_debtors,
+            self.main_service.get_students_debtors,
             "No se encontraron estudiantes deudores",
         )
 
@@ -142,7 +131,7 @@ class SearchStudentTab:
         )
 
         for est in students:
-            data = self.controller.get_student_payment_overview(est.id)
+            data = self.main_service.get_student_payment_overview(est.id)
             self.table.insert_row(
                 index="end", values=self._student_to_row(est, data["balance"])
             )
@@ -176,7 +165,7 @@ Balance: {currency_format(balance)}
 
         student_id = rows[0].values[0]
 
-        data = self.controller.get_student_payment_overview(student_id)
+        data = self.main_service.get_student_payment_overview(student_id)
         self._show_student_details(
             data["student"], data["last_payment"], data["balance"]
         )

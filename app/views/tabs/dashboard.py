@@ -11,7 +11,7 @@ from app.utils.helpers import currency_format
 
 class DashboardTab:
     def __init__(self, parent, controller):
-        self.controller = controller
+        self.main_service = controller
         self.frame = ttk.Frame(parent, padding=15)
 
         self._build_ui()
@@ -63,8 +63,8 @@ class DashboardTab:
     def refresh(self):
         now = datetime.now()
 
-        students = self.controller.get_all_active_students()
-        movements = self.controller.get_effective_payments()
+        students = self.main_service.get_all_active_students()
+        movements = self.main_service.get_effective_payments()
 
         active_count = len(students)
         expected = sum(s.monthly_fee for s in students)
@@ -73,7 +73,7 @@ class DashboardTab:
             m.amount for m in movements if m.month == now.month and m.year == now.year
         )
 
-        debt_total = sum(self.controller.get_balance_by_id(s.id) for s in students)
+        debt_total = sum(self.main_service.get_balance_by_id(s.id) for s in students)
 
         self.active_var.set(str(active_count))
         self.expected_var.set(f"{currency_format(expected)}")

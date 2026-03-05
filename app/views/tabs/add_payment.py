@@ -4,9 +4,9 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.widgets.tableview import Tableview
 
-from app.controllers.main_controller import AppController
-from app.models.exceptions import BusinessRuleError
+from app.models.exceptions import BusinessRuleError, NotFound
 from app.models.models import Movement, Student
+from app.services.application_service import ApplicationService
 from app.utils.constantes import (
     FONT_BODY,
     MONTH_TO_NUM,
@@ -21,10 +21,19 @@ from app.views.helpers_gui import (
 )
 from app.views.toast import show_toast
 
+TABLE_COLUMNS_PAYMENT = [
+    {"text": "id"},
+    {"text": "Mes pagado", "stretch": True},
+    {"text": "Año pagado", "stretch": True},
+    {"text": "Tipo", "stretch": True},
+    {"text": "Monto", "stretch": True},
+    {"text": "Fecha registrada", "stretch": True},
+]
+
 
 class PaymentTab:
-    def __init__(self, parent: ttk.Notebook, controller: AppController):
-        self.controller = controller
+    def __init__(self, parent: ttk.Notebook, controller: ApplicationService):
+        self.main_service = controller
 
         # UI Elements
         self.id_label: ttk.Label
@@ -49,13 +58,13 @@ class PaymentTab:
         self._create_payment_history_table()
         self._create_payment_frame()
 
-        self.controller.subscribe(self.refresh_students)
+        self.main_service.subscribe(self.refresh_students)
 
     # Create GUI elements
 
     def _initialize_student_data(self):
         """Initialize student mapping data."""
-        self.all_students = self.controller.get_all_active_students()
+        self.all_students = self.main_service.get_all_active_students()
         self.student_map = {
             self._get_display_name(s): s.id for s in self.all_students if s.id
         }
@@ -111,17 +120,11 @@ class PaymentTab:
         history_frame = create_label_frame(self.frame, "Historial de Movimientos", True)
         history_frame.pack(fill="both", expand=True, padx=PAD_X, pady=PAD_Y)
 
-        columns = [
-            {"text": "id"},
-            {"text": "Mes pagado", "stretch": True},
-            {"text": "Año pagado", "stretch": True},
-            {"text": "Tipo", "stretch": True},
-            {"text": "Monto", "stretch": True},
-            {"text": "Fecha registrada", "stretch": True},
-        ]
-
         self.table = Tableview(
-            history_frame, coldata=columns, yscrollbar=True, autoalign=True
+            history_frame,
+            coldata=TABLE_COLUMNS_PAYMENT,
+            yscrollbar=True,
+            autoalign=True,
         )
         self.table.pack(fill="both", expand=True, padx=PAD_X, pady=PAD_Y)
 
@@ -165,14 +168,16 @@ class PaymentTab:
 
     def _on_student_selected(self, event=None):
         """Handle student selection from combobox."""
-        self.current_student = self.controller.get_student_by_id(
+        self.current_student = self.main_service.get_student_by_id(
             self.student_map[self.student_combobox.get()]
         )
 
         if not self.current_student or not self.current_student.id:
             self._clear_displays()
         else:
-            data = self.controller.get_student_payment_overview(self.current_student.id)
+            data = self.main_service.get_student_payment_overview(
+                self.current_student.id
+            )
             self._populate_payment_history(data["movements"])
             self._update_info_display(
                 data["student"], data["balance"], data["last_payment"]
@@ -201,7 +206,7 @@ class PaymentTab:
         balance_style = "success" if balance >= 0 else "danger"
         self.balance_label.config(text=balance_text, bootstyle=balance_style)
 
-        month_list = self.controller.get_unpaid_months_by_student_id(
+        month_list = self.main_service.get_unpaid_months_by_student_id(
             self.current_student.id
         )
 
@@ -290,6 +295,9 @@ class PaymentTab:
 
     def _register_payment(self):
         """Handle payment registration logic."""
+        if not self.current_student or not self.current_student.id:
+            return
+
         if self._processing:
             return
 
@@ -323,34 +331,30 @@ Monto: {currency_format(amount)}
             self._set_processing_state(True)
             month_num = MONTH_TO_NUM[month_name]
 
-            result = self.controller.add_payment_to_student(
+            data = self.main_service.add_payment_to_student(
                 student_id=self.current_student.id,
                 month=month_num,
                 year=year,
                 amount=amount,
             )
 
-            if not result:
-                Messagebox.show_error(
-                    "No se pudo registrar el pago. ¿El pago para este mes ya existe?",
-                    "Error de Registro",
-                )
-                return
-
             # Success
             show_toast(self.frame, "Pago registrado con éxito.", "success")
 
-            data = self.controller.get_student_payment_overview(self.current_student.id)
+            data = self.main_service.get_student_payment_overview(
+                self.current_student.id
+            )
             self._populate_payment_history(data["movements"])
+
             self._update_info_display(
                 data["student"], data["balance"], data["last_payment"]
             )
 
-        except BusinessRuleError as e:
+        except (NotFound, BusinessRuleError) as e:
             show_toast(self.frame, str(e), "error")
 
         except Exception as e:
-            self.controller.logger.exception("Unexpected payment error")
+            self.main_service.logger.exception("Unexpected payment error")
             Messagebox.show_error(f"Error inesperado: {e}", "Error")
 
         finally:
@@ -379,12 +383,14 @@ Monto: {currency_format(amount)}
 
     def refresh_students(self):
         """Refresh student list from controller."""
+        self._initialize_student_data()
+        self.student_combobox["values"] = list(self.student_map.keys())
+
         if self.current_student and self.current_student.id:
-            data = self.controller.get_student_payment_overview(self.current_student.id)
+            data = self.main_service.get_student_payment_overview(
+                self.current_student.id
+            )
             self._populate_payment_history(data["movements"])
             self._update_info_display(
                 data["student"], data["balance"], data["last_payment"]
             )
-        else:
-            self._initialize_student_data()
-            self.student_combobox["values"] = list(self.student_map.keys())

@@ -1,17 +1,18 @@
 import logging
 from sqlite3 import DatabaseError
-from typing import Callable, Type, get_type_hints
+from typing import Callable, get_type_hints
 
 import ttkbootstrap as ttk
+from pydantic import ValidationError
 from ttkbootstrap.dialogs import Messagebox
 
-from app.controllers.main_controller import (
+from app.models.models import (
+    BaseModel,
+)
+from app.services.application_service import (
     AppValidationError,
     ConflictError,
     NotFound,
-)
-from app.models.models import (
-    BaseModel,
 )
 from app.utils.constantes import PAD_X, PAD_Y
 from app.views.helpers_gui import (
@@ -23,6 +24,8 @@ from app.views.helpers_gui import (
     mark_invalid,
 )
 from app.views.toast import show_toast
+
+logger = logging.getLogger(__name__)
 
 
 class BaseFormTab:
@@ -39,7 +42,7 @@ class BaseFormTab:
         parent: ttk.Notebook,
         form_title: str,
         layout: list[dict],
-        model_class: Type[BaseModel],
+        model_class: type[BaseModel],
     ):
         """
         Initializes the BaseFormTab.
@@ -147,6 +150,15 @@ class BaseFormTab:
     # VALIDATION
     # --------------------------------------------------
 
+    def build_model(self):
+        data = self.get_form_data()
+
+        try:
+            return self.model_class(**data)
+
+        except ValidationError as e:
+            raise AppValidationError(str(e))
+
     def bind_required_validation(self):
         for section in self.layout:
             for field in section["fields"]:
@@ -179,7 +191,7 @@ class BaseFormTab:
                 mark_invalid(widget)
                 widget.focus_set()
                 error_messages.append(
-                    f"Campo '{name}': Debe tener al menos un caracter"
+                    f"Campo '{meta['label']}': Debe tener al menos un caracter"
                 )
 
         if not good:
@@ -190,15 +202,26 @@ class BaseFormTab:
     # --------------------------------------------------
 
     def get_form_data(self) -> dict[str, str | int]:
-        """
-        Retrieves data from all form fields and returns it as a dictionary.
-        """
+        """Retrieves data from all form fields and returns it as a dictionary."""
         data = {}
-        for attr_name, entry_widget in self.form_fields.items():
-            if isinstance(entry_widget, ttk.Entry) or isinstance(
-                entry_widget, ttk.Combobox
-            ):
-                data[attr_name] = entry_widget.get().strip()
+
+        for name, widget in self.form_fields.items():
+            value = widget.get().strip()
+            meta = self.field_meta.get(name, {})
+
+            converter = meta.get("converter")
+
+            if converter and value != "":
+                try:
+                    value = converter(value)
+                except Exception:
+                    raise AppValidationError(f"Campo '{name}' tiene formato inválido")
+
+            # if isinstance(widget, ttk.Entry) or isinstance(widget, ttk.Combobox):
+            #    data[name] = widget.get().strip()
+
+            data[name] = value
+
         return data
 
     def set_readonly_fields(self):
@@ -225,7 +248,6 @@ class BaseFormTab:
         except ValueError as e:
             show_toast(self.frame, f"ID inválido: {e}", "error")
         except Exception as e:
-            logger = logging.getLogger(__name__)
             logger.error(f"Unexpected error in add_student: {e}")
             Messagebox.show_error(
                 f"Error inesperado.  Contacte al administrador: {e}", "Error"

@@ -3,9 +3,9 @@ from ttkbootstrap.constants import DANGER, SUCCESS
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.widgets.tableview import Tableview
 
-from app.controllers.main_controller import AppController
-from app.models.exceptions import NotFound
+from app.models.exceptions import AppValidationError, ConflictError, NotFound
 from app.models.models import Student
+from app.services.application_service import ApplicationService
 from app.utils.constantes import BOOKS, ICON_DELETE, ICON_EDIT, PAD_X, PAD_Y, TEACHERS
 from app.views.base_tab import BaseFormTab
 from app.views.helpers_gui import (
@@ -121,7 +121,7 @@ FORM_LAYOUT = [
 
 
 class UpdateStudentTab(BaseFormTab):
-    def __init__(self, parent: ttk.Notebook, controller: AppController) -> None:
+    def __init__(self, parent: ttk.Notebook, controller: ApplicationService) -> None:
         super().__init__(
             parent=parent,
             form_title="Datos del Estudiante",
@@ -129,7 +129,7 @@ class UpdateStudentTab(BaseFormTab):
             model_class=Student,
         )
 
-        self.controller = controller
+        self.main_service = controller
         self.update_button: ttk.Button
         self.deactivate_button: ttk.Button
 
@@ -140,7 +140,7 @@ class UpdateStudentTab(BaseFormTab):
         self.bind_required_validation()
         self._set_state("search")
 
-        self.controller.subscribe(self.refresh_student_list)
+        self.main_service.subscribe(self.refresh_student_list)
 
     def _setup_layout(self):
         """Configure main layout structure."""
@@ -175,7 +175,7 @@ class UpdateStudentTab(BaseFormTab):
         # create_label(list_frame, "Seleccionar un estudiante de la lista:", 0, 0, False)
 
         columnas = ("ID", "Apellido", "Nombre", "Activo", "Profesor")
-        students = self.controller.get_all_students()
+        students = self.main_service.get_all_students()
         rowdata = [self._student_to_row(est) for est in students]
 
         self.table = Tableview(
@@ -199,7 +199,7 @@ class UpdateStudentTab(BaseFormTab):
             image=self.image,
             compound="left",
             text="Desactivar Estudiante",
-            command=self.deactivate_student,
+            command=self.switch_sate,
             state="disabled",
             bootstyle=DANGER,
         )
@@ -225,6 +225,19 @@ class UpdateStudentTab(BaseFormTab):
 
     # --- Event Handlers --- #
 
+    def on_double_click(self, event):
+        """Handle double-click on student in table."""
+        student_id = self._get_selected_id()
+        if not student_id:
+            return
+
+        try:
+            student = self.main_service.get_student_by_id(student_id)
+            self._load_student_into_form(student)
+
+        except NotFound as e:
+            show_toast(self.frame, str(e), "error")
+
     def _get_selected_id(self) -> int | None:
         """Get the ID of the selected student from the table."""
         selected_rows = self.table.get_rows(selected=True)
@@ -246,27 +259,12 @@ class UpdateStudentTab(BaseFormTab):
             self.deactivate_button.config(
                 text="Activar estudiante",
                 bootstyle=SUCCESS,
-                command=self.activate_student,
+                command=self.switch_sate,
             )
         else:
             self.deactivate_button.config(
-                text="Desactivar estudiante",
-                bootstyle=DANGER,
-                command=self.deactivate_student,
+                text="Desactivar estudiante", bootstyle=DANGER, command=self.switch_sate
             )
-
-    def on_double_click(self, event):
-        """Handle double-click on student in table."""
-        student_id = self._get_selected_id()
-        if not student_id:
-            return
-
-        try:
-            student = self.controller.get_student_by_id(student_id)
-            self._load_student_into_form(student)
-
-        except NotFound as e:
-            show_toast(self.frame, str(e), "error")
 
     def update_student(self):
         """Handle student update logic."""
@@ -278,65 +276,59 @@ class UpdateStudentTab(BaseFormTab):
 
         self.validate_form()
 
-        result = self._run_action(
-            lambda: self.controller.update_student(student_id, data),
-            "Se actualizó el estudiante",
+        try:
+            _ = self._run_action(
+                lambda: self.main_service.update_student(student_id, data),
+                "Se actualizó el estudiante",
+            )
+
+            self._reset_form_state()
+            self._set_state("search")
+            self.table.selection_clear()
+
+        except NotFound as e:
+            show_toast(self.frame, str(e), "error")
+
+        except AppValidationError as e:
+            show_toast(self.frame, str(e), "error")
+
+        except ConflictError as e:
+            show_toast(self.frame, str(e), "error")
+
+    def switch_sate(self):
+        """Handle state switch"""
+        result = Messagebox.yesno(
+            f"¿Cambiar el estado de {self.form_fields['first_name'].get()} {self.form_fields['last_name'].get()}?",
+            "Confirmar cambio",
         )
 
-        if result:
+        if result != "Yes":
+            return
+
+        student_id = int(self.form_fields["id"].get())
+        try:
+            _ = self._run_action(
+                lambda: self.main_service.switch_student_state(student_id),
+                f"Se cambió el estado del estudiante {self.form_fields['first_name'].get()} {self.form_fields['last_name'].get()}",
+            )
+
             self._reset_form_state()
-            self.table.selection_clear()
             self._set_state("search")
 
-    def deactivate_student(self):
-        """Handle student deletion logic."""
-        result = Messagebox.yesno(
-            f"¿Desactivar a {self.form_fields['last_name'].get()} {self.form_fields['first_name'].get()}?",
-            "Confirmar desactivación",
-        )
-
-        if result != "Yes":
-            return
-
-        student_id = int(self.form_fields["id"].get())
-        self._run_action(
-            lambda: self.controller.switch_student_state(student_id),
-            f"Se desactivó al estudiante {self.form_fields['last_name'].get()} {self.form_fields['first_name'].get()}",
-        )
-        self._reset_form_state()
-        self._set_state("search")
-
-    def activate_student(self):
-        """Handle student activation logic"""
-        result = Messagebox.yesno(
-            f"¿Activar a {self.form_fields['last_name'].get()} {self.form_fields['first_name'].get()}?",
-            "Confirmar Activación",
-        )
-
-        if result != "Yes":
-            return
-
-        student_id = int(self.form_fields["id"].get())
-        self._run_action(
-            lambda: self.controller.switch_student_state(student_id),
-            f"Se activó al estudiante {self.form_fields['last_name'].get()} {self.form_fields['first_name'].get()}",
-        )
-        self._reset_form_state()
-        self._set_state("search")
+        except NotFound:
+            show_toast(self.frame, "Estudiante no encontrado", "error")
 
     def _reset_form_state(self):
         """Reset form after successful operation."""
         self.clear_form()
-
         self.set_form_state(False)
-
         enable_form_fields([self.update_button, self.deactivate_button], False)
 
     # --- Data Handling --- #
 
     def refresh_student_list(self):
         """Refresh the student table with updated data."""
-        students = self.controller.get_all_students()
+        students = self.main_service.get_all_students()
         rowdata = [self._student_to_row(est) for est in students]
 
         self.table.delete_rows()
