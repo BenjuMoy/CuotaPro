@@ -1,8 +1,15 @@
 # --------------------------------------------------------------------------- #
 # Constantes
 # --------------------------------------------------------------------------- #
+from pathlib import Path
+
 APP_VERSION = "1.2.1"
-LOG_FILE = "data/app.log"
+
+LOGS_DIR = Path("logs/")
+LOGS_PATH = Path("logs/app.log")
+
+
+ABOUT_TEXT = "Desarrollado por Benjamin Moyano\nmoyano.ben@gmail.com"
 
 
 # Database-related constants
