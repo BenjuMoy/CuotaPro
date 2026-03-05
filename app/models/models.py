@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal
+from enum import Enum
 
 from pydantic import (
     BaseModel,
@@ -59,6 +59,12 @@ class Student(BaseModel):
         return v
 
 
+class MovementType(str, Enum):
+    FEE = "FEE"
+    PAYMENT = "PAYMENT"
+    REVERSED = "REVERSED"
+
+
 class Movement(BaseModel):
     """Represents a movement in the system.
 
@@ -79,9 +85,7 @@ class Movement(BaseModel):
     id: int | None = None
     student_id: int
     reference_id: int | None = None
-    type: Literal[
-        "FEE", "PAYMENT", "REVERSED"
-    ]  # fee is <= 0, payment is >= 0 and reversed is stored or historical purposes
+    type: MovementType  # fee is <= 0, payment is >= 0 and reversed is stored or historical purposes
     amount: StrictInt = Field(
         ge=-500000, le=500000
     )  # Stored in pesos (no cents). 15000 = $15.000
@@ -91,10 +95,10 @@ class Movement(BaseModel):
 
     @model_validator(mode="after")
     def validate_sign(self):
-        if self.type == "FEE" and self.amount >= 0 and self.reference_id:
+        if self.type == "FEE" and self.amount >= 0:
             raise ValueError("Fee must be negative")
 
-        if self.type == "PAYMENT" and self.amount <= 0 and self.reference_id:
+        if self.type == "PAYMENT" and self.amount <= 0:
             raise ValueError("Payment must be positive")
 
         if self.type == "REVERSED" and not self.reference_id:

@@ -54,7 +54,7 @@ class SalaryReport:
         students_with_debt = [
             est
             for est in student_list
-            if est.active and self.controller.get_balance_by_id(est.id) < 0
+            if est.active and self.main_service.get_balance_by_id(est.id) < 0
         ]
 
         return {
