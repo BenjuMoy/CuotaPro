@@ -33,20 +33,8 @@ class DatabaseManager:
     def transaction(self):
         conn = self.connect()
         try:
-            conn.execute("BEGIN IMMEDIATE")
             yield conn
-            conn.execute("COMMIT")
+            conn.commit()
         except Exception:
-            conn.execute("ROLLBACK")
-            raise
-
-    @contextmanager
-    def readonly(self):
-        conn = self.connect()
-        try:
-            conn.execute("BEGIN")
-            yield conn
-            # conn.execute("COMMIT")
-        except Exception:
-            # conn.execute("ROLLBACK")
+            conn.rollback()
             raise

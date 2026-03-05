@@ -12,7 +12,7 @@ from app.utils.constantes import (
 class DatabaseConfig:
     def __init__(
         self,
-        db_path: Path = Path(DATABASE_PATH),
+        db_path: Path | str = Path(DATABASE_PATH),
         db_dir: Path = Path(DATABASE_DIR),
         backup_dir: Path = Path(DATABASE_BACKUP_DIR),
         export_dir: Path = Path(DATABASE_EXPORT_DIR),

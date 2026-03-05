@@ -5,6 +5,7 @@ def bootstrap_database(conn: Connection):
     # --------------------------------------------------------------------------- #
     # Create tables
     # --------------------------------------------------------------------------- #
+
     conn.execute("""
         CREATE TABLE students (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,6 +46,7 @@ def bootstrap_database(conn: Connection):
     # --------------------------------------------------------------------------- #
     # Indexes
     # --------------------------------------------------------------------------- #
+
     # Enforce 1 fee per month
     conn.execute("""
         CREATE UNIQUE INDEX idx_unique_fee
@@ -63,6 +65,16 @@ def bootstrap_database(conn: Connection):
         CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_reversal
         ON movements (reference_id)
         WHERE reference_id IS NOT NULL;
+        """)
+
+    conn.execute("""
+        CREATE INDEX IF NOT EXISTS idx_active_students
+        ON students(id, active);
+        """)
+
+    conn.execute("""
+        CREATE INDEX IF NOT EXISTS idx_teacher_students
+        ON students(id, teacher);
         """)
 
     conn.execute("""
