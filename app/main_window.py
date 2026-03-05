@@ -3,9 +3,8 @@ from tkinter import Listbox
 import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 
-from app.controllers.main_controller import AppController
-from app.database.connection import DatabaseConfig
-from app.utils.constantes import APP_VERSION, FONT_HEADER
+from app.services.application_service import ApplicationService
+from app.utils.constantes import ABOUT_TEXT, APP_VERSION, FONT_HEADER
 from app.views.tabs.add_payment import PaymentTab
 from app.views.tabs.add_student import AddStudentTab
 from app.views.tabs.administrative import AdministrativeTab
@@ -77,7 +76,9 @@ class MainWindow:
     """Main window of the application."""
 
     def __init__(
-        self, root: ttk.Window, controller: AppController, db_config: DatabaseConfig
+        self,
+        root: ttk.Window,
+        controller: ApplicationService,
     ):
         """Initialize the main window.
         Args:
@@ -86,8 +87,7 @@ class MainWindow:
             db_config: The application config
         """
         self.root = root
-        self.controller = controller
-        self.db_config = db_config
+        self.main_service = controller
 
         self.notebook: ttk.Notebook
         self.status_bar: ttk.Label
@@ -95,7 +95,7 @@ class MainWindow:
         # Create UI components
         self._create_ui()
 
-        self.controller.subscribe(self.refresh_students)
+        self.main_service.subscribe(self.refresh_students)
 
     def _create_ui(self):
         """Create the user interface components."""
@@ -131,15 +131,17 @@ class MainWindow:
         self.notebook.pack(fill="both", expand=True)
 
         for tab_config in layout:
-            tab_instance = tab_config["cls"](self.notebook, self.controller)
+            tab_instance = tab_config["cls"](self.notebook, self.main_service)
 
             setattr(self, tab_config["name"], tab_instance)
 
             self.notebook.add(tab_instance.frame, text=tab_config["label"])
 
+        # self.notebook.bind("<<NotebookTabChanged>>", self._on_tab_change)
+
     def _setup_status_bar(self):
         """Create the status bar."""
-        count = self.controller.get_active_student_count()
+        count = self.main_service.get_active_student_count()
 
         self.status_bar = ttk.Label(
             self.root, text="Listo", relief="sunken", anchor="w"
@@ -152,7 +154,7 @@ class MainWindow:
         self.status_bar.config(text=message)
 
     def refresh_students(self):
-        count = self.controller.get_active_student_count()
+        count = self.main_service.get_active_student_count()
         self.update_status(f"{count} estudiantes activos")
 
     def load_file(self): ...
@@ -186,7 +188,7 @@ class MainWindow:
 
         ttk.Label(
             dialog,
-            text="Desarrollado por Benjamin Moyano\nmoyano.ben@gmail.com",
+            text=ABOUT_TEXT,
             font=("Helvetica", 10),
         ).pack(pady=10)
 
@@ -195,16 +197,7 @@ class MainWindow:
     def create_backup(self):
         """Create a backup of the database."""
         try:
-            confirm = Messagebox.yesno(
-                "Esto reemplazará la base de datos actual.\n\n"
-                "Se recomienda crear un respaldo antes de continuar.\n\n"
-                "¿Desea continuar?",
-                "Confirmar Restauración",
-            )
-            if confirm != "Yes":
-                return
-
-            backup_path = self.controller.create_backup()
+            backup_path = self.main_service.create_backup()
             Messagebox.show_info(
                 f"Respaldo creado en:\n{backup_path}", "Respaldo Creado"
             )
@@ -225,10 +218,7 @@ class MainWindow:
         ttk.Label(dialog, text="Seleccione un archivo de respaldo:").pack(pady=10)
 
         # List available backup files
-        backup_files = list(
-            self.db_config.db_backup_dir.glob("student_management_*.db")
-        )
-        backup_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+        backup_files = self.main_service.list_backup_files()
 
         listbox = Listbox(dialog)
         listbox.pack(fill="both", expand=True, padx=10, pady=10)
@@ -238,6 +228,15 @@ class MainWindow:
 
         def restore_selected():
             try:
+                confirm = Messagebox.yesno(
+                    "Esto reemplazará la base de datos actual.\n\n"
+                    "Se recomienda crear un respaldo antes de continuar.\n\n"
+                    "¿Desea continuar?",
+                    "Confirmar Restauración",
+                )
+                if confirm != "Yes":
+                    return
+
                 selection = listbox.curselection()
                 if not selection:
                     Messagebox.show_warning(
@@ -246,7 +245,7 @@ class MainWindow:
                     return
 
                 selected_file = backup_files[selection[0]]
-                if self.controller.restore_backup(str(selected_file)):
+                if self.main_service.restore_backup(str(selected_file)):
                     Messagebox.show_info("Respaldo restaurado correctamente", "Éxito")
                     self.update_status("Respaldo restaurado")
                     # Restart the application to reload the data
@@ -271,7 +270,7 @@ class MainWindow:
     def verify_integrity(self):
         """Verify the integrity of the database."""
         try:
-            status = self.controller.verify_integrity()
+            status = self.main_service.verify_integrity()
             if status:
                 Messagebox.show_info(
                     "La base de datos está íntegra", "Verificación Completada"
@@ -288,7 +287,7 @@ class MainWindow:
     def show_database_stats(self):
         """Show database statistics."""
         try:
-            stats = self.controller.get_database_stats()
+            stats = self.main_service.get_database_stats()
 
             # Create a dialog to display stats
             dialog = ttk.Toplevel(self.root)
@@ -319,7 +318,7 @@ class MainWindow:
     def export_to_csv(self):
         """Export database to CSV files."""
         try:
-            export_path = self.controller.export_to_csv()
+            export_path = self.main_service.export_to_csv()
             Messagebox.show_info(
                 f"Datos exportados a:\n{export_path}", "Exportación Completada"
             )

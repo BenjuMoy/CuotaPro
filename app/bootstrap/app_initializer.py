@@ -1,6 +1,5 @@
 import logging
 
-from app.controllers.main_controller import AppController
 from app.database.config import DatabaseConfig
 from app.database.connection import DatabaseManager
 from app.database.migrations import migrate
@@ -8,6 +7,7 @@ from app.database.schema import bootstrap_database
 from app.repositories.movement_repository import MovementRepository
 from app.repositories.student_repository import StudentRepository
 from app.services.accounting_service import AccountingService
+from app.services.application_service import ApplicationService
 from app.services.maintenance_service import MaintenanceService
 from app.services.service_container import ServiceContainer
 from app.services.student_service import StudentService
@@ -32,13 +32,13 @@ class AppInitializer:
     # PUBLIC ENTRY POINT
     # ------------------------
 
-    def initialize(self) -> AppController:
+    def initialize(self) -> ApplicationService:
         logger.info("Preparing database")
         self._prepare_database()
 
         logger.info("Building services")
         services = self._build_services()
-        return AppController(services)
+        return ApplicationService(services)
 
     # ------------------------
     # INTERNAL STEPS

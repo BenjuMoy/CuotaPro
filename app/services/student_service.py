@@ -1,5 +1,3 @@
-from pydantic_core import ValidationError
-
 from app.models.models import Student
 from app.models.reportes import SalaryReport
 from app.repositories.student_repository import StudentRepository
@@ -11,20 +9,17 @@ class StudentService:
 
     # Students
 
-    def add(self, data: dict) -> Student:
+    def add(self, data: dict[str, str | int | bool]) -> Student:
         """Adds a student to the database."""
         # Validate model first (outside transaction)
-        try:
-            new_student = Student.model_validate(dict(data))
-        except ValidationError as e:
-            raise ValidationError(e)
+        new_student = Student.model_validate(dict(data))
 
         with self.student_repo.db_manager.transaction() as conn:
             saved_student = self.student_repo.add(new_student, conn)
 
         return saved_student
 
-    def update(self, student_id: int, data: dict) -> Student:
+    def update(self, student_id: int, data: dict[str, str | int | bool]) -> Student:
         """Updates a student, updates state, and saves."""
         with self.student_repo.db_manager.transaction() as conn:
             # Get student
@@ -65,7 +60,7 @@ class StudentService:
         with self.student_repo.db_manager.transaction() as conn:
             return self.student_repo.get_by_id(student_id, conn)
 
-    def get_debtors(self) -> list:
+    def get_debtors(self) -> list[Student]:
         """Search students by debt."""
         with self.student_repo.db_manager.transaction() as conn:
             return self.student_repo.get_debtors(conn)

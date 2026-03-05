@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from pathlib import Path
 from sqlite3 import IntegrityError
 from typing import Callable
 
@@ -18,7 +19,7 @@ from app.models.models import (
 from app.services.service_container import ServiceContainer
 
 
-class AppController:
+class ApplicationService:
     """
     Central controller for the application using SQLite database.
     Manages state and coordinates between the data layer and the UI.
@@ -101,9 +102,6 @@ class AppController:
             self._notify_subscribers()
             return updated_student
 
-        except NotFound:
-            raise
-
         except ValidationError as e:
             formatted = self._handle_validation_error(e)
             raise AppValidationError(formatted) from e
@@ -136,7 +134,7 @@ class AppController:
         """Retrieves a single student by their ID."""
         return self.services.student.get_by_id(student_id)
 
-    def get_students_debtors(self) -> list:
+    def get_students_debtors(self) -> list[Student]:
         """Search students by debt."""
         return self.services.student.get_debtors()
 
@@ -161,29 +159,27 @@ class AppController:
 
     def add_payment_to_student(
         self, student_id: int, month: int, year: int, amount: int
-    ) -> Movement:
+    ) -> dict[str, Student | int | Movement]:
         """Adds payment to student by id. Amount comes always positive from ui and current year is assumed for payment."""
-        try:
-            movement = self.services.accounting.add_payment(
-                student_id, month, year, amount
-            )
+        student, new_balance, movement = self.services.accounting.add_payment(
+            student_id, month, year, amount
+        )
 
-            self.logger.info(
-                "Payment added | student_id=%s month=%s year=%s amount=%s new_balance=%s",
-                movement.student_id,
-                movement.month,
-                movement.year,
-                movement.amount,
-                self.get_balance_by_id(movement.student_id),
-            )
-            self._notify_subscribers()
-            return movement
+        self.logger.info(
+            "Payment added | student_id=%s month=%s year=%s amount=%s new_balance=%s",
+            movement.student_id,
+            movement.month,
+            movement.year,
+            movement.amount,
+            new_balance,
+        )
+        self._notify_subscribers()
 
-        except BusinessRuleError as e:
-            raise BusinessRuleError(str(e))
-
-        except NotFound:
-            raise
+        return {
+            "student": student,
+            "balance": new_balance,
+            "last_payment": movement,
+        }
 
     # Payment getters
 
@@ -222,37 +218,26 @@ class AppController:
         month = now.month
         year = now.year
 
-        try:
-            applied_count = self.services.accounting.add_fee(month, year)
+        applied_count = self.services.accounting.add_fee(month, year)
 
-            self.logger.info(
-                "Monthly fees applied | month=%s year=%s students=%s",
-                month,
-                year,
-                applied_count,
-            )
-            self._notify_subscribers()
-            return applied_count
-
-        except BusinessRuleError:
-            raise
+        self.logger.info(
+            "Monthly fees applied | month=%s year=%s students=%s",
+            month,
+            year,
+            applied_count,
+        )
+        self._notify_subscribers()
+        return applied_count
 
     def increase_fee_amount(self, old_monthly_fee: int, new_monthly_fee: int) -> int:
         """Increase fees for all students with a specific fee amount."""
-        try:
-            affected_students = self.services.accounting.increase(
-                old_monthly_fee, new_monthly_fee
-            )
+        affected_students = self.services.accounting.increase(
+            old_monthly_fee, new_monthly_fee
+        )
 
-            self.logger.info("Fees increased for %s students", affected_students)
-            self._notify_subscribers()
-            return affected_students
-
-        except BusinessRuleError:
-            raise
-
-        except NotFound:
-            raise
+        self.logger.info("Fees increased for %s students", affected_students)
+        self._notify_subscribers()
+        return affected_students
 
     def reverse_movement(self, pago_id: int) -> None:
         """Reverses movement by id"""
@@ -302,8 +287,11 @@ class AppController:
     def create_backup(self):
         return self.services.maintenance.create_backup()
 
-    def restore_backup(self, file_path):
+    def restore_backup(self, file_path: str):
         return self.services.maintenance.restore_backup(file_path)
+
+    def list_backup_files(self) -> list[Path]:
+        return self.services.maintenance.list_backup_files()
 
     def verify_integrity(self):
         return self.services.maintenance.verify_integrity()

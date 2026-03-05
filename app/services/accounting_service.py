@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlite3 import Connection
 
 from app.models.exceptions import BusinessRuleError, NotFound
-from app.models.models import Movement
+from app.models.models import Movement, MovementType, Student
 from app.repositories.movement_repository import MovementRepository
 from app.repositories.student_repository import StudentRepository
 
@@ -18,9 +18,8 @@ class AccountingService:
 
     def add_payment(
         self, student_id: int, month: int, year: int, amount: int
-    ) -> Movement:
+    ) -> tuple[Student, int, Movement]:
         """Adds payment to student by id. Amount comes always positive from ui and current year is assumed for payment."""
-
         if amount <= 0:
             raise BusinessRuleError("El pago debe ser positivo")
 
@@ -29,8 +28,13 @@ class AccountingService:
             raise BusinessRuleError("No se puede pagar un mes mas adelante que este")
 
         with self.movements.db_manager.transaction() as conn:
-            if not self.students.get_by_id(student_id, conn):
+            student = self.students.get_by_id(student_id, conn)
+
+            if not student:
                 raise NotFound("Estudiante no encontrado")
+
+            if not student.active:
+                raise NotFound("Estudiante inactivo")
 
             month_balance = self.movements.get_month_balance(
                 student_id, month, year, conn
@@ -41,7 +45,7 @@ class AccountingService:
 
             movement = Movement(
                 student_id=student_id,
-                type="PAYMENT",
+                type=MovementType.PAYMENT,
                 amount=amount,
                 month=month,
                 year=year,
@@ -53,9 +57,12 @@ class AccountingService:
                 conn=conn,
             )
 
-        return movement
+            new_balance = self.movements.get_balance(student_id, conn)
+
+        return student, new_balance, movement
 
     def add_fee(self, month: int, year: int) -> int:
+        """Generate charges for all avtive students"""
         with self.movements.db_manager.transaction() as conn:
             valid_fee = self.movements.fees_not_applied_for_period(month, year, conn)
 
@@ -68,7 +75,7 @@ class AccountingService:
             for student in students:
                 movement = Movement(
                     student_id=student.id,
-                    type="FEE",
+                    type=MovementType.FEE,
                     amount=-student.monthly_fee,
                     month=month,
                     year=year,
@@ -80,6 +87,7 @@ class AccountingService:
             return applied_count
 
     def increase(self, old_monthly_fee: int, new_monthly_fee: int) -> int:
+        """Increases the monthly fee."""
         if old_monthly_fee <= 0 or new_monthly_fee <= 0:
             raise BusinessRuleError("La cuota no puede ser negativa")
 
@@ -107,10 +115,10 @@ class AccountingService:
             # if not orig or not orig.id:
             #    raise NotFound("Movimiento no encontrado")
 
-            if orig.type == "REVERSED":
+            if orig.type == MovementType.REVERSED:
                 raise BusinessRuleError("No se puede revertir una reversión")
 
-            if orig.type not in ("PAYMENT", "FEE"):
+            if orig.type not in (MovementType.PAYMENT, MovementType.FEE):
                 raise BusinessRuleError("Movimiento no reversible")
 
             if orig.reference_id:
@@ -121,7 +129,7 @@ class AccountingService:
             movement = Movement(
                 student_id=orig.student_id,
                 reference_id=orig.id,
-                type="REVERSED",
+                type=MovementType.REVERSED,
                 amount=-orig.amount,
                 month=orig.month,
                 year=orig.year,

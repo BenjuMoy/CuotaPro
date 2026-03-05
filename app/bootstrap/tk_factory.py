@@ -10,8 +10,8 @@ class TkAppFactory:
         root.title(title)
 
         # Better geometry: 1280x800 centered
-        width = 1280
-        height = 800
+        width = 1366
+        height = 768
         screen_w = root.winfo_screenwidth()
         screen_h = root.winfo_screenheight()
 
@@ -19,9 +19,9 @@ class TkAppFactory:
         y = (screen_h // 2) - (height // 2)
 
         root.geometry(f"{width}x{height}+{x}+{y}")
-        root.minsize(1024, 700)
+        root.minsize(1280, 800)
 
         icon = ttk.PhotoImage(file=ICON_PATH)
-        # root.iconphoto(True, icon)
+        root.iconphoto(True, icon)
 
         return root

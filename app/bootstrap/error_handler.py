@@ -27,6 +27,7 @@ class GlobalErrorHandler:
                 logger.error("Fatal error:", error_msg)
                 print("Fatal error:", error_msg)
 
+            logger.exception("Unhandled exception")
             traceback.print_exception(exc_type, exc_value, exc_traceback)
 
         sys.excepthook = handle_exception
