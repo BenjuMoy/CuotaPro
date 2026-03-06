@@ -5,7 +5,10 @@ from app.database.connection import DatabaseManager
 from app.models.exceptions import NotFound
 from app.models.models import Student
 
-STUDENT_COLUMNS = "id, active, last_name, first_name, phone1, phone2, phone3, teacher, book, course, school, year, monthly_fee"
+STUDENT_COLUMNS = """
+id, active, last_name, first_name, phone1, phone2,
+phone3, teacher, book, course, school, year, monthly_fee
+"""
 
 
 class StudentRepository:
@@ -149,7 +152,7 @@ class StudentRepository:
         query = f"""
             SELECT {STUDENT_COLUMNS}
             FROM students
-            WHERE LOWER(teacher) LIKE LOWER(?)
+            WHERE teacher LIKE ? COLLATE NOCASE
             ORDER BY last_name, first_name"""
         cursor = conn.execute(query, (search_pattern,))
         return [self._row_to_student(row) for row in cursor.fetchall()]
@@ -224,7 +227,9 @@ class StudentRepository:
 
         return cursor.fetchone()[0]
 
-    def get_fees_list(self, conn: Connection) -> list[tuple[int, int]]:
+    def get_fees_list(
+        self, conn: Connection
+    ) -> list[tuple[int, int]]:  # (monthly_fee, count)
         query = (
             "SELECT monthly_fee, COUNT(*) AS count FROM students GROUP BY monthly_fee;"
         )

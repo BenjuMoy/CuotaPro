@@ -170,11 +170,11 @@ class MovementRepository:
         self, student_id: int, month: int, year: int, conn: Connection
     ) -> int:
         """"""
-        query = """
+        query = f"""
         SELECT COALESCE(SUM(m.amount),0)
         FROM movements m
         LEFT JOIN movements r ON r.reference_id = m.id
-        WHERE m.reference_id IS NULL AND r.id IS NULL
+        WHERE {EFFECTIVE_MOVEMENT_FILTER}
         AND m.student_id=? AND m.month=? AND m.year=?"""
         cursor = conn.execute(query, (student_id, month, year))
         return cursor.fetchone()[0]
@@ -187,3 +187,13 @@ class MovementRepository:
 
         if existing_reversal:
             raise BusinessRuleError("Movimiento ya revertido")
+
+    def get_general_month_balance(self, student_id: int, conn: Connection):
+        """"""
+        query = f"""
+        SELECT month, year, SUM(amount)
+        FROM movements
+        WHERE student_id=?
+        GROUP BY year, month"""
+        cursor = conn.execute(query, (student_id,))
+        return [(row["month"], row["year"], row["SUM(amount)"]) for row in cursor]
