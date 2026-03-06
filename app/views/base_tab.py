@@ -1,6 +1,6 @@
 import logging
 from sqlite3 import DatabaseError
-from typing import Callable, get_type_hints
+from typing import Any, Callable, get_type_hints
 
 import ttkbootstrap as ttk
 from pydantic import ValidationError
@@ -41,7 +41,7 @@ class BaseFormTab:
         self,
         parent: ttk.Notebook,
         form_title: str,
-        layout: list[dict],
+        layout: list[dict[str, Any]],
         model_class: type[BaseModel],
     ):
         """
@@ -61,8 +61,6 @@ class BaseFormTab:
         self.form_fields: dict[str, ttk.Entry | ttk.Combobox] = {}
         self.field_meta = {}
 
-        self._row = 0
-
         self.form_frame = ttk.Labelframe(self.frame, text=form_title)
         self.form_frame.columnconfigure(1, weight=1)
         self.form_frame.configure(style="Bold.TLabelframe")
@@ -79,13 +77,12 @@ class BaseFormTab:
 
     def _create_fields_from_layout(self, column_index: int):
         """Create form fields from a declarative layout."""
-        self._row = 0
-        for section_config in self.layout:
+        for idx, section_config in enumerate(self.layout):
             section_frame = ttk.Labelframe(
                 self.form_frame, text=section_config["section"]
             )
             section_frame.grid(
-                row=self._next_row(),
+                row=idx,
                 column=column_index,
                 sticky="nsew",
                 padx=PAD_X,
@@ -95,12 +92,13 @@ class BaseFormTab:
             section_frame.configure(padding=15)
             section_frame.columnconfigure(1, weight=1)
 
-            for field_config in section_config["fields"]:
+            for idx, field_config in enumerate(section_config["fields"]):
                 if field_config["type"] == "entry":
                     self.create_entry_field(
                         section_frame,
                         field_config["name"],
                         field_config["label"],
+                        idx,
                         required=field_config.get("required", False),
                         focus=field_config.get("focus", False),
                     )
@@ -111,17 +109,18 @@ class BaseFormTab:
                         field_config["name"],
                         field_config["label"],
                         field_config["values"],
+                        idx,
                         required=field_config.get("required", False),
                     )
                     self.field_meta[field_config["name"]] = field_config
                 if field_config.get("readonly"):
                     self.readonly_fields.add(field_config["name"])
 
-    def create_entry_field(self, parent, attr_name, label, **kwargs):
+    def create_entry_field(self, parent, attr_name, label, row, **kwargs):
         entry = create_label_entry(
             parent=parent,
             text=label,
-            row=self._next_row(),
+            row=row,
             column=0,
             **kwargs,
         )
@@ -129,22 +128,17 @@ class BaseFormTab:
         return entry
 
     def create_combobox_field(
-        self, parent, attr_name: str, label: str, values: list[str], **kwargs
+        self, parent, attr_name: str, label: str, values: list[str], idx, **kwargs
     ):
         cb = create_label_combobox(
             parent=parent,
             text=label,
-            row=self._next_row(),
+            row=idx,
             column=0,
             values=values,
             **kwargs,
         )
         self.form_fields[attr_name] = cb
-
-    def _next_row(self):
-        r = self._row
-        self._row += 1
-        return r
 
     # --------------------------------------------------
     # VALIDATION
@@ -181,20 +175,16 @@ class BaseFormTab:
             clear_style([widget])
 
     def validate_form(self):
-        good = True
         error_messages = []
 
         for name, widget in reversed(self.form_fields.items()):
             meta = self.field_meta.get(name, {})
             if meta.get("required") and not widget.get():
-                good = False
                 mark_invalid(widget)
                 widget.focus_set()
-                error_messages.append(
-                    f"Campo '{meta['label']}': Debe tener al menos un caracter"
-                )
+                error_messages.append(f"Campo '{meta['label']}': No puede estar vacio")
 
-        if not good:
+        if error_messages:
             raise AppValidationError("\n".join(error_messages))
 
     # --------------------------------------------------

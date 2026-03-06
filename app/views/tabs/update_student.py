@@ -191,7 +191,7 @@ class UpdateStudentTab(BaseFormTab):
     def _create_action_buttons(self):
         """Create action buttons for the form."""
         button_frame = ttk.Frame(self.form_frame)
-        button_frame.grid(row=self._next_row(), column=0, columnspan=3, pady=PAD_Y)
+        button_frame.grid(row=len(FORM_LAYOUT), column=0, columnspan=3, pady=PAD_Y)
 
         self.image = ttk.PhotoImage(file=ICON_DELETE)
         self.deactivate_button = ttk.Button(
