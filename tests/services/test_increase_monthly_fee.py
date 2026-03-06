@@ -12,7 +12,7 @@ def test_increase_monthly_fee(services: ServiceContainer):
         }
     )
 
-    num = services.accounting.increase(100, 200)
+    num = services.accounting.increase_monthly_fee(100, 200)
 
     student = services.student.get_by_id(student.id)
 

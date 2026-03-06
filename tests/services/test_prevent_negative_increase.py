@@ -15,4 +15,4 @@ def test_cannot_pay_same_month_twice(services: ServiceContainer):
     )
 
     with pytest.raises(Exception):
-        services.accounting.increase(100, -1)
+        services.accounting.increase_monthly_fee(100, -1)

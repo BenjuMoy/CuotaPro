@@ -1,7 +1,7 @@
 from app.database.connection import DatabaseManager
 
 
-def test_fee_persisted(db: DatabaseManager):
+def test_month_balance(db: DatabaseManager):
     from app.models.models import Movement, MovementType, Student
     from app.repositories.movement_repository import MovementRepository
     from app.repositories.student_repository import StudentRepository
@@ -31,6 +31,9 @@ def test_fee_persisted(db: DatabaseManager):
         movement = mov_repo.add(movement, conn)
 
         movement = mov_repo.get_by_id(movement.id, conn)
+
+        asd = mov_repo.get_general_month_balance(student.id, conn)
+        print(asd)
 
     assert movement.id == student.id
     assert movement.type == MovementType.FEE
