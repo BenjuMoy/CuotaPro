@@ -1,5 +1,4 @@
 import csv
-import shutil
 import sqlite3
 from datetime import datetime
 from pathlib import Path
@@ -31,6 +30,7 @@ class MaintenanceService:
 
         try:
             with dest_conn:
+                source_conn.execute("PRAGMA wal_checkpoint(FULL)")
                 source_conn.backup(dest_conn)
         finally:
             dest_conn.close()
@@ -51,7 +51,7 @@ class MaintenanceService:
     # RESTORE
     # -------------------------
 
-    def restore_backup(self, file_path: str) -> bool:
+    def restore_backup(self, file_path: Path) -> bool:
         backup_path = Path(file_path)
 
         if not backup_path.exists():

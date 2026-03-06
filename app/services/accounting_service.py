@@ -86,7 +86,7 @@ class AccountingService:
 
             return applied_count
 
-    def increase(self, old_monthly_fee: int, new_monthly_fee: int) -> int:
+    def increase_monthly_fee(self, old_monthly_fee: int, new_monthly_fee: int) -> int:
         """Increases the monthly fee."""
         if old_monthly_fee <= 0 or new_monthly_fee <= 0:
             raise BusinessRuleError("La cuota no puede ser negativa")

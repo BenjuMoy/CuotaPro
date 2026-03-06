@@ -231,7 +231,7 @@ class ApplicationService:
 
     def increase_fee_amount(self, old_monthly_fee: int, new_monthly_fee: int) -> int:
         """Increase fees for all students with a specific fee amount."""
-        affected_students = self.services.accounting.increase(
+        affected_students = self.services.accounting.increase_monthly_fee(
             old_monthly_fee, new_monthly_fee
         )
 
