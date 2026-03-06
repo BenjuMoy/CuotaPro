@@ -5,6 +5,7 @@ from ttkbootstrap.dialogs import Messagebox
 
 from app.services.application_service import ApplicationService
 from app.utils.constantes import ABOUT_TEXT, APP_VERSION, FONT_HEADER
+from app.views.dialogs.about_dialog import show_about
 from app.views.tabs.add_payment import PaymentTab
 from app.views.tabs.add_student import AddStudentTab
 from app.views.tabs.administrative import AdministrativeTab
@@ -14,10 +15,6 @@ from app.views.tabs.search_students import SearchStudentTab
 from app.views.tabs.update_student import UpdateStudentTab
 
 MENU_LAYOUT = [
-    {
-        "label": "Archivo",
-        "items": [{"label": "Cargar archivo", "command": "load_file"}],
-    },
     {
         "label": "Base de Datos",
         "items": [
@@ -29,7 +26,7 @@ MENU_LAYOUT = [
     },
     {
         "label": "Sobre",
-        "items": [{"label": "Sobre la aplicacion", "command": "show_about"}],
+        "items": [{"label": "Sobre la aplicacion", "command": show_about}],
     },
 ]
 
@@ -121,10 +118,7 @@ class MainWindow:
                 if item.get("separator"):
                     menu.add_separator()
                 else:
-                    menu.add_command(
-                        label=item["label"],
-                        command=getattr(self, item["command"]),
-                    )
+                    (menu.add_command(label=item["label"], command=item["command"]))
 
     def _setup_notebook(self, layout):
         self.notebook = ttk.Notebook(self.root)
@@ -156,43 +150,6 @@ class MainWindow:
     def refresh_students(self):
         count = self.main_service.get_active_student_count()
         self.update_status(f"{count} estudiantes activos")
-
-    def load_file(self): ...
-
-    def show_about(self):
-        dialog = ttk.Toplevel(self.root)
-        dialog.title("Sobre la Aplicación")
-        dialog.geometry("400x300")
-        dialog.transient(self.root)
-        dialog.grab_set()
-
-        ttk.Label(
-            dialog,
-            text="Gestor de Estudiantes",
-            font=(FONT_HEADER),
-        ).pack(pady=10)
-
-        ttk.Label(
-            dialog,
-            text=f"Versión {APP_VERSION}",
-            font=("Helvetica", 12),
-        ).pack(pady=5)
-
-        ttk.Label(
-            dialog,
-            text="Sistema de gestión para academias.\n\n"
-            "Permite controlar estudiantes, pagos,\n"
-            "deudas y salarios docentes.",
-            justify="center",
-        ).pack(pady=10)
-
-        ttk.Label(
-            dialog,
-            text=ABOUT_TEXT,
-            font=("Helvetica", 10),
-        ).pack(pady=10)
-
-        ttk.Button(dialog, text="Cerrar", command=dialog.destroy).pack(pady=15)
 
     def create_backup(self):
         """Create a backup of the database."""
@@ -226,7 +183,7 @@ class MainWindow:
         for backup_file in backup_files:
             listbox.insert("end", f"{backup_file.name} - {backup_file.stat().st_mtime}")
 
-        def restore_selected():
+        def restore_selected(self):
             try:
                 confirm = Messagebox.yesno(
                     "Esto reemplazará la base de datos actual.\n\n"
@@ -253,7 +210,7 @@ class MainWindow:
                     # self.root.event_generate("<<RestartApp>>")
                 else:
                     Messagebox.show_error("Error al restaurar respaldo", "Error")
-                dialog.destroy()
+                    dialog.destroy()
             except Exception as e:
                 Messagebox.show_error(f"Error al restaurar respaldo: {e}", "Error")
 
@@ -325,3 +282,38 @@ class MainWindow:
             self.update_status("Datos exportados a CSV")
         except Exception as e:
             Messagebox.show_error(f"Error al exportar datos: {e}", "Error")
+
+    def show_about(self):
+        dialog = ttk.Toplevel(self.root)
+        dialog.title("Sobre la Aplicación")
+        dialog.geometry("400x300")
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        ttk.Label(
+            dialog,
+            text="Gestor de Estudiantes",
+            font=(FONT_HEADER),
+        ).pack(pady=10)
+
+        ttk.Label(
+            dialog,
+            text=f"Versión {APP_VERSION}",
+            font=("Helvetica", 12),
+        ).pack(pady=5)
+
+        ttk.Label(
+            dialog,
+            text="Sistema de gestión para academias.\n\n"
+            "Permite controlar estudiantes, pagos,\n"
+            "deudas y salarios docentes.",
+            justify="center",
+        ).pack(pady=10)
+
+        ttk.Label(
+            dialog,
+            text=ABOUT_TEXT,
+            font=("Helvetica", 10),
+        ).pack(pady=10)
+
+        ttk.Button(dialog, text="Cerrar", command=dialog.destroy).pack(pady=15)
