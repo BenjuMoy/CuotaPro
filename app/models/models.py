@@ -19,6 +19,7 @@ NAME_PATTERN = re.compile(r"^[A-Za-zÁÉÍÓÚÜáéíóúüÑñ\s\-]+$")
 # --------------------------------------------------------------------------- #
 # last_name, first_name, telefons, school, year, teacher, book, course, monthly_fee, balance
 class Student(BaseModel):
+    model_config = {"str_strip_whitespace": True}
     """Represents a student in the system.
 
     Attributes:
@@ -45,7 +46,7 @@ class Student(BaseModel):
     phone2: str = Field(default="", max_length=20)
     phone3: str = Field(default="", max_length=20)
     teacher: str = Field(min_length=1, max_length=20)
-    book: str = Field(default="", max_length=20)
+    book: str = Field(default="", max_length=50)
     course: str = Field(default="", max_length=20)
     school: str = Field(default="", max_length=20)
     year: str = Field(default="", max_length=20)
@@ -53,7 +54,6 @@ class Student(BaseModel):
 
     @field_validator("last_name", "first_name", mode="before")
     def validate_names(cls, v: str) -> str:
-        v = v.strip().title()
         if not NAME_PATTERN.match(v):
             raise ValueError("Nombre inválido")
         return v
@@ -95,13 +95,13 @@ class Movement(BaseModel):
 
     @model_validator(mode="after")
     def validate_sign(self):
-        if self.type == "FEE" and self.amount >= 0:
+        if self.type == MovementType.FEE and self.amount >= 0:
             raise ValueError("Fee must be negative")
 
-        if self.type == "PAYMENT" and self.amount <= 0:
+        if self.type == MovementType.PAYMENT and self.amount <= 0:
             raise ValueError("Payment must be positive")
 
-        if self.type == "REVERSED" and not self.reference_id:
+        if self.type == MovementType.REVERSED and not self.reference_id:
             raise ValueError("Reversal must have reference id")
 
         return self
