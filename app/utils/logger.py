@@ -3,11 +3,15 @@ from logging.handlers import RotatingFileHandler
 
 from app.utils.constantes import LOGS_DIR, LOGS_PATH
 
-LOGS_DIR.mkdir(exist_ok=True)
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def setup_logging():
     logger = logging.getLogger()
+
+    if logger.handlers:
+        return
+
     logger.setLevel(logging.INFO)
 
     formatter = logging.Formatter(
