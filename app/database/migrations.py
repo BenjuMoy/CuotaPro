@@ -10,11 +10,28 @@ Steps to migrate:
 from sqlite3 import Connection
 
 
+def migration_2(conn):
+    conn.execute("""
+        DROP idx_active_students;
+        CREATE INDEX idx_active_students
+        ON students(active);
+
+        DROP idx_teacher_students;
+        CREATE INDEX idx_teacher_students
+        ON students(teacher)
+
+        DROP idx_unique_student;
+        CREATE INDEX idx_unique_student
+        ON students(last_name, first_name, teacher)
+    """)
+
+
 def migration_1(conn): ...
 
 
 MIGRATIONS = {
     1: migration_1,
+    2: migration_2,
 }
 
 

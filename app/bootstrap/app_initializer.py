@@ -47,8 +47,8 @@ class AppInitializer:
     def _prepare_database(self):
         db_exists = self.db_config.db_path.exists()
 
-        if not db_exists:
-            self.db_config.db_path.touch()
+        self.db_config.db_path.touch(exist_ok=True)
+        self.db_config.db_backup_dir.mkdir(parents=True, exist_ok=True)
 
         with self.db.transaction() as conn:
             if not db_exists:

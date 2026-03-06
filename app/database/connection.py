@@ -32,9 +32,12 @@ class DatabaseManager:
     @contextmanager
     def transaction(self):
         conn = self.connect()
+        cursor = conn.cursor()
         try:
             yield conn
             conn.commit()
         except Exception:
             conn.rollback()
             raise
+        finally:
+            cursor.close()

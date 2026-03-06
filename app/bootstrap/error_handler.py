@@ -24,11 +24,9 @@ class GlobalErrorHandler:
                     ),
                 )
             except Exception:
-                logger.error("Fatal error:", error_msg)
-                print("Fatal error:", error_msg)
+                logger.error("Fatal error: %s", error_msg)
 
             logger.exception("Unhandled exception")
-            traceback.print_exception(exc_type, exc_value, exc_traceback)
 
         sys.excepthook = handle_exception
         self.root.report_callback_exception = handle_exception

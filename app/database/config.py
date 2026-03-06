@@ -23,11 +23,7 @@ class DatabaseConfig:
         self.db_export_dir = export_dir
 
     def apply_pragmas(self, connection: Connection):
-        connection.execute("PRAGMA journal_mode = WAL;")  # Enable journal (WAL)
-        connection.execute(
-            "PRAGMA synchronous = NORMAL;"
-        )  # Enable concurrency (NORMAL)
-        connection.execute("PRAGMA foreign_keys = ON;")  # Enable Foreign Keys
-
-
-# Note: If you ever switch to manual file copy (shutil.copy2) while in WAL mode, switch to: PRAGMA wal_checkpoint(FULL);
+        connection.execute("PRAGMA journal_mode = WAL;")
+        connection.execute("PRAGMA synchronous = NORMAL;")
+        connection.execute("PRAGMA foreign_keys = ON;")
+        connection.execute("PRAGMA wal_autocheckpoint = 1000;")

@@ -28,7 +28,7 @@ def bootstrap_database(conn: Connection):
         CREATE TABLE movements (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             student_id INTEGER NOT NULL,
-            reference_id INTEGER,
+            reference_id INTEGER DEFAULT NULL,
             type TEXT NOT NULL CHECK(type IN ('FEE', 'PAYMENT', 'REVERSED')),
             amount INTEGER NOT NULL CHECK (
                 (type = 'FEE' AND amount BETWEEN -500000 AND -1 AND reference_id IS NULL)
@@ -57,38 +57,38 @@ def bootstrap_database(conn: Connection):
     # Enforce Unique students
     conn.execute("""
         CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_student
-        ON students (last_name, first_name, phone1);
+        ON students (last_name, first_name, teacher);
         """)
 
     # Enforce Unique reverses
     conn.execute("""
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_reversal
+        CREATE UNIQUE INDEX idx_unique_reversal
         ON movements (reference_id)
         WHERE reference_id IS NOT NULL;
         """)
 
     conn.execute("""
-        CREATE INDEX IF NOT EXISTS idx_active_students
-        ON students(id, active);
+        CREATE INDEX idx_active_students
+        ON students(active);
         """)
 
     conn.execute("""
-        CREATE INDEX IF NOT EXISTS idx_teacher_students
-        ON students(id, teacher);
+        CREATE INDEX idx_teacher_students
+        ON students(teacher);
         """)
 
     conn.execute("""
-        CREATE INDEX IF NOT EXISTS idx_movements_student_period
+        CREATE INDEX idx_movements_student_period
         ON movements(student_id, year, month);
         """)
 
     conn.execute("""
-        CREATE INDEX IF NOT EXISTS idx_movements_student
+        CREATE INDEX idx_movements_student
         ON movements(student_id);
         """)
 
     # Set database version
-    conn.execute("PRAGMA user_version = 1")
+    conn.execute("PRAGMA user_version = 2")
 
     #        row = self.connection.execute(
     #            "SELECT COUNT(*) as count FROM schema_version"
