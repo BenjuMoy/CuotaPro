@@ -10,28 +10,31 @@ Steps to migrate:
 from sqlite3 import Connection
 
 
-def migration_2(conn):
+def migration_3(conn: Connection):
     conn.execute("""
-        DROP idx_active_students;
-        CREATE INDEX idx_active_students
-        ON students(active);
-
-        DROP idx_teacher_students;
-        CREATE INDEX idx_teacher_students
-        ON students(teacher)
-
-        DROP idx_unique_student;
-        CREATE INDEX idx_unique_student
-        ON students(last_name, first_name, teacher)
+    DROP INDEX IF EXISTS idx_unique_student;
     """)
 
 
-def migration_1(conn): ...
+def migration_2(conn: Connection):
+    conn.executescript("""
+        DROP INDEX IF EXISTS idx_active_students;
+        CREATE INDEX idx_active_students
+        ON students(active);
+
+        DROP INDEX  IF EXISTS idx_teacher_students;
+        CREATE INDEX idx_teacher_students
+        ON students(teacher);
+
+        DROP INDEX IF EXISTS idx_unique_student;
+        CREATE INDEX idx_unique_student
+        ON students(last_name, first_name, teacher);
+    """)
 
 
 MIGRATIONS = {
-    1: migration_1,
     2: migration_2,
+    3: migration_3,
 }
 
 
@@ -51,19 +54,10 @@ def migrate(conn: Connection):
         raise RuntimeError("Database version is newer than application")
 
     while current < latest:
-        migration = MIGRATIONS[current]
+        next_version = current + 1
+        migration = MIGRATIONS[next_version]
 
         migration(conn)
 
-        current += 1
-        set_db_version(conn, current)
-
-        # next_version = current + 1
-
-        # if next_version not in MIGRATIONS:
-        #    raise RuntimeError(f"No migration found for version {next_version}")
-
-        # MIGRATIONS[next_version](conn)
-        # set_db_version(conn, next_version)
-
-        # current = next_version
+        set_db_version(conn, next_version)
+        current = next_version

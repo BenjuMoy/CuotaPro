@@ -1,6 +1,14 @@
 from sqlite3 import Connection
 
 
+def database_initialized(conn):
+    row = conn.execute("""
+        SELECT name FROM sqlite_master
+        WHERE type='table' AND name='students'
+    """).fetchone()
+    return row is not None
+
+
 def bootstrap_database(conn: Connection):
     # --------------------------------------------------------------------------- #
     # Create tables
@@ -12,7 +20,7 @@ def bootstrap_database(conn: Connection):
             active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)),
             last_name TEXT NOT NULL CHECK(length(last_name) BETWEEN 1 AND 50),
             first_name TEXT NOT NULL CHECK(length(first_name) BETWEEN 1 AND 50),
-            phone1 TEXT NOT NULL CHECK(length(phone1) > 0),
+            phone1 TEXT NOT NULL CHECK(length(phone1) BETWEEN 1 AND 20),
             phone2 TEXT DEFAULT '' CHECK(length(phone2) <= 20),
             phone3 TEXT DEFAULT '' CHECK(length(phone3) <= 20),
             teacher TEXT NOT NULL CHECK(length(teacher) BETWEEN 1 AND 20),
@@ -57,7 +65,7 @@ def bootstrap_database(conn: Connection):
     # Enforce Unique students
     conn.execute("""
         CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_student
-        ON students (last_name, first_name, teacher);
+        ON students (last_name, first_name, phone1);
         """)
 
     # Enforce Unique reverses
@@ -88,7 +96,7 @@ def bootstrap_database(conn: Connection):
         """)
 
     # Set database version
-    conn.execute("PRAGMA user_version = 2")
+    conn.execute("PRAGMA user_version = 3")
 
     #        row = self.connection.execute(
     #            "SELECT COUNT(*) as count FROM schema_version"
