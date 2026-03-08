@@ -188,9 +188,9 @@ class MovementRepository:
     ) -> list[tuple[int, int, int]]:
         """Returns in format (month, year, sum)"""
         query = """
-        SELECT month, year, SUM(amount)
+        SELECT month, year, SUM(amount) AS total
         FROM movements
         WHERE student_id=?
         GROUP BY year, month"""
         cursor = conn.execute(query, (student_id,))
-        return [(row["month"], row["year"], row["SUM(amount)"]) for row in cursor]
+        return [(row["month"], row["year"], row["total"]) for row in cursor]
