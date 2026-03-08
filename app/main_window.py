@@ -4,8 +4,8 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 
 from app.services.application_service import ApplicationService
-from app.utils.constantes import ABOUT_TEXT, APP_VERSION, FONT_HEADER
-
+from app.utils.constantes import FONT_HEADER
+from app.views.dialogs.about_dialog import show_about
 from app.views.tabs.add_payment import PaymentTab
 from app.views.tabs.add_student import AddStudentTab
 from app.views.tabs.administrative import AdministrativeTab
@@ -118,7 +118,11 @@ class MainWindow:
                 if item.get("separator"):
                     menu.add_separator()
                 else:
-                    (menu.add_command(label=item["label"], command=getattr(self, item["command"])))
+                    (
+                        menu.add_command(
+                            label=item["label"], command=getattr(self, item["command"])
+                        )
+                    )
 
     def _setup_notebook(self, layout):
         self.notebook = ttk.Notebook(self.root)
@@ -284,36 +288,4 @@ class MainWindow:
             Messagebox.show_error(f"Error al exportar datos: {e}", "Error")
 
     def show_about(self):
-        dialog = ttk.Toplevel(self.root)
-        dialog.title("Sobre la Aplicación")
-        dialog.geometry("400x300")
-        dialog.transient(self.root)
-        dialog.grab_set()
-
-        ttk.Label(
-            dialog,
-            text="Gestor de Estudiantes",
-            font=(FONT_HEADER),
-        ).pack(pady=10)
-
-        ttk.Label(
-            dialog,
-            text=f"Versión {APP_VERSION}",
-            font=("Helvetica", 12),
-        ).pack(pady=5)
-
-        ttk.Label(
-            dialog,
-            text="Sistema de gestión para academias.\n\n"
-            "Permite controlar estudiantes, pagos,\n"
-            "deudas y salarios docentes.",
-            justify="center",
-        ).pack(pady=10)
-
-        ttk.Label(
-            dialog,
-            text=ABOUT_TEXT,
-            font=("Helvetica", 10),
-        ).pack(pady=10)
-
-        ttk.Button(dialog, text="Cerrar", command=dialog.destroy).pack(pady=15)
+        show_about(self.root)
