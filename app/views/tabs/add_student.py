@@ -1,6 +1,6 @@
 import ttkbootstrap as ttk
 
-from app.models.exceptions import
+from app.models.exceptions import AppValidationError
 from app.models.models import Student
 from app.services.application_service import ApplicationService
 from app.utils.constantes import BOOKS, ICON_ADD, PAD_X, PAD_Y, TEACHERS
