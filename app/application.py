@@ -27,7 +27,7 @@ class Application:
         self.main_service: ApplicationService | None = None
         self.initializer: AppInitializer | None = None
         self.main_window: MainWindow | None = None
-        self.root: ttk.Window = None
+        self.root: ttk.Window | None = None
 
     def bootstrap(self):
         logger.info("Bootstrapping application")
