@@ -13,6 +13,7 @@ from app.models.exceptions import (
     NotFound,
 )
 from app.models.models import (
+    DashboardMetrics,
     Movement,
     Student,
 )
@@ -262,6 +263,31 @@ class ApplicationService:
 
     def get_student_payment_overview(self, student_id: int) -> dict:
         return self.services.accounting.get_overview(student_id)
+
+    #  Dashboard
+    def get_dashboard_metrics(self) -> DashboardMetrics:
+        """Get dashboard metrics"""
+        now = datetime.now()
+
+        students = self.get_all_active_students()
+
+        movements = self.get_effective_payments()
+
+        expected = sum(s.monthly_fee for s in students)
+
+        collected = sum(
+            m.amount for m in movements if m.month == now.month and m.year == now.year
+        )
+
+        debt_total = sum(self.get_balance_by_id(s.id) for s in students)
+
+        metrics = DashboardMetrics(
+            active_students=len(students),
+            expected_income=expected,
+            collected=collected,
+            total_debt=debt_total,
+        )
+        return metrics
 
     # --- Informes ---
 

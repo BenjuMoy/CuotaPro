@@ -1,23 +1,23 @@
 from collections import defaultdict
-from datetime import datetime
 
 import matplotlib.pyplot as plt
 import ttkbootstrap as ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 # from ttkbootstrap.constants import *
+from app.services.application_service import ApplicationService
 from app.utils.helpers import currency_format
 
 
 class DashboardTab:
-    def __init__(self, parent, controller):
-        self.main_service = controller
+    def __init__(self, parent, main_service: ApplicationService):
+        self.main_service = main_service
         self.frame = ttk.Frame(parent, padding=15)
 
         self._build_ui()
         self.refresh()
 
-        controller.subscribe(self.refresh)
+        main_service.subscribe(self.refresh)
 
     # -------------------------
     # UI LAYOUT
@@ -61,24 +61,12 @@ class DashboardTab:
     # -------------------------
 
     def refresh(self):
-        now = datetime.now()
+        metrics = self.main_service.get_dashboard_metrics()
 
-        students = self.main_service.get_all_active_students()
-        movements = self.main_service.get_effective_payments()
-
-        active_count = len(students)
-        expected = sum(s.monthly_fee for s in students)
-
-        collected = sum(
-            m.amount for m in movements if m.month == now.month and m.year == now.year
-        )
-
-        debt_total = sum(self.main_service.get_balance_by_id(s.id) for s in students)
-
-        self.active_var.set(str(active_count))
-        self.expected_var.set(f"{currency_format(expected)}")
-        self.collected_var.set(f"{currency_format(collected)}")
-        self.debt_var.set(f"{currency_format(debt_total)}")
+        self.active_var.set(str(metrics.active_students))
+        self.expected_var.set(f"{currency_format(metrics.expected_income)}")
+        self.collected_var.set(f"{currency_format(metrics.collected)}")
+        self.debt_var.set(f"{currency_format(metrics.total_debt)}")
 
         # self._draw_charts(students, movements)
 
