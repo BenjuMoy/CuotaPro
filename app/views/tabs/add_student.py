@@ -1,7 +1,6 @@
 import ttkbootstrap as ttk
-from ttkbootstrap.dialogs import Messagebox
 
-from app.models.exceptions import AppValidationError, ConflictError
+from app.models.exceptions import
 from app.models.models import Student
 from app.services.application_service import ApplicationService
 from app.utils.constantes import BOOKS, ICON_ADD, PAD_X, PAD_Y, TEACHERS
@@ -141,28 +140,27 @@ class AddStudentTab(BaseFormTab):
 
     def add_student(self):
         """Handles the student creation logic."""
-        data = self.get_form_data()
-
         try:
             self.validate_form()
 
+            data = self.get_form_data()
+
             self.add_button.config(text="Guardando...", state="disabled")
-            _ = self._run_action(
+
+            result = self._run_action(
                 lambda: self.main_service.add_student(data),
                 f"Se agrego al estudiante {data['first_name']} {data['last_name']}",
             )
 
-            self.clear_form()
-            self.clear_form_styles()
-            self.form_fields["teacher"].set("")
-            self.form_fields["book"].set("")
-            self.form_fields["last_name"].focus_set()
+            if result:
+                self.clear_form()
+                self.clear_form_styles()
+                self.form_fields["teacher"].set("")
+                self.form_fields["book"].set("")
+                self.form_fields["last_name"].focus_set()
 
-        except (AppValidationError, ConflictError) as e:
+        except AppValidationError as e:
             show_toast(self.frame, str(e), "error")
-
-        except Exception as e:
-            Messagebox.show_error(f"Error inesperado: {e}", "Error critico")
 
         finally:
             self.add_button.config(text="Agregar Estudiante", state="normal")

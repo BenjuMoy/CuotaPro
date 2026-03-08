@@ -3,7 +3,7 @@ from ttkbootstrap.constants import DANGER, SUCCESS
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.widgets.tableview import Tableview
 
-from app.models.exceptions import AppValidationError, ConflictError, NotFound
+from app.models.exceptions import NotFound
 from app.models.models import Student
 from app.services.application_service import ApplicationService
 from app.utils.constantes import BOOKS, ICON_DELETE, ICON_EDIT, PAD_X, PAD_Y, TEACHERS
@@ -138,7 +138,7 @@ class UpdateStudentTab(BaseFormTab):
         self._create_fields_from_layout(1)
         self._create_action_buttons()
         self.bind_required_validation()
-        self._set_state("search")
+        self._set_state(False)
 
         self.main_service.subscribe(self.refresh_student_list)
 
@@ -199,7 +199,7 @@ class UpdateStudentTab(BaseFormTab):
             image=self.image,
             compound="left",
             text="Desactivar Estudiante",
-            command=self.switch_sate,
+            command=self.switch_state,
             state="disabled",
             bootstyle=DANGER,
         )
@@ -216,12 +216,9 @@ class UpdateStudentTab(BaseFormTab):
         )
         self.update_button.pack(side="right", padx=PAD_X)
 
-    def _set_state(self, state: str):
+    def _set_state(self, editing: bool):
         """Set initial form state."""
-        if state == "search":
-            self.set_form_state(False)
-        else:
-            self.set_form_state(True)
+        self.set_form_state(editing)
 
     # --- Event Handlers --- #
 
@@ -248,7 +245,7 @@ class UpdateStudentTab(BaseFormTab):
 
     def _load_student_into_form(self, student: Student):
         """Load student data into the form fields."""
-        self._set_state("edit")
+        self._set_state(True)
         self.populate_form(student)
 
         self.set_readonly_fields()
@@ -259,44 +256,35 @@ class UpdateStudentTab(BaseFormTab):
             self.deactivate_button.config(
                 text="Activar estudiante",
                 bootstyle=SUCCESS,
-                command=self.switch_sate,
+                command=self.switch_state,
             )
         else:
             self.deactivate_button.config(
-                text="Desactivar estudiante", bootstyle=DANGER, command=self.switch_sate
+                text="Desactivar estudiante",
+                bootstyle=DANGER,
+                command=self.switch_state,
             )
 
     def update_student(self):
         """Handle student update logic."""
-        student_id_str = self.form_fields["id"].get().strip()
-        if not student_id_str:
-            return
-        student_id = int(student_id_str)
+        student_id = int(self.form_fields["id"].get())
         data = self.get_form_data()
 
         self.validate_form()
 
-        try:
-            _ = self._run_action(
-                lambda: self.main_service.update_student(student_id, data),
-                "Se actualizó el estudiante",
-            )
+        result = self._run_action(
+            lambda: self.main_service.update_student(student_id, data),
+            "Se actualizó el estudiante",
+        )
 
+        if result:
             self._reset_form_state()
-            self._set_state("search")
+            self._set_state(False)
             self.table.selection_clear()
 
-        except NotFound as e:
-            show_toast(self.frame, str(e), "error")
-
-        except AppValidationError as e:
-            show_toast(self.frame, str(e), "error")
-
-        except ConflictError as e:
-            show_toast(self.frame, str(e), "error")
-
-    def switch_sate(self):
+    def switch_state(self):
         """Handle state switch"""
+        # action = "Activar" if not student.active else "Desactivar"
         result = Messagebox.yesno(
             f"¿Cambiar el estado de {self.form_fields['first_name'].get()} {self.form_fields['last_name'].get()}?",
             "Confirmar cambio",
@@ -313,7 +301,7 @@ class UpdateStudentTab(BaseFormTab):
             )
 
             self._reset_form_state()
-            self._set_state("search")
+            self._set_state(False)
 
         except NotFound:
             show_toast(self.frame, "Estudiante no encontrado", "error")

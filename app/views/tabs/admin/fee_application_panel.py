@@ -106,7 +106,8 @@ class FeeApplicationPanel:
 
         finally:
             self._set_processing(False)
-            self.apply_fees_button.config(state="disabled")
+            if not self.main_service.fees_not_applied_for_period():
+                self.apply_fees_button.config(state="disabled")
 
     def _refresh_apply_label(self):
         date = self.main_service.get_last_applied_fees_date()
@@ -118,7 +119,7 @@ class FeeApplicationPanel:
 
     def _set_processing(self, value: bool):
         self._processing = value
-        state = "disabled" if not value else "normal"
+        state = "disabled" if value else "normal"
         self.apply_fees_button.config(
             state=state, text="Procesando..." if value else "Aplicar Cuotas"
         )

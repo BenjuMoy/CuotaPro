@@ -65,9 +65,7 @@ class PaymentTab:
     def _initialize_student_data(self):
         """Initialize student mapping data."""
         self.all_students = self.main_service.get_all_active_students()
-        self.student_map = {
-            self._get_display_name(s): s.id for s in self.all_students if s.id
-        }
+        self.student_map = {s.id: self._get_display_name(s) for s in self.all_students}
 
     def _get_display_name(self, student: Student) -> str:
         """Creates a consistent display name for the combobox."""
@@ -84,7 +82,7 @@ class PaymentTab:
         )
         self.student_combobox = ttk.Combobox(
             master=select_frame,
-            values=list(self.student_map.keys()),
+            values = list(self.student_map.values()),
             state="readonly",
             width=40,
             font=FONT_BODY,
@@ -168,9 +166,12 @@ class PaymentTab:
 
     def _on_student_selected(self, event=None):
         """Handle student selection from combobox."""
-        self.current_student = self.main_service.get_student_by_id(
-            self.student_map[self.student_combobox.get()]
-        )
+        text = self.student_combobox.get()
+
+        for k, v in self.student_map.items():
+            if v == text:
+                self.current_student = self.main_service.get_student_by_id(k)
+                break
 
         if not self.current_student or not self.current_student.id:
             self._clear_displays()
@@ -206,16 +207,17 @@ class PaymentTab:
         balance_style = "success" if balance >= 0 else "danger"
         self.balance_label.config(text=balance_text, bootstyle=balance_style)
 
-        month_list = self.main_service.get_unpaid_months_by_student_id(
+        # Format is (month, year, debt)
+        debt_month_list: list[tuple[int, int, int]] = self.main_service.get_unpaid_months_by_student_id(
             self.current_student.id
         )
 
-        if not month_list:
+        if not debt_month_list:
             self._disable_payment_controls()
             show_toast(self.frame, "No hay cuotas pendientes para pagar", "error")
             return
 
-        month_list = [NUM_TO_MONTH[month[0]] + f" {month[1]}" for month in month_list]
+        month_list = [NUM_TO_MONTH[month[0]] + f" {month[1]}" for month in debt_month_list]
         # self.month_combobox.set([month_list])
         self.month_combobox["values"] = month_list
 
@@ -243,7 +245,7 @@ class PaymentTab:
             return
 
         # self.month_combobox.set(month)
-        self.month_combobox.set(month_list[-1])
+        self.month_combobox.set(month_list[0])
 
         # Set default amount to student's monthly_fee
         self.amount_entry.delete(0, "end")
@@ -307,7 +309,7 @@ class PaymentTab:
         year = int(date[1])
 
         amount_text = self.amount_entry.get().strip()
-        if not amount_text:
+        if not amount_text or amount_text == "0":
             show_toast(self.frame, "Ingrese un monto válido", "error")
             return
 
@@ -350,6 +352,8 @@ Monto: {currency_format(amount)}
                 data["student"], data["balance"], data["last_payment"]
             )
 
+            self.amount_entry.focus()
+
         except (NotFound, BusinessRuleError) as e:
             show_toast(self.frame, str(e), "error")
 
@@ -360,7 +364,7 @@ Monto: {currency_format(amount)}
         finally:
             self._processing = False
             self._set_processing_state(False)
-            if data and data["balance"] >= 0:
+            if data and data.get("balance", -1) >= 0:
                 self.month_combobox.set("")
                 self.amount_entry.delete(0, "end")
                 self._disable_payment_controls()
@@ -384,7 +388,7 @@ Monto: {currency_format(amount)}
     def refresh_students(self):
         """Refresh student list from controller."""
         self._initialize_student_data()
-        self.student_combobox["values"] = list(self.student_map.keys())
+        self.student_combobox["values"] = list(self.student_map.values())
 
         if self.current_student and self.current_student.id:
             data = self.main_service.get_student_payment_overview(

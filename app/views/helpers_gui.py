@@ -35,8 +35,7 @@ def create_label(
     label.grid(row=row, column=column, sticky="w", padx=PAD_X, pady=PAD_Y)
 
     if required:
-        text = text + " * "
-        label.config(text=text)
+        label.config(text=f"{text} *")
 
     if bold:
         label.configure(font=(FONT_HEADER))
@@ -90,9 +89,7 @@ def get_str(entry: ttk.Entry) -> str:
 
 def get_phones(entries: list[ttk.Entry]) -> list[str]:
     """Gets the raw phone number string."""
-    telefonos = []
-    telefonos.extend([t.get().strip() for t in entries if t.get().strip()])
-    return telefonos
+    return [e.get().strip() for e in entries if e.get().strip()]
 
 
 # --- Style helpers --- #
@@ -108,21 +105,14 @@ def clear_inputs(entries: list[ttk.Entry | ttk.Combobox]) -> None:
 def clear_style(entries: list[ttk.Entry | ttk.Combobox]):
     """Clears style from list of entries"""
     for entry in entries:
-        if isinstance(entry, ttk.Entry) or isinstance(entry, ttk.Combobox):
-            entry.configure(style="")
+        entry.configure(style="")
 
 
-def enable_form_fields(
-    entries: list[ttk.Entry | ttk.Combobox | ttk.Button],
-    enabled: bool = True,
-):
-    """Enables/disables list of entries or buttons."""
-    for w in entries:
-        if isinstance(w, ttk.Entry):
-            w.config(state="normal" if enabled else "disabled")
-        elif isinstance(w, ttk.Combobox):
+def enable_form_fields(widgets, enabled=True):
+    for w in widgets:
+        if isinstance(w, ttk.Combobox):
             w.config(state="readonly" if enabled else "disabled")
-        elif isinstance(w, ttk.Button):
+        else:
             w.config(state="normal" if enabled else "disabled")
 
 
@@ -130,8 +120,14 @@ def enable_combobox(cb: ttk.Combobox) -> None:
     cb.config(state="readonly")
 
 
-def mark_invalid(entry: ttk.Entry | ttk.Combobox):
-    if isinstance(entry, ttk.Entry):
-        entry.configure(style="danger.TEntry")
-    else:
-        entry.configure(style="danger.TCombobox")
+def mark_invalid(widget):
+    style = "danger.TEntry"
+
+    if isinstance(widget, ttk.Combobox):
+        style = "danger.TCombobox"
+
+    widget.configure(style=style)
+
+
+def mark_valid(widget):
+    widget.configure(style="")

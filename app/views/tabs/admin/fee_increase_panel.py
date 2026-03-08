@@ -65,9 +65,9 @@ class FeeIncreasePanel:
         )
         self.increase_fee_button.grid(row=5, column=0, columnspan=2, pady=PAD_Y)
 
-        for entry in (self.old_monthly_fee_combo, self.new_monthly_fee_entry):
-            vcmd = (self.frame.register(lambda P: P.isdigit() or P == ""), "%P")
-            entry.config(validate="key", validatecommand=vcmd)
+        # Set new monthly fee entry to numbers only
+        vcmd = (self.frame.register(lambda P: P.isdigit() or P == ""), "%P")
+        self.new_monthly_fee_entry.config(validate="key", validatecommand=vcmd)
 
     def increase_fee_amount(self):
         if self._processing:
@@ -77,7 +77,7 @@ class FeeIncreasePanel:
         # old_monthly_fee = self._parse_positive_int(old_monthly_fee_str)
 
         selected_label = self.old_monthly_fee_combo.get()
-        old_monthly_fee = self.fee_map[selected_label]
+        old_monthly_fee = self.fee_map.get(selected_label)
 
         if old_monthly_fee is None:
             show_toast(self.frame, "Ingrese una cuota válida", "error")
@@ -153,7 +153,7 @@ class FeeIncreasePanel:
 
     def _set_processing(self, value: bool):
         self._processing = value
-        state = "disabled" if not value else "normal"
+        state = "disabled" if value else "normal"
         self.increase_fee_button.config(
             state=state, text="Procesando..." if value else "Aumentar Valor De Cuotas"
         )

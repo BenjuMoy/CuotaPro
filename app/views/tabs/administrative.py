@@ -12,7 +12,7 @@ class AdministrativeTab:
         frame = ttk.Frame(parent)
         self.frame = frame
 
-        self.fee_aplication = FeeApplicationPanel(frame, controller)
+        self.fee_application = FeeApplicationPanel(frame, controller)
 
         self.fee_increase = FeeIncreasePanel(frame, controller)
 
