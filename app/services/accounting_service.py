@@ -135,9 +135,6 @@ class AccountingService:
                 year=orig.year,
             )
 
-            if movement.student_id != orig.student_id:
-                raise BusinessRuleError("Reversal student mismatch")
-
             movement = self.movements.add(movement, conn)
             return movement
 
@@ -145,7 +142,7 @@ class AccountingService:
 
     def get_unpaid_months_with_debt(
         self, student_id: int
-    )   -> list[tuple[int, int, int]]:
+    ) -> list[tuple[int, int, int]]:
         with self.movements.db_manager.transaction() as conn:
             passed_months = self.movements.get_general_month_balance(student_id, conn)
 
