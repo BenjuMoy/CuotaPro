@@ -5,7 +5,7 @@ from ttkbootstrap.dialogs import Messagebox
 
 from app.services.application_service import ApplicationService
 from app.utils.constantes import ABOUT_TEXT, APP_VERSION, FONT_HEADER
-from app.views.dialogs.about_dialog import show_about
+
 from app.views.tabs.add_payment import PaymentTab
 from app.views.tabs.add_student import AddStudentTab
 from app.views.tabs.administrative import AdministrativeTab
@@ -26,7 +26,7 @@ MENU_LAYOUT = [
     },
     {
         "label": "Sobre",
-        "items": [{"label": "Sobre la aplicacion", "command": show_about}],
+        "items": [{"label": "Sobre la aplicacion", "command": "show_about"}],
     },
 ]
 
@@ -118,7 +118,7 @@ class MainWindow:
                 if item.get("separator"):
                     menu.add_separator()
                 else:
-                    (menu.add_command(label=item["label"], command=item["command"]))
+                    (menu.add_command(label=item["label"], command=getattr(self, item["command"])))
 
     def _setup_notebook(self, layout):
         self.notebook = ttk.Notebook(self.root)
@@ -183,7 +183,7 @@ class MainWindow:
         for backup_file in backup_files:
             listbox.insert("end", f"{backup_file.name} - {backup_file.stat().st_mtime}")
 
-        def restore_selected(self):
+        def restore_selected():
             try:
                 confirm = Messagebox.yesno(
                     "Esto reemplazará la base de datos actual.\n\n"
