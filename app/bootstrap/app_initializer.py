@@ -3,7 +3,7 @@ import logging
 from app.database.config import DatabaseConfig
 from app.database.connection import DatabaseManager
 from app.database.migrations import migrate
-from app.database.schema import bootstrap_database
+from app.database.schema import bootstrap_database, database_initialized
 from app.repositories.movement_repository import MovementRepository
 from app.repositories.student_repository import StudentRepository
 from app.services.accounting_service import AccountingService
@@ -45,14 +45,12 @@ class AppInitializer:
     # ------------------------
 
     def _prepare_database(self):
-        db_exists = self.db_config.db_path.exists()
-
-        self.db_config.db_path.touch(exist_ok=True)
-        self.db_config.db_backup_dir.mkdir(parents=True, exist_ok=True)
 
         with self.db.transaction() as conn:
-            if not db_exists:
+            if not database_initialized(conn):
+                self.db_config.db_backup_dir.mkdir(parents=True, exist_ok=True)
                 bootstrap_database(conn)
+
             else:
                 migrate(conn)
 
