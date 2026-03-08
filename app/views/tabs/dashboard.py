@@ -10,7 +10,7 @@ from app.utils.helpers import currency_format
 
 
 class DashboardTab:
-    def __init__(self, parent, main_service: ApplicationService):
+    def __init__(self, parent: ttk.Notebook, main_service: ApplicationService):
         self.main_service = main_service
         self.frame = ttk.Frame(parent, padding=15)
 
