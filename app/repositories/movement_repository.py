@@ -160,11 +160,6 @@ class MovementRepository:
             "SELECT 1 FROM movements WHERE type='FEE' AND month=? AND year=? LIMIT 1"
         )
         return conn.execute(query, (month, year)).fetchone() is None
-        # cursor = conn.execute(query, (month, year))
-        # row = cursor.fetchone()
-        # if not row:
-        #    return True
-        # return row[0] == 0
 
     def get_month_balance(
         self, student_id: int, month: int, year: int, conn: Connection
@@ -188,9 +183,11 @@ class MovementRepository:
         if existing_reversal:
             raise BusinessRuleError("Movimiento ya revertido")
 
-    def get_general_month_balance(self, student_id: int, conn: Connection):
-        """"""
-        query = f"""
+    def get_general_month_balance(
+        self, student_id: int, conn: Connection
+    ) -> list[tuple[int, int, int]]:
+        """Returns in format (month, year, sum)"""
+        query = """
         SELECT month, year, SUM(amount)
         FROM movements
         WHERE student_id=?

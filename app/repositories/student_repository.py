@@ -185,13 +185,15 @@ class StudentRepository:
 
     def get_debtors(self, conn: Connection) -> list[Student]:
         """Gets all students with balance < 0"""
-        query = f"""
-        SELECT {STUDENT_COLUMNS}
-        FROM students
-        WHERE active = 1
-        AND (SELECT COALESCE(SUM(amount), 0)
-             FROM movements
-             WHERE student_id = id) < 0;"""
+        query = """
+        SELECT s.*
+        FROM students s
+        JOIN (
+            SELECT student_id, SUM(amount) AS balance
+            FROM movements
+            GROUP BY student_id
+        ) b ON b.student_id = s.id
+        WHERE b.balance < 0"""
 
         cursor = conn.execute(query)
         return [self._row_to_student(row) for row in cursor.fetchall()]
