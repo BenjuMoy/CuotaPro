@@ -50,6 +50,7 @@ class SearchStudentTab:
         self.teacher_filter_entry = create_label_combobox(
             search_frame, "Profesor", 1, 0, TEACHERS
         )
+        self.teacher_filter_entry.bind("<<ComboboxSelected>>", self.search_by_teacher)
 
         # --- Separator --- #
         ttk.Separator(search_frame, orient="horizontal").grid(
@@ -67,8 +68,16 @@ class SearchStudentTab:
         results_frame = create_label_frame(self.frame, "Resultados", True)
 
         # Define columns
-        columnas = ("ID", "Apellido", "Nombre", "Profesor", "Balance", "Estado")
-        self.table = Tableview(results_frame, coldata=columnas, yscrollbar=True)
+        coldata = [
+            {"text": "ID", "stretch": False},
+            {"text": "Apellido"},
+            {"text": "Nombre"},
+            {"text": "Profesor"},
+            {"text": "Balance"},
+            {"text": "Estado"},
+        ]
+
+        self.table = Tableview(results_frame, coldata=coldata, yscrollbar=True)
 
         self.table.pack(fill="both", expand=True, padx=PAD_X, pady=PAD_Y)
         self.table.view.bind("<Double-1>", self.on_double_click)
@@ -82,7 +91,7 @@ class SearchStudentTab:
             "No se encontraron estudiantes con ese nombre o apellido",
         )
 
-    def search_by_teacher(self, event):
+    def search_by_teacher(self, _event=None):
         self.name_filter_entry.delete(0, "end")
         self._run_search(
             lambda: self.main_service.search_student_by_teacher(
@@ -97,7 +106,7 @@ class SearchStudentTab:
             self._populate_table(results)
 
             if not results:
-                self.table.insert_row("end", ["No se encontraron estudiantes"])
+                self.table.insert_row("end", [empty_msg])
 
         except Exception as e:
             self.logger.error(e)
