@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from sqlite3 import IntegrityError
-from typing import Callable
+from typing import Any, Callable
 
 from pydantic import ValidationError
 
@@ -87,7 +87,7 @@ class ApplicationService:
         except IntegrityError as e:
             raise ConflictError("El estudiante ya existe") from e
 
-    def update_student(self, student_id: int, data: dict) -> Student | None:
+    def update_student(self, student_id: int, data: dict[str, Any]) -> Student | None:
         """Updates a student, updates state, and saves."""
         try:
             updated_student = self.services.student.update(student_id, data)
@@ -197,7 +197,7 @@ class ApplicationService:
 
     def get_unpaid_months_by_student_id(
         self, student_id: int
-    ) -> dict[tuple[int, int], int]:
+    ) -> list[tuple[int, int, int]]:
         return self.services.accounting.get_unpaid_months_with_debt(student_id)
 
     def get_fees_list(self) -> list[tuple[int, int]]:

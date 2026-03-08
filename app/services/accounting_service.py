@@ -134,41 +134,22 @@ class AccountingService:
                 month=orig.month,
                 year=orig.year,
             )
+
+            if movement.student_id != orig.student_id:
+                raise BusinessRuleError("Reversal student mismatch")
+
             movement = self.movements.add(movement, conn)
             return movement
-
-    # Helpers
-
-    def _get_month_balances(
-        self, movements: list[Movement], student_id: int, conn: Connection
-    ) -> dict[tuple[int, int], int]:
-        """Genarates a dict that contains month and year as keys and debt in value"""
-        passed_months = {}
-
-        for movement in movements:
-            if (movement.month, movement.year) not in passed_months:
-                passed_months[movement.month, movement.year] = (
-                    self.movements.get_month_balance(
-                        student_id, movement.month, movement.year, conn
-                    )
-                )
-
-        sorted_passed_months = dict(
-            sorted(passed_months.items(), key=lambda x: (x[1], x[0]))
-        )
-
-        return sorted_passed_months
 
     # Getters
 
     def get_unpaid_months_with_debt(
         self, student_id: int
-    ) -> dict[tuple[int, int], int]:
+    )   -> list[tuple[int, int, int]]:
         with self.movements.db_manager.transaction() as conn:
-            movements = self.movements.get_student_movements(student_id, conn)
-            passed_months = self._get_month_balances(movements, student_id, conn)
+            passed_months = self.movements.get_general_month_balance(student_id, conn)
 
-        return {key: balance for key, balance in passed_months.items() if balance < 0}
+        return [month for month in passed_months if month[2] < 0]
 
     def get_all_movements(self) -> list[Movement]:
         with self.movements.db_manager.transaction() as conn:
