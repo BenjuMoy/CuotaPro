@@ -1,6 +1,6 @@
 import ttkbootstrap as ttk
 
-from app.utils.constantes import ICON_PATH
+from app.utils.constantes import DEFAULT_HEIGHT, DEFAULT_WIDTH, ICON_PATH
 
 
 def _center_window(root, width, height):
@@ -19,8 +19,8 @@ class TkAppFactory:
         root = ttk.Window(themename=theme)
         root.title(title)
 
-        width = 1366
-        height = 768
+        width = DEFAULT_WIDTH
+        height = DEFAULT_HEIGHT
 
         _center_window(root, width, height)
 

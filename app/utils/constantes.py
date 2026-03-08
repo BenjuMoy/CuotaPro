@@ -87,7 +87,7 @@ NUM_TO_MONTH = {
     12: "Diciembre",
 }
 
-TEACHERS = ["Gabriela", "Ojeda", "Martina"]
+TEACHERS = ["Gabriela", "Daniela", "Ojeda", "Martina"]
 
 BOOKS = [
     "Power Up Start Part 1",
@@ -114,3 +114,6 @@ MAX_YEAR = 2100
 CURRENCY = "ARS"
 
 TYPE_TRANSLATE = {"FEE": "Cuota", "PAYMENT": "Pago", "REVERSED": "Reversión"}
+
+DEFAULT_WIDTH = 1366
+DEFAULT_HEIGHT = 768
