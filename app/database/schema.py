@@ -62,12 +62,6 @@ def bootstrap_database(conn: Connection):
         WHERE type = 'FEE';
         """)
 
-    # Enforce Unique students
-    conn.execute("""
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_student
-        ON students (last_name, first_name, phone1);
-        """)
-
     # Enforce Unique reverses
     conn.execute("""
         CREATE UNIQUE INDEX idx_unique_reversal
