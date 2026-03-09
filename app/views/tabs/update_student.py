@@ -222,7 +222,7 @@ class UpdateStudentTab(BaseFormTab):
 
     # --- Event Handlers --- #
 
-    def on_double_click(self, event):
+    def on_double_click(self, _event=None):
         """Handle double-click on student in table."""
         student_id = self._get_selected_id()
         if not student_id:
