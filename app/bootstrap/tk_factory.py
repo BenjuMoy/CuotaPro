@@ -3,7 +3,7 @@ import ttkbootstrap as ttk
 from app.utils.constantes import DEFAULT_HEIGHT, DEFAULT_WIDTH, ICON_PATH
 
 
-def _center_window(root, width, height):
+def _center_window(root: ttk.Window, width: int, height: int):
     screen_w = root.winfo_screenwidth()
     screen_h = root.winfo_screenheight()
 
