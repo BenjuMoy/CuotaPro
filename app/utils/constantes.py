@@ -87,7 +87,7 @@ NUM_TO_MONTH = {
     12: "Diciembre",
 }
 
-TEACHERS = ["Gabriela", "Daniela", "Ojeda", "Martina"]
+TEACHERS = ["Asuncion", "Daniela", "Florencia", "Kiana", "Romina", "Silvia"]
 
 BOOKS = [
     "Power Up Start Part 1",
