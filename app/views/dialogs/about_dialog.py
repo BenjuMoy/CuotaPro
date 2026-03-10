@@ -3,7 +3,12 @@ import ttkbootstrap as ttk
 from app.utils.constantes import ABOUT_TEXT, APP_VERSION, FONT_HEADER
 
 
-def show_about(root):
+def show_about(root: ttk.Window) -> None:
+    """Sets up the about window.
+
+    Args:
+        root (ttk.Window): Parent window.
+    """
     dialog = ttk.Toplevel(root)
     dialog.title("Sobre la Aplicación")
     dialog.geometry("400x300")
@@ -24,9 +29,9 @@ def show_about(root):
 
     ttk.Label(
         dialog,
-        text="Sistema de gestión para academias.\n\n"
-        "Permite controlar estudiantes, pagos,\n"
-        "deudas y salarios docentes.",
+        text="""Sistema de gestión para academias.\n\n
+        Permite controlar estudiantes, pagos,\n
+        deudas y salarios docentes.""",
         justify="center",
     ).pack(pady=10)
 
