@@ -2,8 +2,7 @@ import sqlite3
 from datetime import datetime
 from sqlite3.dbapi2 import Connection
 
-from app.database.connection import DatabaseManager
-from app.models.exceptions import BusinessRuleError, NotFound
+from app.models.exceptions import NotFound
 from app.models.models import Movement
 
 MOVEMENT_COLUMNS = "id, student_id, reference_id, type, amount, month, year, created_at"
@@ -19,9 +18,6 @@ AND r.id IS NULL
 
 
 class MovementRepository:
-    def __init__(self, db_manager: DatabaseManager):
-        self.db_manager = db_manager
-
     @staticmethod
     def _row_to_movement(row: sqlite3.Row) -> Movement:
         return Movement.model_validate(dict(row))
@@ -174,14 +170,13 @@ class MovementRepository:
         cursor = conn.execute(query, (student_id, month, year))
         return cursor.fetchone()[0]
 
-    def check_not_reversed(self, id: int, conn: Connection):
+    def has_reversal(self, id: int, conn: Connection) -> bool:
         existing_reversal = conn.execute(
             "SELECT id FROM movements WHERE reference_id=? AND type='REVERSED'",
             (id,),
         ).fetchone()
 
-        if existing_reversal:
-            raise BusinessRuleError("Movimiento ya revertido")
+        return True if existing_reversal else False
 
     def get_general_month_balance(
         self, student_id: int, conn: Connection

@@ -1,7 +1,6 @@
 import sqlite3
 from sqlite3.dbapi2 import Connection
 
-from app.database.connection import DatabaseManager
 from app.models.exceptions import NotFound
 from app.models.models import Student
 
@@ -13,9 +12,6 @@ phone3, teacher, book, course, school, year, monthly_fee
 
 class StudentRepository:
     """Data Access Object for student operations."""
-
-    def __init__(self, db_manager: DatabaseManager):
-        self.db_manager = db_manager
 
     # --- Helper Methods --- #
 
@@ -43,7 +39,7 @@ class StudentRepository:
             year,
             monthly_fee
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
         cursor = conn.execute(
@@ -200,9 +196,9 @@ class StudentRepository:
 
     def get_active_student_count(self, conn: Connection) -> int:
         """Gets the amount of active students."""
-        query = "SELECT COUNT(*) FROM students WHERE active = 1"
+        query = "SELECT COUNT(*) AS count FROM students WHERE active = 1"
         cursor = conn.execute(query)
-        return cursor.fetchone()[0]
+        return cursor.fetchone()["count"]
 
     def get_all_active_students(self, conn: Connection) -> list[Student]:
         query = f"""
@@ -217,7 +213,7 @@ class StudentRepository:
     def count_students_by_monthly_fee(self, monthly_fee: int, conn: Connection) -> int:
         """Returns the sum of students with that monthly_fee"""
         query = """
-        SELECT COUNT(*)
+        SELECT COUNT(*) AS count
         FROM students
         WHERE monthly_fee = ? AND active = 1
         """
@@ -227,13 +223,19 @@ class StudentRepository:
             (monthly_fee,),
         )
 
-        return cursor.fetchone()[0]
+        return cursor.fetchone()["count"]
 
-    def get_fees_list(
-        self, conn: Connection
-    ) -> list[tuple[int, int]]:  # (monthly_fee, count)
+    def get_fees_list(self, conn: Connection) -> list[tuple[int, int]]:
+        """Return the count of students by monthly_fee.
+
+        Args:
+            conn (Connection): Connection
+
+        Returns:
+            list[tuple[int, int]]: The fee count list in format (monthly_fee, count)
+        """
         query = (
             "SELECT monthly_fee, COUNT(*) AS count FROM students GROUP BY monthly_fee;"
         )
         cursor = conn.execute(query)
-        return [(data[0], data[1]) for data in cursor.fetchall()]
+        return [(row[0], row["count"]) for row in cursor.fetchall()]

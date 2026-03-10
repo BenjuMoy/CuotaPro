@@ -45,21 +45,21 @@ class AppInitializer:
     # ------------------------
 
     def _prepare_database(self):
+        """bootstrap database or migrates if exists"""
 
         with self.db.transaction() as conn:
             if not database_initialized(conn):
-                self.db_config.db_backup_dir.mkdir(parents=True, exist_ok=True)
                 bootstrap_database(conn)
 
             else:
                 migrate(conn)
 
     def _build_services(self) -> ServiceContainer:
-        student_repo = StudentRepository(self.db)
-        movement_repo = MovementRepository(self.db)
+        student_repo = StudentRepository()
+        movement_repo = MovementRepository()
 
-        student_service = StudentService(student_repo)
-        accounting_service = AccountingService(movement_repo, student_repo)
+        student_service = StudentService(student_repo, self.db)
+        accounting_service = AccountingService(movement_repo, student_repo, self.db)
         maintenance_service = MaintenanceService(self.db)
 
         return ServiceContainer(
