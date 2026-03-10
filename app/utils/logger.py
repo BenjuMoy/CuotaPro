@@ -3,10 +3,9 @@ from logging.handlers import RotatingFileHandler
 
 from app.utils.constantes import LOGS_DIR, LOGS_PATH
 
-LOGS_DIR.mkdir(parents=True, exist_ok=True)
-
 
 def setup_logging():
+    LOGS_DIR.mkdir(parents=True, exist_ok=True)
     logger = logging.getLogger()
 
     if logger.handlers:
