@@ -108,7 +108,7 @@ def clear_style(entries: list[ttk.Entry | ttk.Combobox]):
         entry.configure(style="")
 
 
-def enable_form_fields(widgets, enabled=True):
+def enable_form_fields(widgets: list[ttk.Entry | ttk.Combobox], enabled: bool =True):
     for w in widgets:
         if isinstance(w, ttk.Combobox):
             w.config(state="readonly" if enabled else "disabled")
