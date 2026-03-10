@@ -86,7 +86,7 @@ class ApplicationService:
             raise AppValidationError(formatted) from e
 
         except IntegrityError as e:
-            raise ConflictError("El estudiante ya existe") from e
+            raise ConflictError(str(e)) from e
 
     def update_student(self, student_id: int, data: dict[str, Any]) -> Student | None:
         """Updates a student, updates state, and saves."""
@@ -265,7 +265,7 @@ class ApplicationService:
         return self.services.accounting.get_overview(student_id)
 
     #  Dashboard
-    def get_dashboard_metrics(self) -> DashboardMetrics:
+    def get_kpi_metrics(self) -> DashboardMetrics:
         """Get dashboard metrics"""
         now = datetime.now()
 
@@ -288,6 +288,9 @@ class ApplicationService:
             total_debt=debt_total,
         )
         return metrics
+
+    def get_graphic_metrics(self) -> tuple[list[Student], list[Movement]]:
+        return (self.get_all_active_students(), self.get_all_movements())
 
     # --- Informes ---
 
@@ -319,7 +322,7 @@ class ApplicationService:
     def list_backup_files(self) -> list[Path]:
         return self.services.maintenance.list_backup_files()
 
-    def verify_integrity(self):
+    def verify_integrity(self) -> bool:
         return self.services.maintenance.verify_integrity()
 
     def export_to_csv(self):
