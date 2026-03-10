@@ -14,6 +14,12 @@ def _center_window(root: ttk.Window, width: int, height: int):
 
 
 class TkAppFactory:
+    """Sets up the man window.
+
+    Returns:
+        Window: main window
+    """
+
     @staticmethod
     def create_root(theme: str, title: str) -> ttk.Window:
         root = ttk.Window(themename=theme)

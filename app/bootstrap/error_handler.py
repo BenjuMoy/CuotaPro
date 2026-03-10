@@ -8,6 +8,8 @@ logger = logging.getLogger(__name__)
 
 
 class GlobalErrorHandler:
+    """sets up the global error handler."""
+
     def __init__(self, root):
         self.root = root
 
