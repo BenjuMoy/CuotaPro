@@ -1,14 +1,15 @@
-from tkinter import Listbox
-
 import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 
 from app.services.application_service import ApplicationService
 from app.utils.constantes import FONT_HEADER
 from app.views.dialogs.about_dialog import show_about
+from app.views.dialogs.database_stats_dialog import ShowDatabasrStatsDialog
+from app.views.dialogs.restore_backup_dialog import RestoreBackupDialog
 from app.views.tabs.add_payment import PaymentTab
 from app.views.tabs.add_student import AddStudentTab
 from app.views.tabs.administrative import AdministrativeTab
+from app.views.tabs.analytics import AnalyticsTab
 from app.views.tabs.dashboard import DashboardTab
 from app.views.tabs.informes_gui import ReportsTab
 from app.views.tabs.search_students import SearchStudentTab
@@ -34,7 +35,7 @@ TAB_LAYOUT = [
     {
         "name": "dashboard_tab",
         "cls": DashboardTab,
-        "label": "Resumen",
+        "label": "Inicio",
     },
     {
         "name": "add_student_tab",
@@ -65,6 +66,11 @@ TAB_LAYOUT = [
         "name": "administrative_tab",
         "cls": AdministrativeTab,
         "label": "Administrativo",
+    },
+    {
+        "name": "analytics_tab",
+        "cls": AnalyticsTab,
+        "label": "Analitics",
     },
 ]
 
@@ -129,13 +135,16 @@ class MainWindow:
         self.notebook.pack(fill="both", expand=True)
 
         for tab_config in layout:
-            tab_instance = tab_config["cls"](self.notebook, self.main_service)
+            if tab_config["cls"] == DashboardTab:
+                tab_instance = tab_config["cls"](
+                    self.notebook, self.notebook, self.main_service
+                )
+            else:
+                tab_instance = tab_config["cls"](self.notebook, self.main_service)
 
             setattr(self, tab_config["name"], tab_instance)
 
             self.notebook.add(tab_instance.frame, text=tab_config["label"])
-
-        # self.notebook.bind("<<NotebookTabChanged>>", self._on_tab_change)
 
     def _setup_status_bar(self):
         """Create the status bar."""
@@ -169,64 +178,10 @@ class MainWindow:
 
     def restore_backup(self):
         """Restore a backup of the database."""
-        # Create a dialog to select backup file
-        dialog = ttk.Toplevel(self.root)
-        dialog.title("Restaurar Respaldo")
-        dialog.geometry("400x300")
-        dialog.transient(self.root)
-        dialog.grab_set()
-
-        ttk.Label(dialog, text="Seleccione un archivo de respaldo:").pack(pady=10)
-
-        # List available backup files
-        backup_files = self.main_service.list_backup_files()
-
-        listbox = Listbox(dialog)
-        listbox.pack(fill="both", expand=True, padx=10, pady=10)
-
-        for backup_file in backup_files:
-            listbox.insert("end", f"{backup_file.name} - {backup_file.stat().st_mtime}")
-
-        def restore_selected():
-            try:
-                confirm = Messagebox.yesno(
-                    "Esto reemplazará la base de datos actual.\n\n"
-                    "Se recomienda crear un respaldo antes de continuar.\n\n"
-                    "¿Desea continuar?",
-                    "Confirmar Restauración",
-                )
-                if confirm != "Yes":
-                    return
-
-                selection = listbox.curselection()
-                if not selection:
-                    Messagebox.show_warning(
-                        "Seleccione un archivo de respaldo", "Advertencia"
-                    )
-                    return
-
-                selected_file = backup_files[selection[0]]
-                if self.main_service.restore_backup(str(selected_file)):
-                    Messagebox.show_info("Respaldo restaurado correctamente", "Éxito")
-                    self.update_status("Respaldo restaurado")
-                    # Restart the application to reload the data
-                    self.root.destroy()
-                    # self.root.event_generate("<<RestartApp>>")
-                else:
-                    Messagebox.show_error("Error al restaurar respaldo", "Error")
-                    dialog.destroy()
-            except Exception as e:
-                Messagebox.show_error(f"Error al restaurar respaldo: {e}", "Error")
-
-        button_frame = ttk.Frame(dialog)
-        button_frame.pack(pady=10)
-
-        ttk.Button(button_frame, text="Restaurar", command=restore_selected).pack(
-            side="left", padx=5
-        )
-        ttk.Button(button_frame, text="Cancelar", command=dialog.destroy).pack(
-            side="left", padx=5
-        )
+        try:
+            RestoreBackupDialog(self.root, self.main_service)
+        except Exception as e:
+            Messagebox.show_error(f"Error al restaurar respaldo: {e}", "Error")
 
     def verify_integrity(self):
         """Verify the integrity of the database."""
@@ -248,29 +203,7 @@ class MainWindow:
     def show_database_stats(self):
         """Show database statistics."""
         try:
-            stats = self.main_service.get_database_stats()
-
-            # Create a dialog to display stats
-            dialog = ttk.Toplevel(self.root)
-            dialog.title("Estadísticas de Base de Datos")
-            dialog.geometry("400x300")
-            dialog.transient(self.root)
-            dialog.grab_set()
-
-            stats_text = f"""
-            Base de Datos Existe: {stats["exists"]}
-            Tamaño: {stats["size_mb"]} MB
-            Número de Estudiantes: {stats["student_count"]}
-            Número de Pagos: {stats["payment_count"]}
-            Última Modificación: {stats["last_modified"]}
-            """
-
-            text_widget = ttk.Text(dialog, wrap="word")
-            text_widget.pack(fill="both", expand=True, padx=10, pady=10)
-            text_widget.insert("1.0", stats_text)
-            text_widget.config(state="disabled")
-
-            ttk.Button(dialog, text="Cerrar", command=dialog.destroy).pack(pady=10)
+            ShowDatabasrStatsDialog(self.root, self.main_service)
 
             self.update_status("Estadísticas de base de datos mostradas")
         except Exception as e:
