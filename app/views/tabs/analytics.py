@@ -116,7 +116,7 @@ class AnalyticsTab:
 
         months_sorted = sorted(income_by_month.keys())[-6:]
 
-        labels = [f"{m}/{y}" for y, m in months_sorted]
+        labels = [f"{m} / {y}" for y, m in months_sorted]
         values = [income_by_month[(y, m)] for y, m in months_sorted]
 
         income_ax.bar(labels, values)
@@ -138,8 +138,11 @@ class AnalyticsTab:
             reverse=True,
         )
 
-        teachers = [t for t, _ in sorted_teachers]
-        counts = [c for _, c in sorted_teachers]
+        teachers, counts = [], []
+
+        for t, c in sorted_teachers:
+            teachers.append(t)
+            counts.append(c)
 
         teacher_ax.barh(teachers, counts)
         teacher_ax.set_title("Estudiantes por Profesor")
@@ -172,11 +175,26 @@ class AnalyticsTab:
             else:
                 debt_buckets["3+ meses"] += 1
 
-        debt_ax.pie(
-            debt_buckets.values(),
-            labels=debt_buckets.keys(),
-            autopct="%1.0f%%",
-        )
+        values = list(debt_buckets.values())
+        labels = list(debt_buckets.keys())
+
+        total = sum(values)
+
+        if total == 0:
+            debt_ax.text(
+                0.5,
+                0.5,
+                "Sin datos",
+                ha="center",
+                va="center",
+                fontsize=12,
+            )
+        else:
+            debt_ax.pie(
+                values,
+                labels=labels,
+                autopct="%1.0f%%",
+            )
 
         debt_ax.set_title("Estado de Pagos")
 
