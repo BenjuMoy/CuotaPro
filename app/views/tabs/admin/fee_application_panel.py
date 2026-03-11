@@ -5,7 +5,7 @@ from pydantic import ValidationError
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.style import DANGER
 
-from app.models.exceptions import BusinessRuleError, NotFound
+from app.models.exceptions import NotFound
 from app.services.application_service import ApplicationService
 from app.utils.constantes import FONT_BODY, FONT_HEADER, NUM_TO_MONTH, PAD_X, PAD_Y
 from app.views.toast import show_toast
@@ -30,7 +30,7 @@ class FeeApplicationPanel:
 
         ttk.Label(
             aplicar_cuotas_frame,
-            text="⚠ Acción global masiva.\n Se generará un cargo para cada alumno activo.",
+            text="⚠ Acción global masiva.\n Se generará un cargo para cada alumno activo y sin cuota aplicada.",
             bootstyle="danger",
             # font=("TkDefaultFont", 11, "bold"),
             font=(FONT_HEADER),
@@ -47,18 +47,14 @@ class FeeApplicationPanel:
         )
 
         if not self.main_service.fees_not_applied_for_period():
-            self.apply_fees_button.config(state="disabled")
+            self.apply_fees_button.config(text="Aplcar cuotas nuevamente")
 
         date = self.main_service.get_last_applied_fees_date()
 
         if date:
-            last_month = date[0]
-            last_year = date[1]
-            text = f"Ultima fecha aplicada: {NUM_TO_MONTH[last_month]} de {last_year}"
+            text = f"Ultimo periodo aplicado: {NUM_TO_MONTH[date[0]]} de {date[1]}"
         else:
-            last_month = "Ningun mes"
-            last_year = "Ningun año"
-            text = f"Ultima fecha aplicada: {last_month} de {last_year}"
+            text = "Ultimo periodo aplicado: Ningun mes de Ningun año "
 
         self.aplicar_cuotas_label: ttk.Label = ttk.Label(
             aplicar_cuotas_frame,
@@ -68,12 +64,12 @@ class FeeApplicationPanel:
         self.aplicar_cuotas_label.grid(row=2, column=0, padx=PAD_X, pady=PAD_Y)
 
     def apply_monthly_fees(self) -> None:
-        active_students: int = self.main_service.get_active_student_count()
         now = datetime.now()
+        student_list = self.main_service.get_students_without_fee(now.month, now.year)
 
         confirm = Messagebox.yesno(
             (
-                f"""Fecha {NUM_TO_MONTH[now.month]} {now.year}. \nAlumnos activos {active_students} \n¿Desea continuar?"""
+                f"""Periodo: {NUM_TO_MONTH[now.month]} {now.year}. \nCuota a generar: {student_list} \n¿Desea continuar?"""
             ),
             "Confirmar Aplicación",
         )
@@ -95,8 +91,8 @@ class FeeApplicationPanel:
             self._refresh_apply_label()
             self.apply_fees_button.config(state="disabled")
 
-        except (ValidationError, NotFound, BusinessRuleError) as e:
-            show_toast(self.frame, f"Error validando movimiento: {e}", "error")
+        except (ValidationError, NotFound) as e:
+            show_toast(self.frame, f"Error: {e}", "error")
             self.apply_fees_button.config(state="normal")
 
         except Exception:
@@ -114,7 +110,7 @@ class FeeApplicationPanel:
         if not date:
             text = "No se aplicaron cuotas todavía"
         else:
-            text = f"Última fecha aplicada: {NUM_TO_MONTH.get(date[0], 'N/A')} de {date[1]}"
+            text = f"Último periodo aplicado: {NUM_TO_MONTH.get(date[0], 'N/A')} de {date[1]}"
         self.aplicar_cuotas_label.config(text=text)
 
     def _set_processing(self, value: bool):
