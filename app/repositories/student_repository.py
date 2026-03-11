@@ -210,6 +210,26 @@ class StudentRepository:
         cursor = conn.execute(query)
         return [self._row_to_student(row) for row in cursor.fetchall()]
 
+    def get_students_without_fee(
+        self, month: int, year: int, conn: Connection
+    ) -> list[Student]:
+        query = """
+        SELECT s.*
+            FROM students s
+            WHERE s.active = 1
+            AND NOT EXISTS (
+        SELECT 1
+        FROM movements m
+        WHERE m.student_id = s.id
+        AND m.type = 'FEE'
+        AND m.month = ?
+        AND m.year = ?
+        )
+        """
+        cursor = conn.execute(query, (month, year))
+
+        return [self._row_to_student(row) for row in cursor.fetchall()]
+
     def count_students_by_monthly_fee(self, monthly_fee: int, conn: Connection) -> int:
         """Returns the sum of students with that monthly_fee"""
         query = """

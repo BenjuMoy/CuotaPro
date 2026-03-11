@@ -152,10 +152,40 @@ class MovementRepository:
     def fees_not_applied_for_period(
         self, month: int, year: int, conn: Connection
     ) -> bool:
+        """Checks for global monthly fee application.
+
+        Args:
+            month (int): month
+            year (int): year
+            conn (Connection): connection
+
+        Returns:
+            bool: Wether monthly fees have been applied
+        """
         query = (
             "SELECT 1 FROM movements WHERE type='FEE' AND month=? AND year=? LIMIT 1"
         )
         return conn.execute(query, (month, year)).fetchone() is None
+
+    def fees_not_applied_for_period_for_student(
+        self, student_id: int, month: int, year: int, conn: Connection
+    ) -> bool:
+        """Return True if fee not applied, else False
+
+        Args:
+            student_id (int): students id.
+            month (int): fees month
+            year (int): fees year
+            conn (Connection): connection
+
+        Returns:
+            bool: True if fee not apllied, else False
+        """
+        query = "SELECT 1 FROM movements WHERE type = 'FEE' AND student_id = ? AND month = ? AND year = ? LIMIT 1"
+
+        cursor = conn.execute(query, (student_id, month, year))
+
+        return cursor.fetchone() is None
 
     def get_month_balance(
         self, student_id: int, month: int, year: int, conn: Connection
@@ -170,10 +200,19 @@ class MovementRepository:
         cursor = conn.execute(query, (student_id, month, year))
         return cursor.fetchone()[0]
 
-    def has_reversal(self, id: int, conn: Connection) -> bool:
+    def has_reversal(self, movement_id: int, conn: Connection) -> bool:
+        """Cecks if movement has been reversed.
+
+        Args:
+            id (int): movement id.
+            conn (Connection): Connection.
+
+        Returns:
+            bool: True if movement was reversed, else False.
+        """
         existing_reversal = conn.execute(
             "SELECT id FROM movements WHERE reference_id=? AND type='REVERSED'",
-            (id,),
+            (movement_id,),
         ).fetchone()
 
         return True if existing_reversal else False
