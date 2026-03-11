@@ -1,113 +1,118 @@
-from collections import defaultdict
+from tkinter import StringVar
 
-import matplotlib.pyplot as plt
 import ttkbootstrap as ttk
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-# from ttkbootstrap.constants import *
 from app.services.application_service import ApplicationService
-from app.utils.helpers import currency_format
+from app.utils.constantes import FONT_BODY, FONT_HEADER, TEACHERS
+
+
+class KpiCard(ttk.Labelframe):
+    def __init__(self, parent: ttk.Frame, title: str):
+        super().__init__(parent, text=title, padding=15)
+
+        self.var = StringVar()
+
+        self.label = ttk.Label(
+            self,
+            textvariable=self.var,
+            font=FONT_BODY,
+        )
+
+        self.label.pack()
+
+    def set(self, value: str):
+        self.var.set(value)
 
 
 class DashboardTab:
-    def __init__(self, parent: ttk.Notebook, main_service: ApplicationService):
-        self.main_service = main_service
-        self.frame = ttk.Frame(parent, padding=15)
+    """Safe operational dashboard."""
+
+    def __init__(
+        self, notebook: ttk.Notebook, parent: ttk.Frame, service: ApplicationService
+    ):
+        self.notebook = notebook
+        self.service = service
+        self.frame = ttk.Frame(parent, padding=20)
 
         self._build_ui()
         self.refresh()
 
-        main_service.subscribe(self.refresh)
+        service.subscribe(self.refresh)
 
     # -------------------------
-    # UI LAYOUT
+    # UI
     # -------------------------
 
     def _build_ui(self):
+
         title = ttk.Label(
             self.frame,
             text="Panel de Control",
-            font=("Helvetica", 22, "bold"),
+            font=FONT_HEADER,
         )
         title.pack(pady=10)
 
+        # KPIs
         self.kpi_frame = ttk.Frame(self.frame)
-        self.kpi_frame.pack(fill="x", pady=10)
+        self.kpi_frame.pack(fill="x", pady=15)
 
-        self.chart_frame = ttk.Frame(self.frame)
-        self.chart_frame.pack(fill="both", expand=True)
+        self.students_card = KpiCard(self.kpi_frame, "👨‍🎓 Estudiantes Activos")
+        self.students_card.grid(row=0, column=0, padx=10, sticky="nsew")
 
-        self.active_var = ttk.StringVar()
-        self.expected_var = ttk.StringVar()
-        self.collected_var = ttk.StringVar()
-        self.debt_var = ttk.StringVar()
+        self.teachers_card = KpiCard(self.kpi_frame, "👩‍🏫 Profesores")
+        self.teachers_card.grid(row=0, column=1, padx=10, sticky="nsew")
 
-        self._create_kpi("Estudiantes Activos", self.active_var, 0)
-        self._create_kpi("Ingreso Esperado", self.expected_var, 1)
-        self._create_kpi("Cobrado Mes", self.collected_var, 2)
-        self._create_kpi("Deuda Total", self.debt_var, 3)
+        # self.recent_card = KpiCard(self.kpi_frame, "📅 Movimientos Hoy")
+        # self.recent_card.grid(row=0, column=2, padx=10, sticky="nsew")
 
-    def _create_kpi(self, title, var, col):
-        card = ttk.Labelframe(self.kpi_frame, text=title, padding=15)
-        card.grid(row=0, column=col, padx=10, sticky="nsew")
+        self.taken_card = KpiCard(self.kpi_frame, "📊 Cobranza")
+        self.taken_card.grid(row=0, column=2, padx=10, sticky="nsew")
 
-        label = ttk.Label(card, textvariable=var, font=("Helvetica", 16, "bold"))
-        label.pack()
+        for i in range(3):
+            self.kpi_frame.columnconfigure(i, weight=1)
 
-        self.kpi_frame.columnconfigure(col, weight=1)
+        # Quick actions
+        actions = ttk.Labelframe(
+            self.frame,
+            text="Acciones rápidas",
+            padding=15,
+        )
+        actions.pack(fill="x", pady=10)
+
+        ttk.Button(
+            actions,
+            text="Agregar Estudiante",
+            bootstyle="success",
+            command=lambda: self.notebook.select(1),
+        ).pack(side="left", padx=5)
+
+        ttk.Button(
+            actions,
+            text="Registrar Pago",
+            bootstyle="primary",
+            command=lambda: self.notebook.select(4),
+        ).pack(side="left", padx=5)
+
+        ttk.Button(
+            actions,
+            text="Buscar Estudiante",
+            bootstyle="secondary",
+            command=lambda: self.notebook.select(2),
+        ).pack(side="left", padx=5)
 
     # -------------------------
-    # DATA + CHARTS
+    # DATA
     # -------------------------
 
     def refresh(self):
-        metrics = self.main_service.get_dashboard_metrics()
 
-        self.active_var.set(str(metrics.active_students))
-        self.expected_var.set(f"{currency_format(metrics.expected_income)}")
-        self.collected_var.set(f"{currency_format(metrics.collected)}")
-        self.debt_var.set(f"{currency_format(metrics.total_debt)}")
+        metrics = self.service.get_kpi_metrics()
 
-        # self._draw_charts(students, movements)
+        self.students_card.set(str(metrics.active_students))
+        self.teachers_card.set(str(len(TEACHERS)))
 
-    # -------------------------
-    # CHARTS
-    # -------------------------
+        rate = 0
+        if metrics.expected_income > 0:
+            rate = (metrics.collected / metrics.expected_income) * 100
 
-    def _draw_charts(self, students, movements):
-        for widget in self.chart_frame.winfo_children():
-            widget.destroy()
-
-        fig, axes = plt.subplots(1, 2, figsize=(10, 4))
-
-        # ---- Income per month (last 6 months)
-        income_by_month = defaultdict(int)
-
-        for m in movements:
-            key = f"{m.month}/{m.year}"
-            income_by_month[key] += m.amount
-
-        months = list(income_by_month.keys())[-6:]
-        values = [income_by_month[m] for m in months]
-
-        axes[0].bar(months, values)
-        axes[0].set_title("Ingresos por Mes")
-        axes[0].tick_params(axis="x", rotation=45)
-
-        # ---- Students per teacher
-        teacher_count = defaultdict(int)
-        for s in students:
-            teacher_count[s.teacher] += 1
-
-        teachers = list(teacher_count.keys())  # Replace with TEACHERS constant
-        counts = list(teacher_count.values())
-
-        axes[1].bar(teachers, counts)
-        axes[1].set_title("Estudiantes por Profesor")
-        axes[1].tick_params(axis="x", rotation=45)
-
-        fig.tight_layout()
-
-        canvas = FigureCanvasTkAgg(fig, master=self.chart_frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True)
+        self.taken_card.set(f"{rate:.0f}%")
