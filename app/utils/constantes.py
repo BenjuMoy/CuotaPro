@@ -3,13 +3,13 @@
 # --------------------------------------------------------------------------- #
 from pathlib import Path
 
-APP_VERSION = "1.2.1"
+APP_VERSION = "1.3.1"
 
 LOGS_DIR = Path("logs/")
 LOGS_PATH = Path("logs/app.log")
 
 
-ABOUT_TEXT = "Desarrollado por Benjamin Moyano\nmoyano.ben@gmail.com"
+ABOUT_TEXT = "Desarrollado por Benjamin Moyano\nmoyano [dot] ben [at] gmail [dot] com"
 
 
 # Database-related constants
