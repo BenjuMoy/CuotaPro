@@ -69,7 +69,7 @@ class FeeApplicationPanel:
 
         confirm = Messagebox.yesno(
             (
-                f"""Periodo: {NUM_TO_MONTH[now.month]} {now.year}. \nCuota a generar: {student_list} \n¿Desea continuar?"""
+                f"""Periodo: {NUM_TO_MONTH[now.month]} {now.year}. \nCuotas a generar: {len(student_list)} \n¿Desea continuar?"""
             ),
             "Confirmar Aplicación",
         )
