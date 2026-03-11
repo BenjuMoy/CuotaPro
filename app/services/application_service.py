@@ -211,6 +211,12 @@ class ApplicationService:
     def fees_not_applied_for_period(self) -> bool:
         return self.services.accounting.fees_not_applied_for_period()
 
+    def get_balances_for_students(self) -> dict[int, int]:
+        return self.services.accounting.get_balances_for_students()
+
+    def get_students_without_fee(self, month, year) -> list[Student]:
+        return self.services.accounting.get_students_without_fee(month, year)
+
     # --- Administrative actions --- #
 
     def apply_monthly_fees(self) -> int:

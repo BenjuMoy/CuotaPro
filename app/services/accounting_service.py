@@ -1,5 +1,4 @@
 from datetime import datetime
-from sqlite3 import Connection
 
 from app.database.connection import DatabaseManager
 from app.models.exceptions import BusinessRuleError, NotFound
@@ -67,14 +66,11 @@ class AccountingService:
     def add_fee(self, month: int, year: int) -> int:
         """Generate charges for all avtive students"""
         with self.db.transaction() as conn:
-            valid_fee = self.movements.fees_not_applied_for_period(month, year, conn)
+            students = self.students.get_students_without_fee(month, year, conn)
 
-            if not valid_fee:
-                raise BusinessRuleError("Cuotas ya aplicadas para este mes")
+            if not students:
+                raise NotFound("No ha estudiantes para aplicar")
 
-            students = self.students.get_all_active_students(conn)
-
-            applied_count = 0
             for student in students:
                 movement = Movement(
                     student_id=student.id,
@@ -85,9 +81,8 @@ class AccountingService:
                 )
 
                 self.movements.add(movement, conn)
-                applied_count += 1
 
-            return applied_count
+            return len(students)
 
     def increase_monthly_fee(self, old_monthly_fee: int, new_monthly_fee: int) -> int:
         """Increases the monthly fee."""
@@ -172,6 +167,21 @@ class AccountingService:
         """Returns a tuple containing the month and the year of the last applied fees."""
         with self.db.transaction() as conn:
             return self.movements.get_last_date_applied_fee(conn)
+
+    def get_students_without_fee(self, month, year) -> list[Student]:
+        with self.db.transaction() as conn:
+            return self.students.get_students_without_fee(month, year, conn)
+
+    def get_balances_for_students(self) -> dict[int, int]:
+        with self.db.transaction() as conn:
+            student_list = self.students.get_all_active_students(conn)
+            balances = {}
+
+            for student in student_list:
+                balance = self.movements.get_balance(student.id, conn)
+                balances[student.id] = balance
+
+        return balances
 
     def fees_not_applied_for_period(self) -> bool:
         now = datetime.now()
