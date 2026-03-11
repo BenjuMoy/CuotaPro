@@ -1,7 +1,7 @@
 from sqlite3 import Connection
 
 
-def database_initialized(conn):
+def database_initialized(conn: Connection):
     row = conn.execute("""
         SELECT name FROM sqlite_master
         WHERE type='table' AND name='students'
