@@ -259,10 +259,14 @@ class BaseFormTab:
             value = getattr(data_object, attr_name, "")
             if value is None:
                 value = ""
-            if isinstance(entry_widget, ttk.Entry):
-                entry_widget.insert(0, "" if value is None else str(value))
-            elif isinstance(entry_widget, ttk.Combobox):
+            if attr_name == "teacher" or attr_name == "book": #FIXME
                 entry_widget.set(value)
+            else:
+                entry_widget.insert(0, "" if value is None else str(value))
+            #if isinstance(entry_widget, ttk.Entry):
+            #    entry_widget.insert(0, "" if value is None else str(value))
+            #else:
+            #    entry_widget.set(value)
 
     def clear_form(self):
         """Clears all text from form entry widgets."""
