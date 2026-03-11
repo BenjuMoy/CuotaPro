@@ -1,6 +1,5 @@
 import logging
 from dataclasses import dataclass
-from pathlib import Path
 
 import ttkbootstrap as ttk
 
@@ -8,8 +7,8 @@ from app.bootstrap.app_initializer import AppInitializer
 from app.bootstrap.error_handler import GlobalErrorHandler
 from app.bootstrap.tk_factory import TkAppFactory
 from app.database.config import DatabaseConfig
-from app.main_window import MainWindow
 from app.services.application_service import ApplicationService
+from app.views.main_window import MainWindow
 
 logger = logging.getLogger(__name__)
 
