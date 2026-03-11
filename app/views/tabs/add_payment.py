@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.widgets.tableview import Tableview
@@ -16,9 +14,7 @@ from app.utils.constantes import (
     TYPE_TRANSLATE,
 )
 from app.utils.helpers import currency_format
-from app.views.helpers_gui import (
-    create_label_frame,
-)
+from app.views.helpers_gui import create_label_frame
 from app.views.toast import show_toast
 
 TABLE_COLUMNS_PAYMENT = [
@@ -46,11 +42,9 @@ class PaymentTab:
         self.register_button: ttk.Button
         self.table: Tableview
         self.current_student: Student | None = None
-        self._processing = False
+        self._processing: bool = False
 
-        # self.amount_entry.bind("<FocusOut>", self._validate_amount)
-
-        self.frame: ttk.Frame = ttk.Frame(parent)
+        self.frame = ttk.Frame(parent)
 
         # Initialize data structures
         self._initialize_student_data()
@@ -82,7 +76,7 @@ class PaymentTab:
         )
         self.student_combobox = ttk.Combobox(
             master=select_frame,
-            values = list(self.student_map.values()),
+            values=list(self.student_map.values()),
             state="readonly",
             width=40,
             font=FONT_BODY,
@@ -136,9 +130,8 @@ class PaymentTab:
             row=0, column=0, sticky="w", padx=(0, 5)
         )
 
-        month_list = NUM_TO_MONTH[datetime.now().month]
         self.month_combobox = ttk.Combobox(
-            add_frame, values=month_list, state="disabled", width=15, font=FONT_BODY
+            add_frame, values=[], state="disabled", width=15, font=FONT_BODY
         )
         self.month_combobox.grid(row=0, column=1, sticky="w", padx=(0, 10))
 
@@ -164,7 +157,7 @@ class PaymentTab:
 
     # Action funcs
 
-    def _on_student_selected(self, event=None):
+    def _on_student_selected(self, _event=None):
         """Handle student selection from combobox."""
         text = self.student_combobox.get()
 
@@ -176,13 +169,14 @@ class PaymentTab:
         if not self.current_student or not self.current_student.id:
             self._clear_displays()
         else:
-            data = self.main_service.get_student_payment_overview(
-                self.current_student.id
-            )
-            self._populate_payment_history(data["movements"])
-            self._update_info_display(
-                data["student"], data["balance"], data["last_payment"]
-            )
+            self.refresh_students()
+            # data = self.main_service.get_student_payment_overview(
+            #    self.current_student.id
+            # )
+            # self._populate_payment_history(data["movements"])
+            # self._update_info_display(
+            #    data["student"], data["balance"], data["last_payment"]
+            # )
 
     def _update_info_display(
         self, student: Student, balance: int, last_payment: Movement | None
@@ -208,8 +202,8 @@ class PaymentTab:
         self.balance_label.config(text=balance_text, bootstyle=balance_style)
 
         # Format is (month, year, debt)
-        debt_month_list: list[tuple[int, int, int]] = self.main_service.get_unpaid_months_by_student_id(
-            self.current_student.id
+        debt_month_list: list[tuple[int, int, int]] = (
+            self.main_service.get_unpaid_months_by_student_id(self.current_student.id)
         )
 
         if not debt_month_list:
@@ -217,8 +211,9 @@ class PaymentTab:
             show_toast(self.frame, "No hay cuotas pendientes para pagar", "error")
             return
 
-        month_list = [NUM_TO_MONTH[month[0]] + f" {month[1]}" for month in debt_month_list]
-        # self.month_combobox.set([month_list])
+        month_list = [
+            NUM_TO_MONTH[month[0]] + f" {month[1]}" for month in debt_month_list
+        ]
         self.month_combobox["values"] = month_list
 
         # Enable payment controls
@@ -235,13 +230,14 @@ class PaymentTab:
         self.month_combobox.config(state="readonly")
         self.amount_entry.config(state="normal")
         self.register_button.config(state="normal")
+        self.amount_entry.focus()
 
     def _set_default_payment_values(self, month_list: list[str]) -> None:
         # Set default month to next payable month
         if not month_list:
             self.month_combobox.set("")
             self.register_button.config(state="disabled")
-            # show_toast(self.frame, "No hay cuotas pendientes para pagar", "error") # Pops every time there is a student selected and gets refresh trigger
+            show_toast(self.frame, "No hay cuotas pendientes para pagar", "error")
             return
 
         # self.month_combobox.set(month)
@@ -327,7 +323,6 @@ Monto: {currency_format(amount)}
             return
 
         # Process payment
-        data = {}
         try:
             self._processing = True
             self._set_processing_state(True)
@@ -343,11 +338,11 @@ Monto: {currency_format(amount)}
             # Success
             show_toast(self.frame, "Pago registrado con éxito.", "success")
 
+            # self.refresh_students()
             data = self.main_service.get_student_payment_overview(
                 self.current_student.id
             )
             self._populate_payment_history(data["movements"])
-
             self._update_info_display(
                 data["student"], data["balance"], data["last_payment"]
             )
