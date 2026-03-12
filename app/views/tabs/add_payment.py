@@ -26,10 +26,17 @@ TABLE_COLUMNS_PAYMENT = [
     {"text": "Fecha registrada", "stretch": True},
 ]
 
+INFO_LABELS = {
+    "id_label": "ID:",
+    "monthly_fee_label": "Cuota Mensual:",
+    "balance_label": "Balance Actual:",
+    "ultimo_mes_pagado_label": "Última Fecha Pagada:",
+}
+
 
 class PaymentTab:
-    def __init__(self, parent: ttk.Notebook, controller: ApplicationService):
-        self.main_service = controller
+    def __init__(self, parent: ttk.Notebook, main_service: ApplicationService):
+        self.main_service = main_service
 
         # UI Elements
         self.id_label: ttk.Label
@@ -54,16 +61,39 @@ class PaymentTab:
 
         self.main_service.subscribe(self.refresh_students)
 
+    # Static helpers
+
+    @staticmethod
+    def _get_display_name(student: Student) -> str:
+        """Creates a consistent display name for the combobox."""
+        return f"[{student.id}] {student.last_name}, {student.first_name}"
+
+    @staticmethod
+    def _movement_to_row(movement: Movement) -> tuple:
+        """Convert payment object to table row."""
+        return (
+            movement.id,
+            NUM_TO_MONTH.get(movement.month, "Desconocido"),
+            movement.year,
+            TYPE_TRANSLATE[movement.type],
+            currency_format(movement.amount),
+            movement.created_at.strftime("%d/%m/%Y %H:%M"),
+        )
+
+    @staticmethod
+    def format_last_payment(movement) -> str:
+
+        if not movement:
+            return "Ningún pago registrado"
+
+        return f"{NUM_TO_MONTH[movement.month]} de {movement.year}"
+
     # Create GUI elements
 
     def _initialize_student_data(self):
         """Initialize student mapping data."""
-        self.all_students = self.main_service.get_all_active_students()
+        self.all_students = self.main_service.get_students_debtors()
         self.student_map = {s.id: self._get_display_name(s) for s in self.all_students}
-
-    def _get_display_name(self, student: Student) -> str:
-        """Creates a consistent display name for the combobox."""
-        return f"[{student.id}] {student.last_name}, {student.first_name}"
 
     def _create_widgets(self):
         """Create student selection and info widgets."""
@@ -92,14 +122,7 @@ class PaymentTab:
         )
         self.info_frame.pack(fill="x", padx=PAD_X, pady=PAD_Y)
 
-        info_labels = {
-            "id_label": "ID:",
-            "monthly_fee_label": "Cuota Mensual:",
-            "balance_label": "Balance Actual:",
-            "ultimo_mes_pagado_label": "Última Fecha Pagada:",
-        }
-
-        for i, (attr_name, label_text) in enumerate(info_labels.items()):
+        for i, (attr_name, label_text) in enumerate(INFO_LABELS.items()):
             ttk.Label(self.info_frame, text=label_text, font=FONT_BODY).grid(
                 row=0, column=i * 2, sticky="w", padx=(0, 5)
             )
@@ -161,22 +184,18 @@ class PaymentTab:
         """Handle student selection from combobox."""
         text = self.student_combobox.get()
 
-        for k, v in self.student_map.items():
-            if v == text:
-                self.current_student = self.main_service.get_student_by_id(k)
-                break
+        # for k, v in self.student_map.items():
+        #    if v == text:
+        #        self.current_student = self.main_service.get_student_by_id(k)
+        #        break
+
+        student_id = int(text.split("]")[0][1:])
+        self.current_student = self.main_service.get_student_by_id(student_id)
 
         if not self.current_student or not self.current_student.id:
             self._clear_displays()
         else:
             self.refresh_students()
-            # data = self.main_service.get_student_payment_overview(
-            #    self.current_student.id
-            # )
-            # self._populate_payment_history(data["movements"])
-            # self._update_info_display(
-            #    data["student"], data["balance"], data["last_payment"]
-            # )
 
     def _update_info_display(
         self, student: Student, balance: int, last_payment: Movement | None
@@ -187,18 +206,13 @@ class PaymentTab:
         self.monthly_fee_label.config(text=currency_format(student.monthly_fee))
 
         # Update last paid month
-        if last_payment:
-            ultimo_text = (
-                f"{NUM_TO_MONTH.get(last_payment.month)} De {last_payment.year}"
-            )
-        else:
-            ultimo_text = "Ningún pago registrado"
 
+        ultimo_text = self.format_last_payment(last_payment)
         self.ultimo_mes_pagado_label.config(text=ultimo_text)
 
         # Update balance with color coding
         balance_text = currency_format(balance)
-        balance_style = "success" if balance >= 0 else "danger"
+        balance_style = "success" if balance >= 0 else "warning"
         self.balance_label.config(text=balance_text, bootstyle=balance_style)
 
         # Format is (month, year, debt)
@@ -208,7 +222,7 @@ class PaymentTab:
 
         if not debt_month_list:
             self._disable_payment_controls()
-            show_toast(self.frame, "No hay cuotas pendientes para pagar", "error")
+            show_toast(self.frame, "No hay cuotas pendientes para pagar", "success")
             return
 
         month_list = [
@@ -219,6 +233,7 @@ class PaymentTab:
         # Enable payment controls
         self._enable_payment_controls()
         self._set_default_payment_values(month_list)
+        self.amount_entry.focus()
 
     def _disable_payment_controls(self):
         self.month_combobox.config(state="disabled")
@@ -237,10 +252,8 @@ class PaymentTab:
         if not month_list:
             self.month_combobox.set("")
             self.register_button.config(state="disabled")
-            show_toast(self.frame, "No hay cuotas pendientes para pagar", "error")
             return
 
-        # self.month_combobox.set(month)
         self.month_combobox.set(month_list[0])
 
         # Set default amount to student's monthly_fee
@@ -249,17 +262,6 @@ class PaymentTab:
             self.amount_entry.insert(0, str(self.current_student.monthly_fee))
 
     # Action functions
-
-    def _movement_to_row(self, movement: Movement):
-        """Convert payment object to table row."""
-        return (
-            movement.id,
-            NUM_TO_MONTH.get(movement.month, "Desconocido"),
-            movement.year,
-            TYPE_TRANSLATE[movement.type],
-            currency_format(movement.amount),
-            movement.created_at.strftime("%d/%m/%Y %H:%M"),
-        )
 
     def _populate_payment_history(self, movements: list[Movement]):
         """Populate payment history table."""
@@ -322,6 +324,8 @@ Monto: {currency_format(amount)}
         if confirm != "Yes":
             return
 
+        data = None
+
         # Process payment
         try:
             self._processing = True
@@ -339,9 +343,6 @@ Monto: {currency_format(amount)}
             show_toast(self.frame, "Pago registrado con éxito.", "success")
 
             # self.refresh_students()
-            data = self.main_service.get_student_payment_overview(
-                self.current_student.id
-            )
             self._populate_payment_history(data["movements"])
             self._update_info_display(
                 data["student"], data["balance"], data["last_payment"]
@@ -381,7 +382,7 @@ Monto: {currency_format(amount)}
         self.frame.update_idletasks()
 
     def refresh_students(self):
-        """Refresh student list from controller."""
+        """Refresh student list from main service."""
         self._initialize_student_data()
         self.student_combobox["values"] = list(self.student_map.values())
 
