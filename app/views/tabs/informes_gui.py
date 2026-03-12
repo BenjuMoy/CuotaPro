@@ -14,8 +14,8 @@ from ..helpers_gui import (
 
 
 class ReportsTab:
-    def __init__(self, parent: ttk.Notebook, controller: ApplicationService):
-        self.main_service: ApplicationService = controller
+    def __init__(self, parent: ttk.Notebook, main_service: ApplicationService):
+        self.main_service: ApplicationService = main_service
         self.frame = ttk.Frame(parent)
 
         self.main_service.subscribe(self.refresh_student_list)
@@ -57,7 +57,7 @@ class ReportsTab:
         self.table.pack(side="left", fill="both", expand=True)
 
     def calculate_salary(self):
-        """Fetches data from controller and updates the UI."""
+        """Fetches data from main service and updates the UI."""
         prof_name = self.cb.get()
         if not prof_name:
             return
@@ -66,7 +66,7 @@ class ReportsTab:
             # self.search_btn.config(state="disabled", text="Calculando...")
             self.frame.update()  # Force UI update
 
-            # Get clean data from controller
+            # Get clean data from main service
             report = self.main_service.get_salary_report(prof_name)
 
             # 1. Update Summary Text
@@ -104,7 +104,7 @@ class ReportsTab:
         self.table.delete_rows()
 
     def refresh_student_list(self):
-        """Called by controller if data changes (optional)."""
+        """Called by main service if data changes (optional)."""
         # You might want to clear the report if data changes to avoid showing stale numbers
         self.summary_text_var.set("")
         self._clear_table()

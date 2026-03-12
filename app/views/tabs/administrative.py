@@ -7,15 +7,15 @@ from app.views.tabs.admin.movement_table_panel import MovementTablePanel
 
 
 class AdministrativeTab:
-    def __init__(self, parent: ttk.Notebook, controller: ApplicationService):
-        self.main_service = controller
+    def __init__(self, parent: ttk.Notebook, main_service: ApplicationService):
+        self.main_service = main_service
         frame = ttk.Frame(parent)
         self.frame = frame
 
-        self.fee_application = FeeApplicationPanel(frame, controller)
+        self.fee_application = FeeApplicationPanel(frame, main_service)
 
-        self.fee_increase = FeeIncreasePanel(frame, controller)
+        self.fee_increase = FeeIncreasePanel(frame, main_service)
 
-        self.movements = MovementTablePanel(frame, controller)
+        self.movements = MovementTablePanel(frame, main_service)
 
         self.main_service.subscribe(self.movements.refresh_table)

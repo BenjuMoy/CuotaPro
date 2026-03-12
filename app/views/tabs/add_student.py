@@ -107,7 +107,7 @@ FORM_LAYOUT = [
 
 
 class AddStudentTab(BaseFormTab):
-    def __init__(self, parent: ttk.Notebook, controller: ApplicationService):
+    def __init__(self, parent: ttk.Notebook, main_service: ApplicationService):
         super().__init__(
             parent=parent,
             form_title="Nuevo Estudiante",
@@ -115,7 +115,7 @@ class AddStudentTab(BaseFormTab):
             model_class=Student,
         )
 
-        self.main_service = controller
+        self.main_service = main_service
         self.main_frame.pack(fill="both")
 
         self.form_frame.pack(fill="both", padx=PAD_X, pady=PAD_Y)

@@ -21,7 +21,7 @@ class AppInitializer:
     - Preparing database
     - Running migrations
     - Wiring dependencies
-    - Returning configured controller
+    - Returning configured main service
     """
 
     def __init__(self, db_config: DatabaseConfig):
