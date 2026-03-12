@@ -63,38 +63,11 @@ class MaintenanceService:
         # Close active connection
         self.db.close()
 
-        # db_path = Path(self.config.db_path)
-        # wal_path = db_path.with_suffix(db_path.suffix + "-wal")
-        # shm_path = db_path.with_suffix(db_path.suffix + "-shm")
-
-        ## Remove main DB and WAL artifacts
-        # for path in [db_path, wal_path, shm_path]:
-        #    if path.exists():
-        #        path.unlink()
-
-        # Copy clean backup
-        # shutil.copy2(backup_path, db_path)
-
         with sqlite3.connect(backup_path) as source_conn:
             with sqlite3.connect(self.config.db_path) as dest_conn:
                 source_conn.backup(dest_conn)
 
         return True
-
-    # def restore_backup(self, file_path: str) -> bool: # Old version
-    #    """Restores a backup safely."""
-    #    backup_path = Path(file_path)
-
-    #    if not backup_path.exists():
-    #        return False
-
-    #    self.create_backup()
-
-    #    self.db.close()
-
-    #    shutil.copy2(backup_path, self.config.db_path)
-
-    #    return True
 
     # -------------------------
     # INTEGRITY CHECK
