@@ -2,7 +2,6 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 
 from app.services.application_service import ApplicationService
-from app.utils.constantes import FONT_HEADER
 from app.views.dialogs.about_dialog import show_about
 from app.views.dialogs.database_stats_dialog import ShowDatabasrStatsDialog
 from app.views.dialogs.restore_backup_dialog import RestoreBackupDialog
@@ -17,12 +16,17 @@ from app.views.tabs.update_student import UpdateStudentTab
 
 MENU_LAYOUT = [
     {
-        "label": "Base de Datos",
+        "label": "Archivo",
         "items": [
             {"label": "Crear Respaldo", "command": "create_backup"},
-            {"label": "Verificar Integridad", "command": "verify_integrity"},
             {"separator": True},
             {"label": "Restaurar Respaldo", "command": "restore_backup"},
+        ],
+    },
+    {
+        "label": "Base de Datos",
+        "items": [
+            {"label": "Verificar Integridad", "command": "verify_integrity"},
         ],
     },
     {
@@ -81,16 +85,16 @@ class MainWindow:
     def __init__(
         self,
         root: ttk.Window,
-        controller: ApplicationService,
+        main_service: ApplicationService,
     ):
         """Initialize the main window.
         Args:
             root: The root window
-            controller: The application controller
+            main_service: The application main_service
             db_config: The application config
         """
         self.root = root
-        self.main_service = controller
+        self.main_service = main_service
 
         self.notebook: ttk.Notebook
         self.status_bar: ttk.Label
@@ -102,15 +106,9 @@ class MainWindow:
 
     def _create_ui(self):
         """Create the user interface components."""
-        self._setup_style()
         self._build_menu(MENU_LAYOUT)
         self._setup_notebook(TAB_LAYOUT)
         self._setup_status_bar()
-
-    def _setup_style(self):
-        """Configure the UI style."""
-        style = ttk.Style()
-        style.configure("Bold.TLabelframe.Label", font=(FONT_HEADER))
 
     def _build_menu(self, layout):
         menubar = ttk.Menu(self.root)
@@ -135,7 +133,7 @@ class MainWindow:
         self.notebook.pack(fill="both", expand=True)
 
         for tab_config in layout:
-            if tab_config["cls"] == DashboardTab:
+            if tab_config["cls"] == DashboardTab:  # FIXME
                 tab_instance = tab_config["cls"](
                     self.notebook, self.notebook, self.main_service
                 )
@@ -148,17 +146,16 @@ class MainWindow:
 
     def _setup_status_bar(self):
         """Create the status bar."""
-        count = self.main_service.get_active_student_count()
-
         self.status_bar = ttk.Label(
             self.root, text="Listo", relief="sunken", anchor="w"
         )
         self.status_bar.pack(side="bottom", fill="x")
-        self.update_status(f"{count} estudiantes activos")
+        self.refresh_students()
 
-    def update_status(self, message: str):
+    def update_status(self, message: str, duration: int = 5000):
         """Update the status bar with a message. Args: message: The message to display"""
         self.status_bar.config(text=message)
+        self.root.after(duration, lambda: self.update_status("Listo"))
 
     def refresh_students(self):
         count = self.main_service.get_active_student_count()
@@ -172,7 +169,6 @@ class MainWindow:
                 f"Respaldo creado en:\n{backup_path}", "Respaldo Creado"
             )
             self.update_status("Respaldo creado")
-            self.root.after(3000, lambda: self.update_status("Listo"))
         except Exception as e:
             Messagebox.show_error(f"Error al crear respaldo: {e}", "Error")
 

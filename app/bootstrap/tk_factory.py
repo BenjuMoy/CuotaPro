@@ -1,6 +1,12 @@
 import ttkbootstrap as ttk
 
-from app.utils.constantes import DEFAULT_HEIGHT, DEFAULT_WIDTH, ICON_PATH
+from app.utils.constantes import (
+    DEFAULT_HEIGHT,
+    DEFAULT_WIDTH,
+    FONT_BODY,
+    FONT_HEADER,
+    ICON_PATH,
+)
 
 
 def _center_window(root: ttk.Window, width: int, height: int):
@@ -34,5 +40,11 @@ class TkAppFactory:
 
         root._icon = ttk.PhotoImage(file=ICON_PATH)
         root.iconphoto(True, root._icon)
+
+        # Set up styles
+        style = ttk.Style()
+        style.configure("Bold.TLabelframe.Label", font=(FONT_HEADER))
+
+        root.option_add("*TCombobox*Listbox.font", FONT_BODY)
 
         return root
