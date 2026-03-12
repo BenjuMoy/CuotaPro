@@ -9,7 +9,7 @@ LOGS_DIR = Path("logs/")
 LOGS_PATH = Path("logs/app.log")
 
 
-ABOUT_TEXT = "Desarrollado por Benjamin Moyano\nmoyano [dot] ben [at] gmail [dot] com"
+ABOUT_TEXT = "Desarrollado por Benjamin Moyano.\nmoyano [dot] ben [at] gmail [dot] com"
 
 
 # Database-related constants
