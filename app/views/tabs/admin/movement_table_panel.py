@@ -3,6 +3,7 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.widgets.tableview import Tableview
 
 from app.models.exceptions import BusinessRuleError, NotFound
+from app.models.models import Movement
 from app.services.application_service import ApplicationService
 from app.utils.constantes import (
     CAMPO_ID,
@@ -76,7 +77,23 @@ class MovementTablePanel:
 
         self._populate_table(self.table_filters.get())
 
-    def handle_double_click(self, event):
+    # Static Methods
+
+    @staticmethod
+    def _movement_to_row(mov: Movement) -> tuple:
+        return (
+            mov.id,
+            mov.student_id,
+            TYPE_TRANSLATE[mov.type],
+            currency_format(mov.amount),
+            NUM_TO_MONTH[mov.month],
+            mov.year,
+            mov.created_at.strftime(FECHA_HOY_AHORA_FMT),
+        )
+
+    # Actions
+
+    def handle_double_click(self, _event):
         if self._processing:
             return
 
@@ -118,20 +135,11 @@ class MovementTablePanel:
             movements = self.main_service.get_all_movements()
 
         for mov in movements:
-            data = (
-                mov.id,
-                mov.student_id,
-                TYPE_TRANSLATE[mov.type],
-                currency_format(mov.amount),
-                NUM_TO_MONTH[mov.month],
-                mov.year,
-                mov.created_at.strftime(FECHA_HOY_AHORA_FMT),
-            )
-            self.table.insert_row("end", data)
+            self.table.insert_row("end", self._movement_to_row(mov))
 
     def refresh_table(self):
         current_filter = self.table_filters.get()
         self._populate_table(current_filter)
 
-    def _on_filter_selected(self, event=None):
+    def _on_filter_selected(self, _event=None):
         self._populate_table(self.table_filters.get())

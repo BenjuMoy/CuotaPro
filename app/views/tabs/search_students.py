@@ -19,8 +19,8 @@ from app.views.toast import show_toast
 
 
 class SearchStudentTab:
-    def __init__(self, parent: ttk.Notebook, controller: ApplicationService):
-        self.main_service = controller
+    def __init__(self, parent: ttk.Notebook, main_service: ApplicationService):
+        self.main_service = main_service
         self.frame = ttk.Frame(parent)
         self.logger = logging.getLogger(__name__)
 
@@ -82,6 +82,39 @@ class SearchStudentTab:
         self.table.pack(fill="both", expand=True, padx=PAD_X, pady=PAD_Y)
         self.table.view.bind("<Double-1>", self.on_double_click)
 
+    # Static Methods
+
+    @staticmethod
+    def _show_student_details(
+        est: Student, last_payment: Movement | None, balance: int
+    ):
+        phones = [t for t in (est.phone1, est.phone2, est.phone3) if t]
+        detalles = f"""
+Estado: {"✅ Activo" if est.active else "🚫 Inactivo"}
+Nombre: {est.last_name} {est.first_name}
+Teléfonos: {", ".join(phones)}
+Escuela: {est.school}
+Año: {est.year}
+Profesor: {est.teacher}
+Libro: {est.book}
+Curso: {est.course}
+Cuota: {est.monthly_fee}
+Balance: {currency_format(balance)}
+Último mes pagado: {NUM_TO_MONTH.get(last_payment.month, "Desconocido") if last_payment else "Ningun pago registrado"}
+    """
+        Messagebox.show_info(detalles, f"Ficha de {est.first_name} {est.last_name}")
+
+    @staticmethod
+    def _student_to_row(est: Student, balance: int) -> tuple:
+        return (
+            est.id,
+            est.last_name,
+            est.first_name,
+            est.teacher,
+            currency_format(balance),
+            "✅ Activo" if est.active else "🚫 Inactivo",
+        )
+
     # --- Search Actions --- #
     def search_by_name(self):
         self.teacher_filter_entry.set("")
@@ -122,16 +155,6 @@ class SearchStudentTab:
         )
 
     # --- Table Helpers ---
-    def _student_to_row(self, est: Student, balance: int) -> tuple:
-        return (
-            est.id,
-            est.last_name,
-            est.first_name,
-            est.teacher,
-            currency_format(balance),
-            "✅ Activo" if est.active else "🚫 Inactivo",
-        )
-
     def _populate_table(self, students: list[Student]):
         """Limpia la tabla y la llena con la lista proporcionada."""
         self.table.delete_rows()
@@ -141,33 +164,16 @@ class SearchStudentTab:
 
         for est in students:
             data = self.main_service.get_student_payment_overview(est.id)
-            self.table.insert_row(
+            row = self.table.insert_row(
                 index="end", values=self._student_to_row(est, data["balance"])
             )
 
             if data["balance"] < 0:
-                self.table.apply_table_stripes(stripecolor=("yellow", "black"))
+                self.table.view.item(row.iid, tags=("debtor",))
 
-    def _show_student_details(
-        self, est: Student, last_payment: Movement | None, balance: int
-    ):
-        phones = [t for t in (est.phone1, est.phone2, est.phone3) if t]
-        detalles = f"""
-Estado: {"✅ Activo" if est.active else "🚫 Inactivo"}
-Nombre: {est.last_name} {est.first_name}
-Teléfonos: {", ".join(phones)}
-Escuela: {est.school}
-Año: {est.year}
-Profesor: {est.teacher}
-Libro: {est.book}
-Curso: {est.course}
-Cuota: {est.monthly_fee}
-Balance: {currency_format(balance)}
-Último mes pagado: {NUM_TO_MONTH.get(last_payment.month, "Desconocido") if last_payment else "Ningun pago registrado"}
-    """
-        Messagebox.show_info(detalles, f"Ficha de {est.first_name} {est.last_name}")
+        self.table
 
-    def on_double_click(self, event):
+    def on_double_click(self, _event):
         rows = self.table.get_rows(selected=True)
         if not rows:
             return

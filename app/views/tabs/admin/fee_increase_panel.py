@@ -69,6 +69,17 @@ class FeeIncreasePanel:
         vcmd = (self.frame.register(lambda P: P.isdigit() or P == ""), "%P")
         self.new_monthly_fee_entry.config(validate="key", validatecommand=vcmd)
 
+    # Static Methods
+
+    @staticmethod
+    def _parse_positive_int(value: str) -> int | None:
+        if not value:
+            return None
+        try:
+            return int(value)
+        except ValueError:
+            return None
+
     def increase_fee_amount(self):
         if self._processing:
             return
@@ -142,14 +153,6 @@ class FeeIncreasePanel:
 
         finally:
             self._set_processing(False)
-
-    def _parse_positive_int(self, value: str) -> int | None:
-        if not value:
-            return None
-        try:
-            return int(value)
-        except ValueError:
-            return None
 
     def _set_processing(self, value: bool):
         self._processing = value
