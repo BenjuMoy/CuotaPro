@@ -118,7 +118,7 @@ FORM_LAYOUT = [
 
 
 class UpdateStudentTab(BaseFormTab):
-    def __init__(self, parent: ttk.Notebook, controller: ApplicationService) -> None:
+    def __init__(self, parent: ttk.Notebook, main_service: ApplicationService):
         super().__init__(
             parent=parent,
             form_title="Datos del Estudiante",
@@ -126,7 +126,7 @@ class UpdateStudentTab(BaseFormTab):
             model_class=Student,
         )
 
-        self.main_service = controller
+        self.main_service = main_service
         self.update_button: ttk.Button
         self.deactivate_button: ttk.Button
 
