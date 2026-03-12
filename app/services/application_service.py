@@ -22,7 +22,7 @@ from app.services.service_container import ServiceContainer
 
 class ApplicationService:
     """
-    Central controller for the application using SQLite database.
+    Central main service for the application using SQLite database.
     Manages state and coordinates between the data layer and the UI.
     """
 
@@ -160,7 +160,7 @@ class ApplicationService:
 
     def add_payment_to_student(
         self, student_id: int, month: int, year: int, amount: int
-    ) -> dict[str, Student | int | Movement]:
+    ) -> dict:
         """Adds payment to student by id. Amount comes always positive from ui and current year is assumed for payment."""
         student, new_balance, movement = self.services.accounting.add_payment(
             student_id, month, year, amount
@@ -176,11 +176,7 @@ class ApplicationService:
         )
         self._notify_subscribers()
 
-        return {
-            "student": student,
-            "balance": new_balance,
-            "last_payment": movement,
-        }
+        return self.get_student_payment_overview(student_id)
 
     # Payment getters
 
@@ -214,7 +210,7 @@ class ApplicationService:
     def get_balances_for_students(self) -> dict[int, int]:
         return self.services.accounting.get_balances_for_students()
 
-    def get_students_without_fee(self, month, year) -> list[Student]:
+    def get_students_without_fee(self, month: int, year: int) -> list[Student]:
         return self.services.accounting.get_students_without_fee(month, year)
 
     # --- Administrative actions --- #
@@ -322,7 +318,7 @@ class ApplicationService:
     def create_backup(self):
         return self.services.maintenance.create_backup()
 
-    def restore_backup(self, file_path: str):
+    def restore_backup(self, file_path: Path) -> bool:
         return self.services.maintenance.restore_backup(file_path)
 
     def list_backup_files(self) -> list[Path]:

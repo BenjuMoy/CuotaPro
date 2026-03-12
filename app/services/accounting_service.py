@@ -168,7 +168,7 @@ class AccountingService:
         with self.db.transaction() as conn:
             return self.movements.get_last_date_applied_fee(conn)
 
-    def get_students_without_fee(self, month, year) -> list[Student]:
+    def get_students_without_fee(self, month: int, year: int) -> list[Student]:
         with self.db.transaction() as conn:
             return self.students.get_students_without_fee(month, year, conn)
 
