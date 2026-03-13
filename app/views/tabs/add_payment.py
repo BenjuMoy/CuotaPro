@@ -145,7 +145,7 @@ class PaymentTab:
 
     def _create_payment_frame(self):
         """Create payment registration frame."""
-        add_frame = ttk.Labelframe(self.frame, text="Registrar Nuevo Pago", padding=10)
+        add_frame = create_label_frame(self.frame, "Registrar Nuevo Pago", False)
         add_frame.pack(fill="x", padx=PAD_X, pady=PAD_Y)
 
         # Month selection
