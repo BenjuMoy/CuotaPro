@@ -27,10 +27,8 @@ class KpiCard(ttk.Labelframe):
 class DashboardTab:
     """Safe operational dashboard."""
 
-    def __init__(
-        self, notebook: ttk.Notebook, parent: ttk.Frame, service: ApplicationService
-    ):
-        self.notebook = notebook
+    def __init__(self, parent: ttk.Notebook, service: ApplicationService):
+        self.parent = parent
         self.service = service
         self.frame = ttk.Frame(parent, padding=20)
 
@@ -83,21 +81,21 @@ class DashboardTab:
             actions,
             text="Agregar Estudiante",
             bootstyle="success",
-            command=lambda: self.notebook.select(1),
+            command=lambda: self.parent.select(1),
         ).pack(side="left", padx=20, pady=20, expand=True, fill="both")
 
         ttk.Button(
             actions,
             text="Registrar Pago",
             bootstyle="primary",
-            command=lambda: self.notebook.select(4),
+            command=lambda: self.parent.select(4),
         ).pack(side="left", padx=20, pady=20, expand=True, fill="both")
 
         ttk.Button(
             actions,
             text="Buscar Estudiante",
             bootstyle="secondary",
-            command=lambda: self.notebook.select(2),
+            command=lambda: self.parent.select(2),
         ).pack(side="left", padx=20, pady=20, expand=True, fill="both")
 
     # -------------------------

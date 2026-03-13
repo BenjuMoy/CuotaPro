@@ -141,12 +141,7 @@ class MainWindow:
         self.notebook.pack(fill="both", expand=True)
 
         for tab_config in layout:
-            if tab_config["cls"] == DashboardTab:  # FIXME
-                tab_instance = tab_config["cls"](
-                    self.notebook, self.notebook, self.main_service
-                )
-            else:
-                tab_instance = tab_config["cls"](self.notebook, self.main_service)
+            tab_instance = tab_config["cls"](self.notebook, self.main_service)
 
             setattr(self, tab_config["name"], tab_instance)
 
