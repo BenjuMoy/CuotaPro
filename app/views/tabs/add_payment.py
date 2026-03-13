@@ -324,7 +324,7 @@ Monto: {currency_format(amount)}
         if confirm != "Yes":
             return
 
-        data = None
+        student_overview = None
 
         # Process payment
         try:
@@ -332,7 +332,7 @@ Monto: {currency_format(amount)}
             self._set_processing_state(True)
             month_num = MONTH_TO_NUM[month_name]
 
-            data = self.main_service.add_payment_to_student(
+            student_overview = self.main_service.add_payment_to_student(
                 student_id=self.current_student.id,
                 month=month_num,
                 year=year,
@@ -343,9 +343,11 @@ Monto: {currency_format(amount)}
             show_toast(self.frame, "Pago registrado con éxito.", "success")
 
             # self.refresh_students()
-            self._populate_payment_history(data["movements"])
+            self._populate_payment_history(student_overview.movements)
             self._update_info_display(
-                data["student"], data["balance"], data["last_payment"]
+                student_overview.student,
+                student_overview.balance,
+                student_overview.last_payment,
             )
 
             self.amount_entry.focus()
@@ -360,7 +362,7 @@ Monto: {currency_format(amount)}
         finally:
             self._processing = False
             self._set_processing_state(False)
-            if data and data.get("balance", -1) >= 0:
+            if student_overview and student_overview.balance >= 0:
                 self.month_combobox.set("")
                 self.amount_entry.delete(0, "end")
                 self._disable_payment_controls()
