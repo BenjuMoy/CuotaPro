@@ -7,7 +7,7 @@ from app.models.exceptions import NotFound
 from app.models.models import Student
 from app.services.application_service import ApplicationService
 from app.utils.constantes import BOOKS, ICON_DELETE, ICON_EDIT, PAD_X, PAD_Y, TEACHERS
-from app.views.base_tab import BaseFormTab
+from app.views.base_tab import BaseStudentFormTab
 from app.views.helpers_gui import create_label, enable_form_fields
 from app.views.toast import show_toast
 
@@ -117,7 +117,7 @@ FORM_LAYOUT = [
 ]
 
 
-class UpdateStudentTab(BaseFormTab):
+class UpdateStudentTab(BaseStudentFormTab):
     def __init__(self, parent: ttk.Notebook, main_service: ApplicationService):
         super().__init__(
             parent=parent,

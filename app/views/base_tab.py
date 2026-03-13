@@ -28,7 +28,7 @@ from app.views.toast import show_toast
 logger = logging.getLogger(__name__)
 
 
-class BaseFormTab:
+class BaseStudentFormTab:
     """
     A base class for creating tabs that contain a form for a Pydantic model.
 
@@ -259,13 +259,13 @@ class BaseFormTab:
             value = getattr(data_object, attr_name, "")
             if value is None:
                 value = ""
-            if attr_name == "teacher" or attr_name == "book": #FIXME
+            if attr_name == "teacher" or attr_name == "book":  # FIXME
                 entry_widget.set(value)
             else:
                 entry_widget.insert(0, "" if value is None else str(value))
-            #if isinstance(entry_widget, ttk.Entry):
+            # if isinstance(entry_widget, ttk.Entry):
             #    entry_widget.insert(0, "" if value is None else str(value))
-            #else:
+            # else:
             #    entry_widget.set(value)
 
     def clear_form(self):
