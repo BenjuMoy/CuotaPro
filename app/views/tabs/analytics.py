@@ -28,11 +28,7 @@ class AnalyticsTab:
     # -------------------------
 
     def _build_ui(self):
-        title = ttk.Label(
-            self.frame,
-            text="Panel de Control",
-            font=FONT_TITLE,
-        )
+        title = ttk.Label(self.frame, text="Panel de Control", font=FONT_TITLE)
         title.pack(pady=10)
 
         self.kpi_frame = ttk.Frame(self.frame)

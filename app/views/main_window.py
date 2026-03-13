@@ -131,8 +131,7 @@ class MainWindow:
                 else:
                     (
                         menu.add_command(
-                            label=item["label"],
-                            command=COMMANDS[item["command"]],
+                            label=item["label"], command=COMMANDS[item["command"]]
                         )
                     )
 
