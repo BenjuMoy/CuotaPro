@@ -111,6 +111,13 @@ class MainWindow:
         self._setup_status_bar()
 
     def _build_menu(self, layout):
+        COMMANDS = {
+            "create_backup": self.create_backup,
+            "restore_backup": self.restore_backup,
+            "verify_integrity": self.verify_integrity,
+            "show_about": self.show_about,
+        }
+
         menubar = ttk.Menu(self.root)
         self.root.config(menu=menubar)
 
@@ -124,7 +131,8 @@ class MainWindow:
                 else:
                     (
                         menu.add_command(
-                            label=item["label"], command=getattr(self, item["command"])
+                            label=item["label"],
+                            command=COMMANDS[item["command"]],
                         )
                     )
 
