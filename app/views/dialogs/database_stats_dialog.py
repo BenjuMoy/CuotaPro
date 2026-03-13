@@ -1,11 +1,12 @@
 import ttkbootstrap as ttk
 
 from app.services.application_service import ApplicationService
+from app.views.helpers_gui import center_window
 
 
 class ShowDatabasrStatsDialog:
-    def __init__(self, parent: ttk.Window, main_service: ApplicationService):
-        self.parent = parent
+    def __init__(self, root: ttk.Window, main_service: ApplicationService):
+        self.root = root
         self.main_service = main_service
 
         self.get_database_stats
@@ -34,3 +35,5 @@ class ShowDatabasrStatsDialog:
         text_widget.config(state="disabled")
 
         ttk.Button(dialog, text="Cerrar", command=dialog.destroy).pack(pady=10)
+
+        center_window(self.root)

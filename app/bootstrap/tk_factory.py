@@ -1,22 +1,11 @@
 import ttkbootstrap as ttk
 
 from app.utils.constantes import (
-    DEFAULT_HEIGHT,
-    DEFAULT_WIDTH,
     FONT_BODY,
     FONT_HEADER,
     ICON_PATH,
 )
-
-
-def _center_window(root: ttk.Window, width: int, height: int):
-    screen_w = root.winfo_screenwidth()
-    screen_h = root.winfo_screenheight()
-
-    x = (screen_w // 2) - (width // 2)
-    y = (screen_h // 2) - (height // 2)
-
-    root.geometry(f"{width}x{height}+{x}+{y}")
+from app.views.helpers_gui import center_window
 
 
 class TkAppFactory:
@@ -31,10 +20,7 @@ class TkAppFactory:
         root = ttk.Window(themename=theme)
         root.title(title)
 
-        width = DEFAULT_WIDTH
-        height = DEFAULT_HEIGHT
-
-        _center_window(root, width, height)
+        center_window(root)
 
         root.minsize(1280, 800)
 

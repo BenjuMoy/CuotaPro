@@ -1,6 +1,13 @@
 import ttkbootstrap as ttk
 
-from app.utils.constantes import FONT_BODY, FONT_HEADER, PAD_X, PAD_Y
+from app.utils.constantes import (
+    DEFAULT_HEIGHT,
+    DEFAULT_WIDTH,
+    FONT_BODY,
+    FONT_HEADER,
+    PAD_X,
+    PAD_Y,
+)
 
 
 # --- widgets creation --- #
@@ -108,7 +115,7 @@ def clear_style(entries: list[ttk.Entry | ttk.Combobox]):
         entry.configure(style="")
 
 
-def enable_form_fields(widgets: list[ttk.Entry | ttk.Combobox], enabled: bool =True):
+def enable_form_fields(widgets: list[ttk.Entry | ttk.Combobox], enabled: bool = True):
     for w in widgets:
         if isinstance(w, ttk.Combobox):
             w.config(state="readonly" if enabled else "disabled")
@@ -131,3 +138,22 @@ def mark_invalid(widget):
 
 def mark_valid(widget):
     widget.configure(style="")
+
+
+def center_window(
+    root: ttk.Window, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT
+):
+    """Recieves a window and centers it in the screen.
+
+    Args:
+        root (ttk.Window): the window.
+        width (int): the width.
+        height (int): The height.
+    """
+    screen_w = root.winfo_screenwidth()
+    screen_h = root.winfo_screenheight()
+
+    x = (screen_w // 2) - (width // 2)
+    y = (screen_h // 2) - (height // 2)
+
+    root.geometry(f"{width}x{height}+{x}+{y}")

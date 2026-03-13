@@ -1,6 +1,7 @@
 import ttkbootstrap as ttk
 
 from app.utils.constantes import ABOUT_TEXT, APP_VERSION, FONT_HEADER
+from app.views.helpers_gui import center_window
 
 
 def show_about(root: ttk.Window) -> None:
@@ -42,3 +43,5 @@ def show_about(root: ttk.Window) -> None:
     ).pack(pady=10)
 
     ttk.Button(dialog, text="Cerrar", command=dialog.destroy).pack(pady=15)
+
+    center_window(root)
