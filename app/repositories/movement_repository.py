@@ -215,7 +215,7 @@ class MovementRepository:
             (movement_id,),
         ).fetchone()
 
-        return True if existing_reversal else False
+        return existing_reversal is not None
 
     def get_general_month_balance(
         self, student_id: int, conn: Connection
