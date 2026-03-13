@@ -277,8 +277,8 @@ class ApplicationService:
 
         expected = sum(s.monthly_fee for s in students)
 
-        collected = sum(
-            m.amount for m in movements if m.month == now.month and m.year == now.year
+        collected = self.services.accounting.get_total_collected_this_month(
+            now.month, now.year
         )
 
         debt_total = sum(self.get_balance_by_id(s.id) for s in students)

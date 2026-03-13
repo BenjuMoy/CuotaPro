@@ -228,3 +228,17 @@ class MovementRepository:
         GROUP BY year, month"""
         cursor = conn.execute(query, (student_id,))
         return [(row["month"], row["year"], row["total"]) for row in cursor]
+
+    def total_collected_this_month(
+        self, month: int, year: int, conn: Connection
+    ) -> int:
+        query = """
+        SELECT SUM(amount) AS amount
+        FROM movements
+        WHERE type='PAYMENT'
+        AND month=?
+        AND year=?
+        """
+
+        cursor = conn.execute(query, (month, year))
+        return cursor.fetchone()["amount"]

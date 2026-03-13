@@ -190,6 +190,10 @@ class AccountingService:
         with self.db.transaction() as conn:
             return self.movements.fees_not_applied_for_period(month, year, conn)
 
+    def get_total_collected_this_month(self, month: int, year: int):
+        with self.db.transaction() as conn:
+            return self.movements.total_collected_this_month(month, year, conn)
+
     # Wrappers
 
     def get_overview(self, student_id: int):
