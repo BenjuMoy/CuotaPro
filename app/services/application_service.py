@@ -274,8 +274,6 @@ class ApplicationService:
 
         students = self.get_all_active_students()
 
-        movements = self.get_effective_payments()
-
         expected = sum(s.monthly_fee for s in students)
 
         collected = self.services.accounting.get_total_collected_this_month(
@@ -284,13 +282,12 @@ class ApplicationService:
 
         debt_total = sum(self.get_balance_by_id(s.id) for s in students)
 
-        metrics = DashboardMetrics(
+        return DashboardMetrics(
             active_students=len(students),
             expected_income=expected,
             collected=collected,
             total_debt=debt_total,
         )
-        return metrics
 
     def get_graphic_metrics(self) -> tuple[list[Student], list[Movement]]:
         return (self.get_all_active_students(), self.get_all_movements())
