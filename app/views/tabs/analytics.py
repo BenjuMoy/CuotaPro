@@ -7,7 +7,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from app.models.models import Movement, MovementType, Student
 from app.services.application_service import ApplicationService
-from app.utils.constantes import NUM_TO_MONTH
+from app.utils.constantes import FONT_TITLE, NUM_TO_MONTH
 from app.utils.helpers import currency_format
 
 
@@ -31,7 +31,7 @@ class AnalyticsTab:
         title = ttk.Label(
             self.frame,
             text="Panel de Control",
-            font=("Helvetica", 22, "bold"),
+            font=FONT_TITLE,
         )
         title.pack(pady=10)
 
@@ -48,11 +48,11 @@ class AnalyticsTab:
         self.debt_var = ttk.StringVar()
         self.rate_var = ttk.StringVar()
 
-        self._create_kpi("👨‍🎓 Estudiantes", self.active_var, 0)
-        self._create_kpi("💰 Esperado", self.expected_var, 1)
-        self._create_kpi("✅ Cobrado", self.collected_var, 2)
-        self._create_kpi("⚠ Deuda", self.debt_var, 3)
-        self._create_kpi("📊 Cobranza", self.rate_var, 4)
+        # self._create_kpi("👨‍🎓 Estudiantes", self.active_var, 0)
+        self._create_kpi("💰 Esperado", self.expected_var, 0)
+        self._create_kpi("✅ Cobrado", self.collected_var, 1)
+        self._create_kpi("⚠ Deuda", self.debt_var, 2)
+        # self._create_kpi("📊 Cobranza", self.rate_var, 4)
 
     def _create_kpi(self, title: str, var: StringVar, col: int):
         card = ttk.Labelframe(self.kpi_frame, text=title, padding=15)

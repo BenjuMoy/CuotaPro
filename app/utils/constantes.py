@@ -55,6 +55,7 @@ CAMPO_MES_PAGADO = "mes_pagado"
 PAD_X = 5
 PAD_Y = 5
 
+FONT_TITLE = ("Helvetica", 22, "bold")
 FONT_HEADER = ("Helvetica", 18, "bold")
 FONT_BODY = ("Segoe UI", 14)
 

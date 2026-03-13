@@ -3,6 +3,7 @@ import ttkbootstrap as ttk
 from app.utils.constantes import (
     FONT_BODY,
     FONT_HEADER,
+    FONT_TITLE,
     ICON_PATH,
 )
 from app.views.helpers_gui import center_window
@@ -29,7 +30,7 @@ class TkAppFactory:
 
         # Set up styles
         style = ttk.Style()
-        style.configure("Bold.TLabelframe.Label", font=(FONT_HEADER))
+        style.configure("Bold.TLabelframe.Label", font=(FONT_TITLE))
 
         root.option_add("*TCombobox*Listbox.font", FONT_BODY)
 

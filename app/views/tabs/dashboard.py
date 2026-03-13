@@ -3,7 +3,7 @@ from tkinter import StringVar
 import ttkbootstrap as ttk
 
 from app.services.application_service import ApplicationService
-from app.utils.constantes import FONT_BODY, FONT_HEADER, TEACHERS
+from app.utils.constantes import FONT_BODY, FONT_HEADER, FONT_TITLE, TEACHERS
 
 
 class KpiCard(ttk.Labelframe):
@@ -15,7 +15,7 @@ class KpiCard(ttk.Labelframe):
         self.label = ttk.Label(
             self,
             textvariable=self.var,
-            font=FONT_BODY,
+            font=FONT_HEADER,
         )
 
         self.label.pack()
@@ -48,7 +48,7 @@ class DashboardTab:
         title = ttk.Label(
             self.frame,
             text="Panel de Control",
-            font=FONT_HEADER,
+            font=FONT_TITLE,
         )
         title.pack(padx=20, pady=20)
 
