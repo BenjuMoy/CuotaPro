@@ -6,7 +6,7 @@ from app.utils.constantes import LOGS_DIR, LOGS_PATH
 
 def setup_logging():
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
-    logger = logging.getLogger()
+    logger = logging.getLogger("app")
 
     if logger.handlers:
         return
@@ -21,6 +21,7 @@ def setup_logging():
         LOGS_PATH,
         maxBytes=1_000_000,  # 1MB
         backupCount=5,
+        encoding="utf-8",
     )
     file_handler.setFormatter(formatter)
 
