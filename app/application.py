@@ -24,10 +24,11 @@ class Application:
         self._config = AppConfig()
         self._db_config = DatabaseConfig()
 
-        self._root: ttk.Window
-        self._services: ApplicationService
-        self._initializer: AppInitializer
-        self.main_window: MainWindow
+        # Set to None for safe shutdown
+        self._root: ttk.Window | None = None
+        self._services: ApplicationService | None = None
+        self._initializer: AppInitializer | None = None
+        self.main_window: MainWindow | None = None
 
     def bootstrap(self):
         logger.info("Bootstrapping application")
