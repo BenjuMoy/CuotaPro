@@ -50,23 +50,23 @@ class DashboardTab:
             text="Panel de Control",
             font=FONT_HEADER,
         )
-        title.pack(pady=10)
+        title.pack(padx=20, pady=20)
 
         # KPIs
         self.kpi_frame = ttk.Frame(self.frame)
-        self.kpi_frame.pack(fill="x", pady=15)
+        self.kpi_frame.pack(fill="x", padx=20, pady=20)
 
         self.students_card = KpiCard(self.kpi_frame, "👨‍🎓 Estudiantes Activos")
-        self.students_card.grid(row=0, column=0, padx=10, sticky="nsew")
+        self.students_card.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
 
         self.teachers_card = KpiCard(self.kpi_frame, "👩‍🏫 Profesores")
-        self.teachers_card.grid(row=0, column=1, padx=10, sticky="nsew")
+        self.teachers_card.grid(row=0, column=1, padx=20, pady=20, sticky="nsew")
 
         # self.recent_card = KpiCard(self.kpi_frame, "📅 Movimientos Hoy")
         # self.recent_card.grid(row=0, column=2, padx=10, sticky="nsew")
 
         self.taken_card = KpiCard(self.kpi_frame, "📊 Cobranza")
-        self.taken_card.grid(row=0, column=2, padx=10, sticky="nsew")
+        self.taken_card.grid(row=0, column=2, padx=20, pady=20, sticky="nsew")
 
         for i in range(3):
             self.kpi_frame.columnconfigure(i, weight=1)
@@ -77,28 +77,28 @@ class DashboardTab:
             text="Acciones rápidas",
             padding=15,
         )
-        actions.pack(fill="x", pady=10)
+        actions.pack(fill="x", padx=20, pady=20)
 
         ttk.Button(
             actions,
             text="Agregar Estudiante",
             bootstyle="success",
             command=lambda: self.notebook.select(1),
-        ).pack(side="left", padx=5)
+        ).pack(side="left", padx=20, pady=20, expand=True, fill="both")
 
         ttk.Button(
             actions,
             text="Registrar Pago",
             bootstyle="primary",
             command=lambda: self.notebook.select(4),
-        ).pack(side="left", padx=5)
+        ).pack(side="left", padx=20, pady=20, expand=True, fill="both")
 
         ttk.Button(
             actions,
             text="Buscar Estudiante",
             bootstyle="secondary",
             command=lambda: self.notebook.select(2),
-        ).pack(side="left", padx=5)
+        ).pack(side="left", padx=20, pady=20, expand=True, fill="both")
 
     # -------------------------
     # DATA
