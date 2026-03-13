@@ -163,12 +163,12 @@ Balance: {currency_format(balance)}
         )
 
         for est in students:
-            data = self.main_service.get_student_payment_overview(est.id)
+            student_overview = self.main_service.get_student_payment_overview(est.id)
             row = self.table.insert_row(
-                index="end", values=self._student_to_row(est, data["balance"])
+                index="end", values=self._student_to_row(est, student_overview.balance)
             )
 
-            if data["balance"] < 0:
+            if student_overview.balance < 0:
                 self.table.view.item(row.iid, tags=("debtor",))
 
         self.table
@@ -180,7 +180,9 @@ Balance: {currency_format(balance)}
 
         student_id = rows[0].values[0]
 
-        data = self.main_service.get_student_payment_overview(student_id)
+        student_overview = self.main_service.get_student_payment_overview(student_id)
         self._show_student_details(
-            data["student"], data["last_payment"], data["balance"]
+            student_overview.student,
+            student_overview.last_payment,
+            student_overview.balance,
         )

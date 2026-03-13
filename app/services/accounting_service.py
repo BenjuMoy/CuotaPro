@@ -2,7 +2,7 @@ from datetime import datetime
 
 from app.database.connection import DatabaseManager
 from app.models.exceptions import BusinessRuleError, NotFound
-from app.models.models import Movement, MovementType, Student
+from app.models.models import Movement, MovementType, Student, StudentOverview
 from app.repositories.movement_repository import MovementRepository
 from app.repositories.student_repository import StudentRepository
 
@@ -196,15 +196,13 @@ class AccountingService:
 
     # Wrappers
 
-    def get_overview(self, student_id: int):
+    def get_overview(self, student_id: int) -> StudentOverview:
         with self.db.transaction() as conn:
-            return {
-                "student": self.students.get_by_id(student_id, conn),
-                "balance": self.movements.get_balance(student_id, conn),
-                "last_payment": self.movements.get_student_last_payment(
+            return StudentOverview(
+                student=self.students.get_by_id(student_id, conn),
+                balance=self.movements.get_balance(student_id, conn),
+                last_payment=self.movements.get_student_last_payment(student_id, conn),
+                movements=self.movements.get_effective_movements_by_id(
                     student_id, conn
                 ),
-                "movements": self.movements.get_effective_movements_by_id(
-                    student_id, conn
-                ),
-            }
+            )

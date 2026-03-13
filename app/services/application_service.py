@@ -16,6 +16,7 @@ from app.models.models import (
     DashboardMetrics,
     Movement,
     Student,
+    StudentOverview,
 )
 from app.services.service_container import ServiceContainer
 
@@ -160,7 +161,7 @@ class ApplicationService:
 
     def add_payment_to_student(
         self, student_id: int, month: int, year: int, amount: int
-    ) -> dict:
+    ) -> StudentOverview:
         """Adds payment to student by id. Amount comes always positive from ui and current year is assumed for payment."""
         student, new_balance, movement = self.services.accounting.add_payment(
             student_id, month, year, amount
@@ -263,7 +264,7 @@ class ApplicationService:
 
     # Wrappers
 
-    def get_student_payment_overview(self, student_id: int) -> dict:
+    def get_student_payment_overview(self, student_id: int) -> StudentOverview:
         return self.services.accounting.get_overview(student_id)
 
     #  Dashboard

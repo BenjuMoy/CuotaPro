@@ -113,3 +113,10 @@ class DashboardMetrics:
     expected_income: int
     collected: int
     total_debt: int
+
+
+class StudentOverview(BaseModel):
+    student: Student
+    balance: int
+    last_payment: Movement | None
+    movements: list[Movement]

@@ -387,10 +387,12 @@ Monto: {currency_format(amount)}
         self.student_combobox["values"] = list(self.student_map.values())
 
         if self.current_student and self.current_student.id:
-            data = self.main_service.get_student_payment_overview(
+            student_overview = self.main_service.get_student_payment_overview(
                 self.current_student.id
             )
-            self._populate_payment_history(data["movements"])
+            self._populate_payment_history(student_overview.movements)
             self._update_info_display(
-                data["student"], data["balance"], data["last_payment"]
+                student_overview.student,
+                student_overview.balance,
+                student_overview.last_payment,
             )
