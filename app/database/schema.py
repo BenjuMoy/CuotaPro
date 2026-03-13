@@ -1,5 +1,7 @@
 from sqlite3 import Connection
 
+from app.utils.constantes import SCHEMA_VERSION
+
 
 def database_initialized(conn: Connection):
     row = conn.execute("""
@@ -90,7 +92,7 @@ def bootstrap_database(conn: Connection):
         """)
 
     # Set database version
-    conn.execute("PRAGMA user_version = 3")
+    conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
 
     #        row = self.connection.execute(
     #            "SELECT COUNT(*) as count FROM schema_version"

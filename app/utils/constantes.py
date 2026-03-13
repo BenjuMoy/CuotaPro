@@ -18,6 +18,8 @@ DATABASE_PATH = "data/student_management.db"
 DATABASE_BACKUP_DIR = "data/backup/"
 DATABASE_EXPORT_DIR = "data/exports/"
 
+SCHEMA_VERSION = 3
+
 # Icons
 ICON_ADD = "app/views/assets/add.png"
 ICON_EDIT = "app/views/assets/edit.png"
