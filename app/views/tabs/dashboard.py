@@ -5,6 +5,18 @@ import ttkbootstrap as ttk
 from app.services.application_service import ApplicationService
 from app.utils.constantes import FONT_BODY, FONT_HEADER, FONT_TITLE, TEACHERS
 
+CARDS = {
+    "student_card": "👨‍🎓 Estudiantes Activos",
+    "teacher_card": "👩‍🏫 Profesores",
+    "taken_card": "📊 Cobranza",
+}
+
+BUTTONS = {
+    1: ("Agregar Estudiante", "success"),
+    4: ("Registrar Pago", "prmary"),
+    2: ("Buscar Estudiante", "secondary"),
+}
+
 
 class KpiCard(ttk.Labelframe):
     def __init__(self, parent: ttk.Frame, title: str):
@@ -32,6 +44,10 @@ class DashboardTab:
         self.service = service
         self.frame = ttk.Frame(parent, padding=20)
 
+        self.student_card: KpiCard
+        self.teacher_card: KpiCard
+        self.taken_card: KpiCard
+
         self._build_ui()
         self.refresh()
 
@@ -54,17 +70,11 @@ class DashboardTab:
         self.kpi_frame = ttk.Frame(self.frame)
         self.kpi_frame.pack(fill="x", padx=20, pady=20)
 
-        self.students_card = KpiCard(self.kpi_frame, "👨‍🎓 Estudiantes Activos")
-        self.students_card.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
+        for i, (name, label) in enumerate(CARDS.items()):
+            cls = KpiCard(self.kpi_frame, label)
+            cls.grid(row=0, column=i, padx=20, pady=20, sticky="nsew")
 
-        self.teachers_card = KpiCard(self.kpi_frame, "👩‍🏫 Profesores")
-        self.teachers_card.grid(row=0, column=1, padx=20, pady=20, sticky="nsew")
-
-        # self.recent_card = KpiCard(self.kpi_frame, "📅 Movimientos Hoy")
-        # self.recent_card.grid(row=0, column=2, padx=10, sticky="nsew")
-
-        self.taken_card = KpiCard(self.kpi_frame, "📊 Cobranza")
-        self.taken_card.grid(row=0, column=2, padx=20, pady=20, sticky="nsew")
+            setattr(self, name, cls)
 
         for i in range(3):
             self.kpi_frame.columnconfigure(i, weight=1)
@@ -77,26 +87,13 @@ class DashboardTab:
         )
         actions.pack(fill="x", padx=20, pady=20)
 
-        ttk.Button(
-            actions,
-            text="Agregar Estudiante",
-            bootstyle="success",
-            command=lambda: self.parent.select(1),
-        ).pack(side="left", padx=20, pady=20, expand=True, fill="both")
-
-        ttk.Button(
-            actions,
-            text="Registrar Pago",
-            bootstyle="primary",
-            command=lambda: self.parent.select(4),
-        ).pack(side="left", padx=20, pady=20, expand=True, fill="both")
-
-        ttk.Button(
-            actions,
-            text="Buscar Estudiante",
-            bootstyle="secondary",
-            command=lambda: self.parent.select(2),
-        ).pack(side="left", padx=20, pady=20, expand=True, fill="both")
+        for idx, (label, style) in BUTTONS.items():
+            ttk.Button(
+                actions,
+                text=label,
+                bootstyle=style,
+                command=lambda: self.parent.select(idx),
+            ).pack(side="left", padx=20, pady=20, expand=True, fill="both")
 
     # -------------------------
     # DATA
@@ -106,8 +103,8 @@ class DashboardTab:
 
         metrics = self.service.get_kpi_metrics()
 
-        self.students_card.set(str(metrics.active_students))
-        self.teachers_card.set(str(len(TEACHERS)))
+        self.student_card.set(str(metrics.active_students))
+        self.teacher_card.set(str(len(TEACHERS)))
 
         rate = 0
         if metrics.expected_income > 0:
