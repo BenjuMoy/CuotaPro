@@ -84,12 +84,12 @@ class BaseStudentFormTab:
 
     def _create_fields_from_layout(self, column_index: int):
         """Create form fields from a declarative layout."""
-        for idx, section_config in enumerate(self.layout):
+        for section_idx, section_config in enumerate(self.layout):
             section_frame = ttk.Labelframe(
                 self.form_frame, text=section_config["section"]
             )
             section_frame.grid(
-                row=idx,
+                row=section_idx,
                 column=column_index,
                 sticky="nsew",
                 padx=PAD_X,
@@ -99,13 +99,13 @@ class BaseStudentFormTab:
             section_frame.configure(padding=15)
             section_frame.columnconfigure(1, weight=1)
 
-            for idx, field_config in enumerate(section_config["fields"]):
+            for field_idx, field_config in enumerate(section_config["fields"]):
                 if field_config["type"] == "entry":
                     self.create_entry_field(
                         section_frame,
                         field_config["name"],
                         field_config["label"],
-                        idx,
+                        field_idx,
                         required=field_config.get("required", False),
                         focus=field_config.get("focus", False),
                     )
@@ -116,7 +116,7 @@ class BaseStudentFormTab:
                         field_config["name"],
                         field_config["label"],
                         field_config["values"],
-                        idx,
+                        field_idx,
                         required=field_config.get("required", False),
                     )
                     self.field_meta[field_config["name"]] = field_config
