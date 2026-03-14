@@ -116,7 +116,6 @@ class AddStudentTab(BaseStudentFormTab):
         )
 
         self.main_service = main_service
-        self.main_frame.pack(fill="both")
 
         self.form_frame.pack(fill="both", padx=PAD_X, pady=PAD_Y)
         self.form_frame.columnconfigure(0, weight=1)
