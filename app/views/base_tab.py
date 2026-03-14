@@ -1,20 +1,28 @@
 import logging
+from collections import defaultdict
 from sqlite3 import DatabaseError
 from typing import Any, Callable, get_type_hints
 
+import matplotlib.pyplot as plt
 import ttkbootstrap as ttk
+from matplotlib.axes import Axes
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from pydantic import ValidationError
 from ttkbootstrap.dialogs import Messagebox
 
 from app.models.models import (
     BaseModel,
+    Movement,
+    MovementType,
+    Student,
 )
 from app.services.application_service import (
+    ApplicationService,
     AppValidationError,
     ConflictError,
     NotFound,
 )
-from app.utils.constantes import PAD_X, PAD_Y
+from app.utils.constantes import FONT_TITLE, NUM_TO_MONTH, PAD_X, PAD_Y
 from app.views.helpers_gui import (
     clear_inputs,
     clear_style,
@@ -24,6 +32,7 @@ from app.views.helpers_gui import (
     mark_invalid,
 )
 from app.views.toast import show_toast
+from app.views.widgets.kpi_card import KpiCard
 
 logger = logging.getLogger(__name__)
 
@@ -277,3 +286,193 @@ class BaseStudentFormTab:
         """Removes any success/danger styling from form entry widgets."""
         entries = list(self.form_fields.values())
         clear_style(entries)
+
+
+CHART_STYLE = "seaborn-v0_8"
+
+
+class BaseMetricsTab:
+    def __init__(
+        self,
+        parent: ttk.Notebook,
+        main_service: ApplicationService,
+        title: str,
+        cards: dict[str, str],
+    ):
+        self.parent = parent
+        self.main_service = main_service
+        self.frame = ttk.Frame(parent, padding=25)
+        self.kpi_config = cards
+        self.title = title
+
+        self.cards: dict[str, KpiCard] = {}
+
+    # -------------------------
+    # CARDS
+    # -------------------------
+
+    def create_kpi_cards(self):
+        ttk.Label(self.frame, text=self.title, font=FONT_TITLE).pack(padx=20, pady=20)
+
+        # KPIs
+        self.kpi_frame = ttk.Frame(self.frame)
+        self.kpi_frame.pack(fill="x", padx=20, pady=20)
+
+        for i, (name, label) in enumerate(self.kpi_config.items()):
+            card = KpiCard(self.kpi_frame, label)
+            card.grid(row=0, column=i, padx=20, pady=20, sticky="nsew")
+
+            self.kpi_frame.columnconfigure(i, weight=1)
+            self.kpi_frame.rowconfigure(0, weight=1)
+            self.cards[name] = card
+
+    # -------------------------
+    # BUTTONS
+    # -------------------------
+
+    def build_buttons(self, buttons: dict[int, tuple[str, str]]):
+        # Quick actions
+        actions = ttk.Labelframe(
+            self.frame,
+            text="Acciones rápidas",
+            padding=15,
+        )
+        actions.pack(fill="x", padx=20, pady=20)
+
+        for idx, (label, style) in buttons.items():
+            ttk.Button(
+                actions,
+                text=label,
+                bootstyle=style,
+                command=lambda i=idx: self.parent.select(i),
+            ).pack(side="left", padx=20, pady=20, expand=True, fill="both")
+
+    # -------------------------
+    # CHARTS
+    # -------------------------
+
+    def draw_charts(self, students: list[Student], movements: list[Movement]):
+        chart_frame = ttk.Frame(self.frame)
+        chart_frame.pack(fill="both", expand=True)
+
+        plt.style.use(CHART_STYLE)
+
+        for widget in chart_frame.winfo_children():
+            widget.destroy()
+
+        fig = plt.figure(figsize=(10, 6))
+        gs = fig.add_gridspec(2, 2)
+
+        self._draw_income_chart(fig.add_subplot(gs[0, :]), movements)
+        self._draw_teacher_chart(fig.add_subplot(gs[1, 0]), students)
+        self._draw_debt_chart(fig.add_subplot(gs[1, 1]), students)
+
+        fig.tight_layout()
+
+        canvas = FigureCanvasTkAgg(fig, chart_frame)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill="both", expand=True)
+
+        plt.close(fig)
+
+    # -------------------------
+    # Income last 6 months
+    # -------------------------
+
+    def _draw_income_chart(self, income_ax: Axes, movements: list[Movement]):
+        income_by_month = defaultdict(int)
+
+        for m in movements:
+            if m.type == MovementType.PAYMENT:
+                key = (m.year, NUM_TO_MONTH.get(m.month, "N/A"))
+                income_by_month[key] += m.amount
+
+        months_sorted = sorted(income_by_month.keys())[-6:]
+
+        labels = [f"{m} / {y}" for y, m in months_sorted]
+        values = [income_by_month[(y, m)] for y, m in months_sorted]
+
+        income_ax.bar(labels, values)
+        income_ax.set_title("Ingresos últimos 6 meses")
+        income_ax.tick_params(axis="x", rotation=45)
+
+    # -------------------------
+    # Students per teacher
+    # -------------------------
+
+    def _draw_teacher_chart(self, teacher_ax: Axes, students: list[Student]):
+        teacher_count = defaultdict(int)
+
+        for s in students:
+            teacher_count[s.teacher] += 1
+
+        sorted_teachers = sorted(
+            teacher_count.items(),
+            key=lambda x: x[1],
+            reverse=True,
+        )
+
+        teachers, counts = [], []
+
+        for t, c in sorted_teachers:
+            teachers.append(t)
+            counts.append(c)
+
+        teacher_ax.barh(teachers, counts)
+        teacher_ax.set_title("Estudiantes por Profesor")
+
+    # -------------------------
+    # Payment status
+    # -------------------------
+
+    def _draw_debt_chart(self, debt_ax: Axes, students: list[Student]):
+        debt_buckets = {
+            "Al día": 0,
+            "1 mes": 0,
+            "2 meses": 0,
+            "3+ meses": 0,
+        }
+
+        balances = self.main_service.get_balances_for_students()
+        for s in students:
+            balance = balances[s.id]
+
+            if balance >= 0:
+                debt_buckets["Al día"] += 1
+                continue
+
+            months = abs(balance) // s.monthly_fee
+
+            if months == 1:
+                debt_buckets["1 mes"] += 1
+            elif months == 2:
+                debt_buckets["2 meses"] += 1
+            else:
+                debt_buckets["3+ meses"] += 1
+
+        values = list(debt_buckets.values())
+        labels = list(debt_buckets.keys())
+
+        colors = ["green", "gold", "orange", "red"]
+
+        total = sum(values)
+
+        if total == 0:
+            debt_ax.text(
+                0.5,
+                0.5,
+                "Sin datos",
+                ha="center",
+                va="center",
+                fontsize=12,
+            )
+
+        else:
+            debt_ax.pie(
+                values,
+                labels=labels,
+                colors=colors,
+                autopct="%1.0f%%",
+            )
+
+        debt_ax.set_title("Estado de Pagos")
