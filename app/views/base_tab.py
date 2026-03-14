@@ -286,9 +286,6 @@ class BaseStudentFormTab:
         clear_style(entries)
 
 
-CHART_STYLE = "seaborn-v0_8"
-
-
 class BaseMetricsTab:
     def __init__(
         self,
@@ -302,6 +299,8 @@ class BaseMetricsTab:
         self.frame = ttk.Frame(parent, padding=25)
         self.kpi_config = cards
         self.title = title
+
+        self.chart_style = "seaborn-v0_8"
 
         self.cards: dict[str, KpiCard] = {}
 
@@ -354,7 +353,7 @@ class BaseMetricsTab:
             self.chart_frame = ttk.Frame(self.frame)
             self.chart_frame.pack(fill="both", expand=True)
 
-        plt.style.use(CHART_STYLE)
+        plt.style.use(self.chart_style)
 
         for widget in self.chart_frame.winfo_children():
             widget.destroy()
