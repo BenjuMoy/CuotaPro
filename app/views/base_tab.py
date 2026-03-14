@@ -350,12 +350,13 @@ class BaseMetricsTab:
     # -------------------------
 
     def draw_charts(self, students: list[Student], movements: list[Movement]):
-        chart_frame = ttk.Frame(self.frame)
-        chart_frame.pack(fill="both", expand=True)
+        if not hasattr(self, "chart_frame"):
+            self.chart_frame = ttk.Frame(self.frame)
+            self.chart_frame.pack(fill="both", expand=True)
 
         plt.style.use(CHART_STYLE)
 
-        for widget in chart_frame.winfo_children():
+        for widget in self.chart_frame.winfo_children():
             widget.destroy()
 
         fig = plt.figure(figsize=(10, 6))
@@ -367,7 +368,7 @@ class BaseMetricsTab:
 
         fig.tight_layout()
 
-        canvas = FigureCanvasTkAgg(fig, chart_frame)
+        canvas = FigureCanvasTkAgg(fig, self.chart_frame)
         canvas.draw()
         canvas.get_tk_widget().pack(fill="both", expand=True)
 
