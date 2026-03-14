@@ -74,11 +74,9 @@ class BaseStudentFormTab:
         self.form_frame.columnconfigure(1, weight=1)
         self.form_frame.configure(style="Bold.TLabelframe")
 
-        # self.section_labels: dict[str, ttk.Label] = {}
         self.readonly_fields: set[str] = set()
 
         self.main_frame = ttk.Frame(self.frame)
-        # self.main_frame.pack(fill="both", expand=False)
 
     # --------------------------------------------------
     # FIELD CREATION
