@@ -1,7 +1,7 @@
 import logging
 from collections import defaultdict
 from sqlite3 import DatabaseError
-from typing import Any, Callable, get_type_hints
+from typing import Callable, get_type_hints
 
 import matplotlib.pyplot as plt
 import ttkbootstrap as ttk
@@ -12,6 +12,7 @@ from ttkbootstrap.dialogs import Messagebox
 
 from app.models.models import (
     BaseModel,
+    FieldConfig,
     Movement,
     MovementType,
     Student,
@@ -50,7 +51,7 @@ class BaseStudentFormTab:
         self,
         parent: ttk.Notebook,
         form_title: str,
-        layout: list[dict[str, Any]],
+        layout: list[dict[str, str | FieldConfig]],
         model_class: type[BaseModel],
     ):
         """
@@ -99,29 +100,31 @@ class BaseStudentFormTab:
             section_frame.configure(padding=15)
             section_frame.columnconfigure(1, weight=1)
 
-            for field_idx, field_config in enumerate(section_config["fields"]):
-                if field_config["type"] == "entry":
+            for field_idx, field_config in enumerate[FieldConfig](
+                section_config["fields"]
+            ):
+                if not hasattr(field_config.type, "set"):
                     self.create_entry_field(
                         section_frame,
-                        field_config["name"],
-                        field_config["label"],
+                        field_config.name,
+                        field_config.label,
                         field_idx,
-                        required=field_config.get("required", False),
-                        focus=field_config.get("focus", False),
+                        required=field_config.required,
+                        focus=field_config.focus,
                     )
-                    self.field_meta[field_config["name"]] = field_config
-                elif field_config["type"] == "combobox":
+                    self.field_meta[field_config.name] = field_config
+                else:
                     self.create_combobox_field(
                         section_frame,
-                        field_config["name"],
-                        field_config["label"],
-                        field_config["values"],
+                        field_config.name,
+                        field_config.label,
+                        field_config.values,
                         field_idx,
-                        required=field_config.get("required", False),
+                        required=field_config.required,
                     )
-                    self.field_meta[field_config["name"]] = field_config
-                if field_config.get("readonly"):
-                    self.readonly_fields.add(field_config["name"])
+                    self.field_meta[field_config.name] = field_config
+                if field_config.readonly:
+                    self.readonly_fields.add(field_config.name)
 
     def create_entry_field(self, parent, attr_name, label, row, **kwargs):
         entry = create_label_entry(
@@ -163,11 +166,11 @@ class BaseStudentFormTab:
     def bind_required_validation(self):
         for section in self.layout:
             for field in section["fields"]:
-                if field.get("required", False):
-                    widget = self.form_fields.get(field["name"])
+                if field.required:
+                    widget = self.form_fields.get(field.name)
                     if widget:
                         widget.bind("<FocusOut>", self._validate_widget)
-                        if field.get("numeric", False):
+                        if field.numeric:
                             vcmd = (
                                 self.frame.register(lambda P: P.isdigit() or P == ""),
                                 "%P",
@@ -186,7 +189,7 @@ class BaseStudentFormTab:
 
         for name, widget in reversed(self.form_fields.items()):
             meta = self.field_meta.get(name, {})
-            if meta.get("required") and not widget.get():
+            if meta.required and not widget.get():
                 mark_invalid(widget)
                 widget.focus_set()
                 error_messages.append(f"Campo '{meta['label']}': No puede estar vacio")
@@ -206,16 +209,13 @@ class BaseStudentFormTab:
             value = widget.get().strip()
             meta = self.field_meta.get(name, {})
 
-            converter = meta.get("converter")
+            converter = meta.converter
 
             if converter and value != "":
                 try:
                     value = converter(value)
                 except Exception:
                     raise AppValidationError(f"Campo '{name}' tiene formato inválido")
-
-            # if isinstance(widget, ttk.Entry) or isinstance(widget, ttk.Combobox):
-            #    data[name] = widget.get().strip()
 
             data[name] = value
 

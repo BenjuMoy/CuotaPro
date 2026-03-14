@@ -1,7 +1,7 @@
 import ttkbootstrap as ttk
 
 from app.models.exceptions import AppValidationError
-from app.models.models import Student
+from app.models.models import FieldConfig, Student
 from app.services.application_service import ApplicationService
 from app.utils.constantes import BOOKS, ICON_ADD, PAD_X, PAD_Y, TEACHERS
 from app.views.base_tab import BaseStudentFormTab
@@ -11,96 +11,96 @@ FORM_LAYOUT = [
     {
         "section": "Identidad",
         "fields": [
-            {
-                "name": "last_name",
-                "label": "Apellido",
-                "type": "entry",
-                "required": True,
-                "converter": str,
-                "focus": True,
-            },
-            {
-                "name": "first_name",
-                "label": "Nombre",
-                "type": "entry",
-                "required": True,
-                "converter": str,
-            },
+            FieldConfig(
+                name="last_name",
+                label="Apellido",
+                type=ttk.Entry,
+                required=True,
+                converter=str,
+                focus=True,
+            ),
+            FieldConfig(
+                name="first_name",
+                label="Nombre",
+                type=ttk.Entry,
+                required=True,
+                converter=str,
+            ),
         ],
     },
     {
         "section": "Contacto",
         "fields": [
-            {
-                "name": "phone1",
-                "label": "Teléfono principal",
-                "type": "entry",
-                "required": True,
-                "converter": str,
-            },
-            {
-                "name": "phone2",
-                "label": "Teléfono alternativo",
-                "type": "entry",
-                "converter": str,
-            },
-            {
-                "name": "phone3",
-                "label": "Otro teléfono",
-                "type": "entry",
-                "converter": str,
-            },
+            FieldConfig(
+                name="phone1",
+                label="Teléfono principal",
+                type=ttk.Entry,
+                required=True,
+                converter=str,
+            ),
+            FieldConfig(
+                name="phone2",
+                label="Teléfono alternativo",
+                type=ttk.Entry,
+                converter=str,
+            ),
+            FieldConfig(
+                name="phone3",
+                label="Otro teléfono",
+                type=ttk.Entry,
+                converter=str,
+            ),
         ],
     },
     {
         "section": "Academico",
         "fields": [
-            {
-                "name": "teacher",
-                "label": "Profesor",
-                "type": "combobox",
-                "values": TEACHERS,
-                "required": True,
-                "converter": str,
-            },
-            {
-                "name": "book",
-                "label": "Libro",
-                "type": "combobox",
-                "values": BOOKS,
-                "converter": str,
-            },
-            {
-                "name": "course",
-                "label": "Curso",
-                "type": "entry",
-                "converter": str,
-            },
-            {
-                "name": "school",
-                "label": "Escuela",
-                "type": "entry",
-                "converter": str,
-            },
-            {
-                "name": "year",
-                "label": "Año",
-                "type": "entry",
-                "converter": str,
-            },
+            FieldConfig(
+                name="teacher",
+                label="Profesor",
+                type=ttk.Combobox,
+                values=TEACHERS,
+                required=True,
+                converter=str,
+            ),
+            FieldConfig(
+                name="book",
+                label="Libro",
+                type=ttk.Combobox,
+                values=BOOKS,
+                converter=str,
+            ),
+            FieldConfig(
+                name="course",
+                label="Curso",
+                type=ttk.Entry,
+                converter=str,
+            ),
+            FieldConfig(
+                name="school",
+                label="Escuela",
+                type=ttk.Entry,
+                converter=str,
+            ),
+            FieldConfig(
+                name="year",
+                label="Año",
+                type=ttk.Entry,
+                converter=str,
+            ),
         ],
     },
     {
         "section": "Administrativo",
         "fields": [
-            {
-                "name": "monthly_fee",
-                "label": "Cuota",
-                "type": "entry",
-                "required": True,
-                "numeric": True,
-                "converter": int,
-            }
+            FieldConfig(
+                name="monthly_fee",
+                label="Cuota",
+                type=ttk.Entry,
+                required=True,
+                numeric=True,
+                converter=int,
+            )
         ],
     },
 ]
