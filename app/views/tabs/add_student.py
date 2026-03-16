@@ -135,7 +135,8 @@ class AddStudentTab(BaseStudentFormTab):
             text="Agregar Estudiante",
             command=self.add_student,
         )
-        self.add_button.grid(row=len(FORM_LAYOUT), column=2, padx=PAD_X, pady=PAD_Y)
+        last_row = self.form_frame.grid_size()[1]
+        self.add_button.grid(row=last_row, column=2, padx=PAD_X, pady=PAD_Y)
 
     def add_student(self):
         """Handles the student creation logic."""
