@@ -192,7 +192,7 @@ class BaseStudentFormTab:
             if meta.required and not widget.get():
                 mark_invalid(widget)
                 widget.focus_set()
-                error_messages.append(f"Campo '{meta['label']}': No puede estar vacio")
+                error_messages.append(f"Campo '{meta.label}': No puede estar vacio")
 
         if error_messages:
             raise AppValidationError("\n".join(error_messages))
