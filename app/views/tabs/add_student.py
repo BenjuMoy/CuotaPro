@@ -84,7 +84,7 @@ FORM_LAYOUT = [
             ),
             FieldConfig(
                 name="year",
-                label="Grado",
+                label="Año Escolar",
                 type=ttk.Entry,
                 converter=str,
             ),
