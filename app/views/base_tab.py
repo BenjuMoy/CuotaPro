@@ -378,12 +378,12 @@ class BaseMetricsTab:
 
         for m in movements:
             if m.type == MovementType.PAYMENT:
-                key = (m.year, NUM_TO_MONTH.get(m.month, "N/A"))
+                key = (m.year, m.month)
                 income_by_month[key] += m.amount
 
         months_sorted = sorted(income_by_month.keys())[-6:]
 
-        labels = [f"{m} / {y}" for y, m in months_sorted]
+        labels = [f"{NUM_TO_MONTH[m]} / {y}" for y, m in months_sorted]
         values = [income_by_month[(y, m)] for y, m in months_sorted]
 
         income_ax.bar(labels, values)
