@@ -103,7 +103,7 @@ class BaseStudentFormTab:
             for field_idx, field_config in enumerate[FieldConfig](
                 section_config["fields"]
             ):
-                if not hasattr(field_config.type, "set"):
+                if field_config.type == ttk.Entry:
                     self.create_entry_field(
                         section_frame,
                         field_config.name,
