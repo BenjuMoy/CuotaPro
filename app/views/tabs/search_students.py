@@ -158,17 +158,16 @@ Balance: {currency_format(balance)}
     def _populate_table(self, students: list[Student]):
         """Limpia la tabla y la llena con la lista proporcionada."""
         self.table.delete_rows()
-        students = sorted(
-            students, key=lambda s: (s.last_name.lower(), s.first_name.lower())
-        )
+
+        balances = self.main_service.get_balances_for_students()
 
         for est in students:
-            student_overview = self.main_service.get_student_payment_overview(est.id)
+            balance = balances.get(est.id, 0)
             row = self.table.insert_row(
-                index="end", values=self._student_to_row(est, student_overview.balance)
+                index="end", values=self._student_to_row(est, balance)
             )
 
-            if student_overview.balance < 0:
+            if balance < 0:
                 self.table.view.item(row.iid, tags=("debtor",))
 
     def on_double_click(self, _event):
