@@ -46,3 +46,11 @@ class DatabaseManager:
         except Exception:
             conn.rollback()
             raise
+
+    @contextmanager
+    def read(self):
+        conn = self.connect()
+        try:
+            yield conn
+        except Exception:
+            raise

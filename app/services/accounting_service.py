@@ -138,55 +138,55 @@ class AccountingService:
     def get_unpaid_months_with_debt(
         self, student_id: int
     ) -> list[tuple[int, int, int]]:
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             passed_months = self.movements.get_general_month_balance(student_id, conn)
 
         return [month for month in passed_months if month[2] < 0]
 
     def get_all_movements(self) -> list[Movement]:
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             return self.movements.get_all(conn)
 
     def get_effective_payments(self) -> list[Movement]:
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             return self.movements.get_effective_payments(conn)
 
     def get_effective_fees(self) -> list[Movement]:
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             return self.movements.get_effective_fees(conn)
 
     def get_balance_by_id(self, student_id: int) -> int:
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             return self.movements.get_balance(student_id, conn)
 
     def get_last_fee_date(self) -> tuple[int, int] | None:
         """Returns a tuple containing the month and the year of the last applied fees."""
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             return self.movements.get_last_date_applied_fee(conn)
 
     def get_students_without_fee(self, month: int, year: int) -> list[Student]:
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             return self.students.get_students_without_fee(month, year, conn)
 
     def get_balances_for_students(self) -> dict[int, int]:
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             return self.movements.get_balances_for_students(conn)
 
     def fees_not_applied_for_period(self) -> bool:
         now = datetime.now()
         month = now.month
         year = now.year
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             return self.movements.fees_not_applied_for_period(month, year, conn)
 
     def get_total_collected_this_month(self, month: int, year: int):
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             return self.movements.total_collected_this_month(month, year, conn)
 
     # Wrappers
 
     def get_overview(self, student_id: int) -> StudentOverview:
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             return StudentOverview(
                 student=self.students.get_by_id(student_id, conn),
                 balance=self.movements.get_balance(student_id, conn),
