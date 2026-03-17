@@ -139,10 +139,7 @@ class FeeIncreasePanel:
             clear_inputs([self.old_monthly_fee_combo, self.new_monthly_fee_entry])
             clear_style([self.old_monthly_fee_combo, self.new_monthly_fee_entry])
 
-            data = self.main_service.get_fees_list()
-            self.old_monthly_fee_combo.config(
-                values=[f"{value[0]} ({value[1]})" for value in data]
-            )
+            self.refresh_fee_combo()
 
         except (NotFound, BusinessRuleError) as e:
             show_toast(self.frame, f"Error: {str(e)}", "error")
