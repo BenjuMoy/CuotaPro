@@ -184,6 +184,7 @@ class UpdateStudentTab(BaseStudentFormTab):
             coldata=COLUMNS,
             rowdata=rowdata,
             searchable=True,
+            disable_right_click=True,
             yscrollbar=True,
             autoalign=True,
         )
