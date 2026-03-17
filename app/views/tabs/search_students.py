@@ -45,6 +45,7 @@ class SearchStudentTab:
             command=self.search_by_name,
         )
         student_name.grid(row=0, column=2, padx=PAD_X, pady=PAD_Y)
+        self.name_filter_entry.bind("<KeyRelease>", lambda e: self.search_by_name())
 
         # --- Row 1: Teacher Filter --- #
         self.teacher_filter_entry = create_label_combobox(
