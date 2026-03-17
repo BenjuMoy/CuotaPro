@@ -107,11 +107,12 @@ class PaymentTab:
         self.student_combobox = ttk.Combobox(
             master=select_frame,
             values=list(self.student_map.values()),
-            state="readonly",
+            state="normal",
             width=40,
             font=FONT_BODY,
         )
         self.student_combobox.grid(row=0, column=1, sticky="ew", padx=(0, 5))
+        self.student_combobox.bind("<KeyRelease>", self.on_type)
         self.student_combobox.bind("<<ComboboxSelected>>", self._on_student_selected)
 
         select_frame.columnconfigure(1, weight=1)
@@ -179,6 +180,21 @@ class PaymentTab:
         add_frame.columnconfigure(1, weight=1)
 
     # Action funcs
+
+    def on_type(self, event):
+        """Filter combobox values based on current input."""
+        typed = self.student_combobox.get().lower()
+        if typed == "":
+            # Reset to full list if input is empty
+            self.student_combobox["values"] = list(self.student_map.values())
+        else:
+            # Filter values that start with the typed text
+            filtered = [
+                item
+                for item in list(self.student_map.values())
+                if typed in item.lower()
+            ]
+            self.student_combobox["values"] = filtered
 
     def _on_student_selected(self, _event=None):
         """Handle student selection from combobox."""
