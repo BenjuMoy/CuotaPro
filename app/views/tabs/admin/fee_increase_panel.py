@@ -71,15 +71,6 @@ class FeeIncreasePanel:
 
     # Static Methods
 
-    @staticmethod
-    def _parse_positive_int(value: str) -> int | None:
-        if not value:
-            return None
-        try:
-            return int(value)
-        except ValueError:
-            return None
-
     def increase_fee_amount(self):
         if self._processing:
             return
@@ -95,7 +86,7 @@ class FeeIncreasePanel:
             return
         affected = self.main_service.count_students_by_monthly_fee(old_monthly_fee)
 
-        new_monthly_fee = self._parse_positive_int(self.new_monthly_fee_entry.get())
+        new_monthly_fee = int(self.new_monthly_fee_entry.get())
         if new_monthly_fee is None:
             show_toast(self.frame, "Ingrese una cuota válida", "error")
             return
