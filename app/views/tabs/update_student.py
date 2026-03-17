@@ -129,6 +129,8 @@ class UpdateStudentTab(BaseStudentFormTab):
         self.main_service = main_service
         self.update_button: ttk.Button
         self.deactivate_button: ttk.Button
+        self.delete_icon: ttk.PhotoImage
+        self.edit_icon: ttk.PhotoImage
 
         self._setup_layout()
         self._create_student_list()
