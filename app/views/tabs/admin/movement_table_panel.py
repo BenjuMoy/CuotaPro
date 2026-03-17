@@ -104,7 +104,7 @@ class MovementTablePanel:
         row_values = selected_rows[0].values
         res = Messagebox.yesno(
             f"ID del alumno: {row_values[1]} \nTipo: {row_values[2]} \nFecha: {row_values[6]} \nMonto: {row_values[3]}",
-            "Reverir movimiento",
+            "Revertir movimiento",
         )
 
         if res != "Yes":
