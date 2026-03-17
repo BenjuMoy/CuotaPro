@@ -20,6 +20,7 @@ FORM_LAYOUT = [
                 label="ID",
                 type=ttk.Entry,
                 converter=int,
+                required=True,
                 readonly=True,
             ),
             FieldConfig(
