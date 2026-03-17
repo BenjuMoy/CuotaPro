@@ -112,6 +112,7 @@ class MovementTablePanel:
             return
 
         try:
+            self._processing = True
             pago_id = selected_rows[0].values[0]
             self.main_service.reverse_movement(pago_id)
 
@@ -123,6 +124,9 @@ class MovementTablePanel:
 
         except Exception:
             Messagebox.show_error("Error al eliminar uno o más movimientos", "error")
+
+        finally:
+            self._processing = False
 
     def _populate_table(self, filter: str = "Todo"):
         self.table.delete_rows()
