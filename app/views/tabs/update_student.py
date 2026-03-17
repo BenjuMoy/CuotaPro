@@ -183,6 +183,7 @@ class UpdateStudentTab(BaseStudentFormTab):
             list_frame,
             coldata=COLUMNS,
             rowdata=rowdata,
+            searchable=True,
             yscrollbar=True,
             autoalign=True,
         )
