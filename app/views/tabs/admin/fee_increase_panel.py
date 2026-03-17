@@ -158,3 +158,4 @@ class FeeIncreasePanel:
         self.old_monthly_fee_combo.config(
             values=[f"{value[0]} ({value[1]})" for value in data]
         )
+        self.old_monthly_fee_combo.set("")
