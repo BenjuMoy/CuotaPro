@@ -129,7 +129,7 @@ class MovementTablePanel:
             self._processing = False
 
     def _populate_table(self, filter: str = "Todo"):
-        self.table.delete_rows()
+        self.table.unload_table_data()
 
         if filter == FILTER_PAYMENTS:
             movements = self.main_service.get_effective_payments()
@@ -138,8 +138,11 @@ class MovementTablePanel:
         else:
             movements = self.main_service.get_all_movements()
 
-        for mov in movements:
-            self.table.insert_row("end", self._movement_to_row(mov))
+        self.table.build_table_data(
+            ADMIN_MOVEMENTS_COLUMNS,
+            [self._movement_to_row(movement) for movement in movements],
+        )
+        self.table.load_table_data()
 
     def refresh_table(self):
         current_filter = self.table_filters.get()
