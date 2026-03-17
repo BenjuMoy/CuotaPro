@@ -3,7 +3,7 @@
 # --------------------------------------------------------------------------- #
 from pathlib import Path
 
-APP_VERSION = "1.3.1"
+APP_VERSION = "1.3.2"
 
 LOGS_DIR = Path("logs/")
 LOGS_PATH = Path("logs/app.log")
