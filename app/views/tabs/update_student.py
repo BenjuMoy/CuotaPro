@@ -117,6 +117,8 @@ FORM_LAYOUT = [
     },
 ]
 
+COLUMNS = ("ID", "Apellido", "Nombre", "Activo", "Profesor")
+
 
 class UpdateStudentTab(BaseStudentFormTab):
     def __init__(self, parent: ttk.Notebook, main_service: ApplicationService):
@@ -174,13 +176,12 @@ class UpdateStudentTab(BaseStudentFormTab):
         )
         # create_label(list_frame, "Seleccionar un estudiante de la lista:", 0, 0, False)
 
-        columnas = ("ID", "Apellido", "Nombre", "Activo", "Profesor")
         students = self.main_service.get_all_students()
         rowdata = [self._student_to_row(est) for est in students]
 
         self.table = Tableview(
             list_frame,
-            coldata=columnas,
+            coldata=COLUMNS,
             rowdata=rowdata,
             yscrollbar=True,
             autoalign=True,
