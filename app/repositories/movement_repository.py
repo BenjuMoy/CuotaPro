@@ -52,6 +52,15 @@ class MovementRepository:
         created_at = datetime.fromisoformat(row["created_at"])
         return movement.model_copy(update={"id": movement_id, "created_at": created_at})
 
+    def apply_fees(self, data: list[tuple], conn: Connection):
+        conn.executemany(
+            """
+            INSERT INTO movements(student_id, reference_id, type, amount, month, year)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            data,
+        )
+
     # Getters
 
     def get_all(self, conn: Connection) -> list[Movement]:

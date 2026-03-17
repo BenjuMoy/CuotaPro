@@ -71,16 +71,12 @@ class AccountingService:
             if not students:
                 raise NotFound("No ha estudiantes para aplicar")
 
-            for student in students:
-                movement = Movement(
-                    student_id=student.id,
-                    type=MovementType.FEE,
-                    amount=-student.monthly_fee,
-                    month=month,
-                    year=year,
-                )
+            data = [
+                (student.id, None, "FEE", -student.monthly_fee, month, year)
+                for student in students
+            ]
 
-                self.movements.add(movement, conn)
+            self.movements.apply_fees(data, conn)
 
             return len(students)
 
