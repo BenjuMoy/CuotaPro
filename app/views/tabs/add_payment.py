@@ -200,11 +200,6 @@ class PaymentTab:
         """Handle student selection from combobox."""
         text = self.student_combobox.get()
 
-        # for k, v in self.student_map.items():
-        #    if v == text:
-        #        self.current_student = self.main_service.get_student_by_id(k)
-        #        break
-
         student_id = int(text.split("]")[0][1:])
         self.current_student = self.main_service.get_student_by_id(student_id)
 
@@ -261,7 +256,6 @@ class PaymentTab:
         self.month_combobox.config(state="readonly")
         self.amount_entry.config(state="normal")
         self.register_button.config(state="normal")
-        self.amount_entry.focus()
 
     def _set_default_payment_values(self, month_list: list[str]) -> None:
         # Set default month to next payable month
