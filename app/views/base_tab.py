@@ -245,7 +245,7 @@ class BaseStudentFormTab:
         except ValueError as e:
             show_toast(self.frame, f"ID inválido: {e}", "error")
         except Exception as e:
-            logger.error(f"Unexpected error in add_student: {e}")
+            logger.exception("Unexpected error in form action")
             Messagebox.show_error(
                 f"Error inesperado.  Contacte al administrador: {e}", "Error"
             )
