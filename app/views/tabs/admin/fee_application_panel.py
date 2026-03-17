@@ -47,7 +47,7 @@ class FeeApplicationPanel:
         )
 
         if not self.main_service.fees_not_applied_for_period():
-            self.apply_fees_button.config(text="Aplcar cuotas nuevamente")
+            self.apply_fees_button.config(text="Aplicar cuotas nuevamente")
 
         date = self.main_service.get_last_applied_fees_date()
 
