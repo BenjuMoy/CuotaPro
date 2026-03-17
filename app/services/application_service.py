@@ -280,7 +280,9 @@ class ApplicationService:
             now.month, now.year
         )
 
-        debt_total = sum(self.get_balance_by_id(s.id) for s in students)
+        balances = self.get_balances_for_students()
+
+        debt_total = sum(balances.get(s.id, 0) for s in students)
 
         return DashboardMetrics(
             active_students=len(students),
