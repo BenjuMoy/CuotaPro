@@ -174,14 +174,7 @@ class AccountingService:
 
     def get_balances_for_students(self) -> dict[int, int]:
         with self.db.transaction() as conn:
-            student_list = self.students.get_all_active_students(conn)
-            balances = {}
-
-            for student in student_list:
-                balance = self.movements.get_balance(student.id, conn)
-                balances[student.id] = balance
-
-        return balances
+            return self.movements.get_balances_for_students(conn)
 
     def fees_not_applied_for_period(self) -> bool:
         now = datetime.now()

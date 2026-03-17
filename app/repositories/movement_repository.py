@@ -242,3 +242,18 @@ class MovementRepository:
 
         cursor = conn.execute(query, (month, year))
         return cursor.fetchone()["amount"]
+
+    def get_balances_for_students(self, conn: Connection) -> dict[int, int]:
+        """Gets balances for all students in format {student_id, balance}
+
+        Returns:
+            dict[int, int]: The dictionary containing the debts
+        """
+        query = """
+        SELECT student_id, SUM(amount) as balance
+        FROM movements
+        GROUP BY student_id;
+        """
+
+        cursor = conn.execute(query)
+        return {row[0]: row["balance"] for row in cursor.fetchall()}
