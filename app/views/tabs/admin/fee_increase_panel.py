@@ -95,13 +95,6 @@ class FeeIncreasePanel:
             return
         affected = self.main_service.count_students_by_monthly_fee(old_monthly_fee)
 
-        if not affected:
-            self.old_monthly_fee_combo.configure(style="danger.TEntry")
-            show_toast(
-                self.frame, "No se encontraron estudiantes con esa cuota", "error"
-            )
-            return None
-
         new_monthly_fee = self._parse_positive_int(self.new_monthly_fee_entry.get())
         if new_monthly_fee is None:
             show_toast(self.frame, "Ingrese una cuota válida", "error")
