@@ -141,8 +141,8 @@ Balance: {currency_format(balance)}
             if not results:
                 self.table.insert_row("end", ["", empty_msg, "", "", "", ""])
 
-        except Exception as e:
-            self.logger.error(e)
+        except Exception:
+            self.logger.exception("Error searching students")
             show_toast(self.frame, "Error buscando estudiantes", "error")
 
     def show_debtors(self):
