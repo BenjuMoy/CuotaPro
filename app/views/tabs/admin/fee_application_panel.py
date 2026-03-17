@@ -64,6 +64,9 @@ class FeeApplicationPanel:
         self.aplicar_cuotas_label.grid(row=2, column=0, padx=PAD_X, pady=PAD_Y)
 
     def apply_monthly_fees(self) -> None:
+        if self._processing:
+            return
+
         now = datetime.now()
         student_list = self.main_service.get_students_without_fee(now.month, now.year)
 
