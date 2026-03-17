@@ -187,7 +187,7 @@ class BaseStudentFormTab:
     def validate_form(self):
         error_messages = []
 
-        for name, widget in reversed(self.form_fields.items()):
+        for name, widget in self.form_fields.items():
             meta = self.field_meta.get(name, {})
             if meta.required and not widget.get():
                 mark_invalid(widget)
