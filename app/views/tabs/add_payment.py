@@ -1,4 +1,5 @@
 import ttkbootstrap as ttk
+from ttkbootstrap.constants import DANGER, SUCCESS
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.widgets.tableview import Tableview
 
@@ -223,7 +224,7 @@ class PaymentTab:
 
         # Update balance with color coding
         balance_text = currency_format(balance)
-        balance_style = "success" if balance >= 0 else "warning"
+        balance_style = SUCCESS if balance >= 0 else DANGER
         self.balance_label.config(text=balance_text, bootstyle=balance_style)
 
         # Format is (month, year, debt)
