@@ -17,6 +17,15 @@ from app.views.helpers_gui import (
 )
 from app.views.toast import show_toast
 
+COLUMNS = [
+    {"text": "ID", "stretch": False},
+    {"text": "Apellido"},
+    {"text": "Nombre"},
+    {"text": "Profesor"},
+    {"text": "Balance"},
+    {"text": "Estado"},
+]
+
 
 class SearchStudentTab:
     def __init__(self, parent: ttk.Notebook, main_service: ApplicationService):
@@ -68,17 +77,7 @@ class SearchStudentTab:
         """create Tableview for results."""
         results_frame = create_label_frame(self.frame, "Resultados", True)
 
-        # Define columns
-        coldata = [
-            {"text": "ID", "stretch": False},
-            {"text": "Apellido"},
-            {"text": "Nombre"},
-            {"text": "Profesor"},
-            {"text": "Balance"},
-            {"text": "Estado"},
-        ]
-
-        self.table = Tableview(results_frame, coldata=coldata, yscrollbar=True)
+        self.table = Tableview(results_frame, coldata=COLUMNS, yscrollbar=True)
 
         self.table.pack(fill="both", expand=True, padx=PAD_X, pady=PAD_Y)
         self.table.view.bind("<Double-1>", self.on_double_click)
