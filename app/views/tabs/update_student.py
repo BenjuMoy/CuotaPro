@@ -320,8 +320,9 @@ class UpdateStudentTab(BaseStudentFormTab):
         students = self.main_service.get_all_students()
         rowdata = [self._student_to_row(est) for est in students]
 
-        self.table.delete_rows()
-        self.table.insert_rows("end", rowdata)
+        self.table.unload_table_data()
+        self.table.build_table_data(COLUMNS, rowdata)
+        self.table.load_table_data()
 
     @staticmethod
     def _student_to_row(est: Student) -> tuple:
