@@ -139,7 +139,7 @@ Balance: {currency_format(balance)}
             self._populate_table(results)
 
             if not results:
-                self.table.insert_row("end", [empty_msg])
+                self.table.insert_row("end", ["", empty_msg, "", "", "", ""])
 
         except Exception as e:
             self.logger.error(e)
