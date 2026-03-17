@@ -171,8 +171,6 @@ Balance: {currency_format(balance)}
             if student_overview.balance < 0:
                 self.table.view.item(row.iid, tags=("debtor",))
 
-        self.table
-
     def on_double_click(self, _event):
         rows = self.table.get_rows(selected=True)
         if not rows:
