@@ -190,10 +190,10 @@ class UpdateStudentTab(BaseStudentFormTab):
         button_frame = ttk.Frame(self.form_frame)
         button_frame.grid(row=len(FORM_LAYOUT), column=0, columnspan=3, pady=PAD_Y)
 
-        self.image = ttk.PhotoImage(file=ICON_DELETE)
+        self.delete_icon = ttk.PhotoImage(file=ICON_DELETE)
         self.deactivate_button = ttk.Button(
             button_frame,
-            image=self.image,
+            image=self.delete_icon,
             compound="left",
             text="Desactivar Estudiante",
             command=self.switch_state,
@@ -202,10 +202,10 @@ class UpdateStudentTab(BaseStudentFormTab):
         )
         self.deactivate_button.pack(side="left", padx=PAD_X)
 
-        self.image2 = ttk.PhotoImage(file=ICON_EDIT)
+        self.edit_icon = ttk.PhotoImage(file=ICON_EDIT)
         self.update_button = ttk.Button(
             button_frame,
-            image=self.image2,
+            image=self.edit_icon,
             compound="left",
             text="Actualizar Estudiante",
             command=self.update_student,
