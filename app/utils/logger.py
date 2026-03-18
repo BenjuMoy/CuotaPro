@@ -6,7 +6,7 @@ from app.utils.constantes import LOGS_DIR, LOGS_PATH
 
 def setup_logging():
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
-    logger = logging.getLogger("app")
+    logger = logging.getLogger()
 
     if logger.handlers:
         return
