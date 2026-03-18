@@ -4,7 +4,7 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.widgets.tableview import Tableview
 
 from app.models.exceptions import NotFound
-from app.models.models import FieldConfig, Student
+from app.models.models import FieldConfig, RefreshType, Student
 from app.services.application_service import ApplicationService
 from app.utils.constantes import BOOKS, ICON_DELETE, ICON_EDIT, PAD_X, PAD_Y, TEACHERS
 from app.views.base_tab import BaseStudentFormTab
@@ -142,7 +142,7 @@ class UpdateStudentTab(BaseStudentFormTab):
         self.bind_required_validation()
         self._set_state(False)
 
-        self.main_service.subscribe(self.refresh_student_list)
+        self.main_service.subscribe(RefreshType.STUDENTS, self.refresh_student_list)
 
     def _setup_layout(self):
         """Configure main layout structure."""

@@ -3,7 +3,7 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.widgets.tableview import Tableview
 
 from app.models.exceptions import BusinessRuleError, NotFound
-from app.models.models import Movement
+from app.models.models import Movement, RefreshType
 from app.services.application_service import ApplicationService
 from app.utils.constantes import (
     CAMPO_ID,
@@ -35,9 +35,10 @@ ADMIN_MOVEMENTS_COLUMNS = (
 class MovementTablePanel:
     def __init__(self, frame: ttk.Frame, service: ApplicationService):
         self.frame = frame
-
         self.main_service = service
         self._processing = False
+
+        self.main_service.subscribe(RefreshType.MOVEMENTS, self.refresh_table)
 
         self._create_table()
 

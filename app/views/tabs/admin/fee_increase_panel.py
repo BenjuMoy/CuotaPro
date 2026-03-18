@@ -2,6 +2,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 
 from app.models.exceptions import BusinessRuleError, NotFound
+from app.models.models import RefreshType
 from app.services.application_service import ApplicationService
 from app.utils.constantes import PAD_X, PAD_Y
 from app.utils.helpers import currency_format
@@ -18,10 +19,10 @@ class FeeIncreasePanel:
     def __init__(self, frame: ttk.Frame, service: ApplicationService):
         self.frame = frame
         self._processing = False
-
         self.main_service = service
-
         self.fee_map = {}
+
+        self.main_service.subscribe(RefreshType.MOVEMENTS, self.refresh_fee_combo)
 
         self._create_widgets()
 

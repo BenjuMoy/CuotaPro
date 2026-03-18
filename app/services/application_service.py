@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from sqlite3 import IntegrityError
@@ -15,6 +16,7 @@ from app.models.exceptions import (
 from app.models.models import (
     DashboardMetrics,
     Movement,
+    RefreshType,
     Student,
     StudentOverview,
 )
@@ -29,27 +31,25 @@ class ApplicationService:
 
     def __init__(self, services: ServiceContainer):
         self.services = services
-
         self.logger = logging.getLogger(__name__)
-        self._subscribers: list[Callable[[], None]] = []
+        self._subscribers: dict[str, list[Callable]] = defaultdict(list)
 
     # --- Subscription Pattern for UI Updates ---
-    def subscribe(self, callback: Callable[[], None]) -> None:
+    def subscribe(self, event: str, callback: Callable):
         """Allows a UI component to subscribe to data changes."""
-        self._subscribers.append(callback)
+        self._subscribers[event].append(callback)
 
-    def unsubscribe(self, callback):
-        if callback in self._subscribers:
-            self._subscribers.remove(callback)
+    def unsubscribe(self, event: str, callback: Callable):
+        if callback in self._subscribers[event]:
+            self._subscribers[event].remove(callback)
 
-    def _notify_subscribers(self) -> None:
+    def _notify(self, event: str, **data) -> None:
         """Notifies all subscribed components that data has changed."""
-        for callback in list(self._subscribers):
+        for callback in list(self._subscribers[event]):
             try:
-                callback()
+                callback(**data)
             except Exception as e:
                 self.logger.exception(f"Subscriber error: {e}")
-                # logging.exception(f"Subscriber error {e}")
 
     # --- Centralized Error Handling ---
     @staticmethod
@@ -79,7 +79,7 @@ class ApplicationService:
                 saved_student.monthly_fee,
             )
 
-            self._notify_subscribers()
+            self._notify(RefreshType.STUDENTS)
             return saved_student
 
         except ValidationError as e:
@@ -101,7 +101,7 @@ class ApplicationService:
                 updated_student.first_name,
                 updated_student.monthly_fee,
             )
-            self._notify_subscribers()
+            self._notify(RefreshType.STUDENTS)
             return updated_student
 
         except ValidationError as e:
@@ -117,7 +117,7 @@ class ApplicationService:
             updated_student = self.services.student.switch_state(student_id)
 
             self.logger.info("Student with id=%s switched state.", updated_student.id)
-            self._notify_subscribers()
+            self._notify(RefreshType.STUDENTS)
             return updated_student
 
         except NotFound:
@@ -175,7 +175,7 @@ class ApplicationService:
             movement.amount,
             new_balance,
         )
-        self._notify_subscribers()
+        self._notify(RefreshType.MOVEMENTS)
 
         return self.get_student_payment_overview(student_id)
 
@@ -230,7 +230,7 @@ class ApplicationService:
             year,
             applied_count,
         )
-        self._notify_subscribers()
+        self._notify(RefreshType.MOVEMENTS)
         return applied_count
 
     def increase_fee_amount(self, old_monthly_fee: int, new_monthly_fee: int) -> int:
@@ -240,7 +240,7 @@ class ApplicationService:
         )
 
         self.logger.info("Fees increased for %s students", affected_students)
-        self._notify_subscribers()
+        self._notify(RefreshType.STUDENTS)
         return affected_students
 
     def reverse_movement(self, pago_id: int) -> None:
@@ -254,7 +254,7 @@ class ApplicationService:
                 movement.month,
                 movement.year,
             )
-            self._notify_subscribers()
+            self._notify(RefreshType.MOVEMENTS)
 
         except BusinessRuleError:
             raise

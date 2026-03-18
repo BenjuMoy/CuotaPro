@@ -4,7 +4,7 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.widgets.tableview import Tableview
 
 from app.models.exceptions import BusinessRuleError, NotFound
-from app.models.models import Movement, Student
+from app.models.models import Movement, RefreshType, Student
 from app.services.application_service import ApplicationService
 from app.utils.constantes import (
     FONT_BODY,
@@ -60,7 +60,8 @@ class PaymentTab:
         self._create_payment_history_table()
         self._create_payment_frame()
 
-        self.main_service.subscribe(self.refresh_students)
+        self.main_service.subscribe(RefreshType.STUDENTS, self.refresh_students)
+        self.main_service.subscribe(RefreshType.MOVEMENTS, self.refresh_students)
 
     # Static helpers
 

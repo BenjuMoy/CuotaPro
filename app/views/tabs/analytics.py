@@ -1,5 +1,6 @@
 import ttkbootstrap as ttk
 
+from app.models.models import RefreshType
 from app.services.application_service import ApplicationService
 from app.utils.helpers import currency_format
 from app.views.base_tab import BaseMetricsTab
@@ -24,7 +25,9 @@ class AnalyticsTab(BaseMetricsTab):
         self.draw_charts(*self.main_service.get_graphic_metrics())
         self.refresh()
 
-        main_service.subscribe(self.refresh)
+        self.main_service.subscribe(RefreshType.STUDENTS, self.refresh)
+        self.main_service.subscribe(RefreshType.MOVEMENTS, self.refresh)
+        print("tab loaded")
 
     # -------------------------
     # DATA

@@ -17,5 +17,3 @@ class AdministrativeTab:
         self.fee_increase = FeeIncreasePanel(frame, main_service)
 
         self.movements = MovementTablePanel(frame, main_service)
-
-        self.main_service.subscribe(self.movements.refresh_table)

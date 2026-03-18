@@ -1,6 +1,7 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 
+from app.models.models import RefreshType
 from app.services.application_service import ApplicationService
 from app.views.dialogs.about_dialog import show_about
 from app.views.dialogs.database_stats_dialog import ShowDatabasrStatsDialog
@@ -102,7 +103,7 @@ class MainWindow:
         # Create UI components
         self._create_ui()
 
-        self.main_service.subscribe(self.refresh_students)
+        self.main_service.subscribe(RefreshType.STUDENTS, self.refresh_students)
 
     def _create_ui(self):
         """Create the user interface components."""

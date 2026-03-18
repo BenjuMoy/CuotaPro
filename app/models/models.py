@@ -134,3 +134,8 @@ class FieldConfig:
     numeric: bool = False
     values: list[str] | None = None
     readonly: bool = False
+
+
+class RefreshType(str, Enum):
+    STUDENTS = "student_changed"
+    MOVEMENTS = "movement_added"

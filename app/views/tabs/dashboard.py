@@ -1,5 +1,6 @@
 import ttkbootstrap as ttk
 
+from app.models.models import RefreshType
 from app.services.application_service import ApplicationService
 from app.utils.constantes import TEACHERS
 from app.views.base_tab import BaseMetricsTab
@@ -30,7 +31,8 @@ class DashboardTab(BaseMetricsTab):
         self.build_buttons(BUTTONS)
         self.refresh()
 
-        main_service.subscribe(self.refresh)
+        main_service.subscribe(RefreshType.STUDENTS, self.refresh)
+        main_service.subscribe(RefreshType.MOVEMENTS, self.refresh)
 
     # -------------------------
     # DATA
