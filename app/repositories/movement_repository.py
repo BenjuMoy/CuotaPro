@@ -246,6 +246,7 @@ class MovementRepository:
         FROM movements m
         LEFT JOIN movements r ON r.reference_id = m.id
         WHERE {EFFECTIVE_MOVEMENT_FILTER}
+        AND m.type = 'PAYMENT'
         AND m.month=? AND m.year=?
         """
 
