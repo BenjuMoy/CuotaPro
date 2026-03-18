@@ -241,12 +241,12 @@ class MovementRepository:
     def total_collected_this_month(
         self, month: int, year: int, conn: Connection
     ) -> int:
-        query = """
-        SELECT SUM(amount) AS amount
-        FROM movements
-        WHERE type='PAYMENT'
-        AND month=?
-        AND year=?
+        query = f"""
+        SELECT SUM(m.amount) AS amount
+        FROM movements m
+        LEFT JOIN movements r ON r.reference_id = m.id
+        WHERE {EFFECTIVE_MOVEMENT_FILTER}
+        AND m.month=? AND m.year=?
         """
 
         cursor = conn.execute(query, (month, year))
