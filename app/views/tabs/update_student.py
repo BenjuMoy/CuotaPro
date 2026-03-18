@@ -96,7 +96,7 @@ FORM_LAYOUT = [
             ),
             FieldConfig(
                 name="year",
-                label="Año",
+                label="Año Escolar",
                 type=ttk.Entry,
                 converter=str,
             ),
