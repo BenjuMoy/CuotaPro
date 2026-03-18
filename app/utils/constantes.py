@@ -110,7 +110,40 @@ BOOKS = [
     "Insight Int.",
 ]
 
-COURSES = []
+COURSES = [
+    "Kids 1",
+    "Kids 2",
+    "Kids 3",
+    "Junior 1",
+    "Junior 2",
+    "Junior 3",
+    "Senior 1",
+    "Senior 2",
+    "Senior 3",
+    "Senior 4",
+    "Senior 5",
+    "Senior 6",
+    "Adults 1",
+    "Adults 2",
+    "Adults 3",
+    "Adults 4",
+]
+
+YEAR = [
+    "Kindergarden",
+    "1 EP",
+    "2 EP",
+    "3 EP",
+    "4 EP",
+    "5 EP",
+    "6 EP",
+    "1 ES",
+    "2 ES",
+    "3 ES",
+    "4 ES",
+    "5 ES",
+    "6 ES",
+]
 
 MIN_YEAR = 2020
 MAX_YEAR = 2100

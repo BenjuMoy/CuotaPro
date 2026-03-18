@@ -6,7 +6,16 @@ from ttkbootstrap.widgets.tableview import Tableview
 from app.models.exceptions import NotFound
 from app.models.models import FieldConfig, RefreshType, Student
 from app.services.application_service import ApplicationService
-from app.utils.constantes import BOOKS, ICON_DELETE, ICON_EDIT, PAD_X, PAD_Y, TEACHERS
+from app.utils.constantes import (
+    BOOKS,
+    COURSES,
+    ICON_DELETE,
+    ICON_EDIT,
+    PAD_X,
+    PAD_Y,
+    TEACHERS,
+    YEAR,
+)
 from app.views.base_tab import BaseStudentFormTab
 from app.views.helpers_gui import create_label, enable_form_fields
 from app.views.toast import show_toast
@@ -85,7 +94,8 @@ FORM_LAYOUT = [
             FieldConfig(
                 name="course",
                 label="Curso",
-                type=ttk.Entry,
+                type=ttk.Combobox,
+                values=COURSES,
                 converter=str,
             ),
             FieldConfig(
@@ -97,7 +107,8 @@ FORM_LAYOUT = [
             FieldConfig(
                 name="year",
                 label="Año Escolar",
-                type=ttk.Entry,
+                type=ttk.Combobox,
+                values=YEAR,
                 converter=str,
             ),
         ],
