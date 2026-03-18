@@ -258,10 +258,12 @@ class MovementRepository:
         Returns:
             dict[int, int]: The dictionary containing the debts
         """
-        query = """
-        SELECT student_id, SUM(amount) as balance
-        FROM movements
-        GROUP BY student_id;
+        query = f"""
+        SELECT m.student_id, SUM(m.amount) as balance
+        FROM movements m
+        LEFT JOIN movements r ON r.reference_id = m.id
+        WHERE {EFFECTIVE_MOVEMENT_FILTER}
+        GROUP BY m.student_id;
         """
 
         cursor = conn.execute(query)
