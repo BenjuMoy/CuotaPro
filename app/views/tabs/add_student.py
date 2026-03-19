@@ -143,6 +143,9 @@ class AddStudentTab(BaseStudentFormTab):
     def add_student(self):
         """Handles the student creation logic."""
         try:
+            self.frame.config(cursor="watch")
+            self.frame.update_idletasks()
+
             self.validate_form()
 
             data = self.get_form_data()
@@ -166,3 +169,5 @@ class AddStudentTab(BaseStudentFormTab):
 
         finally:
             self.add_button.config(text="Agregar Estudiante", state="normal")
+            self.frame.config(cursor="")
+            self.frame.update_idletasks()
