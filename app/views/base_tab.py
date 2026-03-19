@@ -18,7 +18,6 @@ from app.models.models import (
     Student,
 )
 from app.services.application_service import (
-    ApplicationService,
     AppValidationError,
     ConflictError,
     NotFound,
@@ -100,9 +99,7 @@ class BaseStudentFormTab:
             section_frame.configure(padding=15)
             section_frame.columnconfigure(1, weight=1)
 
-            for field_idx, field_config in enumerate[FieldConfig](
-                section_config["fields"]
-            ):
+            for field_idx, field_config in enumerate(section_config["fields"]):
                 if field_config.type == ttk.Entry:
                     self.create_entry_field(
                         section_frame,
@@ -192,7 +189,7 @@ class BaseStudentFormTab:
             if meta.required and not widget.get():
                 mark_invalid(widget)
                 widget.focus_set()
-                error_messages.append(f"Campo '{meta.label}': No puede estar vacio")
+                error_messages.append(f"Campo '{meta.label}' es obligatorio")
 
         if error_messages:
             raise AppValidationError("\n".join(error_messages))
