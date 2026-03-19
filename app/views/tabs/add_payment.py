@@ -326,10 +326,7 @@ class PaymentTab:
         amount = int(amount_text)
 
         confirm = Messagebox.yesno(
-            f"""Estudiante: {self.current_student.first_name} {self.current_student.last_name}
-Fecha: {month_name} De {year}
-Monto: {currency_format(amount)}
-¿Confirmar pago?""",
+            self.format_message(month_name, year, amount),
             "Confirmar pago",
         )
 
@@ -397,6 +394,12 @@ Monto: {currency_format(amount)}
 
         self.frame.config(cursor="watch" if processing else "")
         self.frame.update_idletasks()
+
+    def format_message(self, month_name, year, amount):
+        return f"""👤 {self.current_student.first_name} {self.current_student.last_name}
+📅 {month_name} De {year}
+💰 {currency_format(amount)}
+¿Confirmar pago?"""
 
     def refresh_students(self):
         """Refresh student list from main service."""
