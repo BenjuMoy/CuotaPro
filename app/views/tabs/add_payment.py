@@ -61,7 +61,7 @@ class PaymentTab:
         self._create_payment_frame()
 
         self.main_service.subscribe(RefreshType.STUDENTS, self.refresh_students)
-        self.main_service.subscribe(RefreshType.MOVEMENTS, self.refresh_students)
+        self.main_service.subscribe(RefreshType.MOVEMENTS, self.refresh_payments)
 
     # Static helpers
 
@@ -205,7 +205,7 @@ class PaymentTab:
         student_id = int(text.split("]")[0][1:])
         self.current_student = self.main_service.get_student_by_id(student_id)
 
-        self.refresh_students()
+        self.refresh_payments()
 
     def _update_info_display(
         self, student: Student, balance: int, last_payment: Movement | None
@@ -379,6 +379,9 @@ class PaymentTab:
         """Refresh student list from main service."""
         self._initialize_student_data()
         self.student_combobox["values"] = list(self.student_map.values())
+
+    def refresh_payments(self):
+        self.refresh_students()
 
         if self.current_student and self.current_student.id:
             student_overview = self.main_service.get_student_payment_overview(
