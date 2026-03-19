@@ -22,9 +22,7 @@ class DashboardTab(BaseMetricsTab):
     """Safe operational dashboard."""
 
     def __init__(self, parent: ttk.Notebook, main_service: ApplicationService):
-        super().__init__(
-            parent=parent, main_service=main_service, title="Inicio", cards=CARDS
-        )
+        super().__init__(parent=parent, title="Inicio", cards=CARDS)
         self.service = main_service
 
         self.create_kpi_cards()

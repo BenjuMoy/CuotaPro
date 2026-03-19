@@ -16,10 +16,10 @@ class AnalyticsTab(BaseMetricsTab):
     def __init__(self, parent: ttk.Notebook, main_service: ApplicationService):
         super().__init__(
             parent=parent,
-            main_service=main_service,
             title="Analitica",
             cards=CARDS,
         )
+        self.main_service = main_service
 
         self.create_kpi_cards()
         self.draw_charts(*self.main_service.get_graphic_metrics())
@@ -27,7 +27,6 @@ class AnalyticsTab(BaseMetricsTab):
 
         self.main_service.subscribe(RefreshType.STUDENTS, self.refresh)
         self.main_service.subscribe(RefreshType.MOVEMENTS, self.refresh)
-        print("tab loaded")
 
     # -------------------------
     # DATA

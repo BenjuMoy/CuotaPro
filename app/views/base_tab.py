@@ -286,12 +286,10 @@ class BaseMetricsTab:
     def __init__(
         self,
         parent: ttk.Notebook,
-        main_service: ApplicationService,
         title: str,
         cards: dict[str, str],
     ):
         self.parent = parent
-        self.main_service = main_service
         self.frame = ttk.Frame(parent, padding=25)
         self.kpi_config = cards
         self.title = title
@@ -344,7 +342,12 @@ class BaseMetricsTab:
     # CHARTS
     # -------------------------
 
-    def draw_charts(self, students: list[Student], movements: list[Movement]):
+    def draw_charts(
+        self,
+        students: list[Student],
+        movements: list[Movement],
+        balances: dict[int, int],
+    ):
         if not hasattr(self, "chart_frame"):
             self.chart_frame = ttk.Frame(self.frame)
             self.chart_frame.pack(fill="both", expand=True)
@@ -359,7 +362,7 @@ class BaseMetricsTab:
 
         self._draw_income_chart(fig.add_subplot(gs[0, :]), movements)
         self._draw_teacher_chart(fig.add_subplot(gs[1, 0]), students)
-        self._draw_debt_chart(fig.add_subplot(gs[1, 1]), students)
+        self._draw_debt_chart(fig.add_subplot(gs[1, 1]), students, balances)
 
         fig.tight_layout()
 
@@ -419,7 +422,9 @@ class BaseMetricsTab:
     # Payment status
     # -------------------------
 
-    def _draw_debt_chart(self, debt_ax: Axes, students: list[Student]):
+    def _draw_debt_chart(
+        self, debt_ax: Axes, students: list[Student], balances: dict[int, int]
+    ):
         debt_buckets = {
             "Al día": 0,
             "1 mes": 0,
@@ -427,8 +432,10 @@ class BaseMetricsTab:
             "3+ meses": 0,
         }
 
-        balances = self.main_service.get_balances_for_students()
         for s in students:
+            if s.id not in balances:
+                continue
+
             balance = balances[s.id]
 
             if balance >= 0:
