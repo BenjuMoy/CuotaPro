@@ -205,10 +205,7 @@ class PaymentTab:
         student_id = int(text.split("]")[0][1:])
         self.current_student = self.main_service.get_student_by_id(student_id)
 
-        if not self.current_student or not self.current_student.id:
-            self._clear_displays()
-        else:
-            self.refresh_students()
+        self.refresh_students()
 
     def _update_info_display(
         self, student: Student, balance: int, last_payment: Movement | None
@@ -234,7 +231,7 @@ class PaymentTab:
         )
 
         if not debt_month_list:
-            self._disable_payment_controls()
+            self._enable_payment_controls(False)
             show_toast(self.frame, "No hay cuotas pendientes para pagar", "success")
             return
 
@@ -248,16 +245,11 @@ class PaymentTab:
         self._set_default_payment_values(month_list)
         self.amount_entry.focus()
 
-    def _disable_payment_controls(self):
-        self.month_combobox.config(state="disabled")
-        self.amount_entry.config(state="disabled")
-        self.register_button.config(state="disabled")
-
-    def _enable_payment_controls(self):
+    def _enable_payment_controls(self, value: bool = True):
         """Enable payment-related controls with appropriate defaults."""
-        self.month_combobox.config(state="readonly")
-        self.amount_entry.config(state="normal")
-        self.register_button.config(state="normal")
+        self.month_combobox.config(state="readonly" if value else "disabled")
+        self.amount_entry.config(state="normal" if value else "disabled")
+        self.register_button.config(state="normal" if value else "disabled")
 
     def _set_default_payment_values(self, month_list: list[str]) -> None:
         # Set default month to next payable month
@@ -292,18 +284,6 @@ class PaymentTab:
             #    self.table.apply_table_stripes(stripecolor=("orange", "black"))
             # elif m.type == "REVERSED":
             #    self.table.apply_table_stripes(stripecolor=("yellow", "black"))
-
-    def _clear_displays(self):
-        """Clear all display widgets."""
-        self.current_student = None
-        self.id_label.config(text="-")
-        self.monthly_fee_label.config(text="-")
-        self.balance_label.config(text="-", bootstyle="default")
-        self.ultimo_mes_pagado_label.config(text="-")
-
-        self.month_combobox.config(state="disabled")
-        self.amount_entry.config(state="disabled")
-        self.amount_entry.delete(0, "end")
 
     def _register_payment(self):
         """Handle payment registration logic."""
@@ -374,23 +354,17 @@ class PaymentTab:
             if student_overview and student_overview.balance >= 0:
                 self.month_combobox.set("")
                 self.amount_entry.delete(0, "end")
-                self._disable_payment_controls()
+                self._enable_payment_controls(False)
                 self.student_combobox.set("")
-                self.student_combobox.configure(state="normal")
                 self.student_combobox.focus()
 
-    def _set_processing_state(self, processing: bool):
+    def _set_processing_state(self, processing: bool = True):
         """Enable/disable UI while processing payment."""
-        state = "disabled" if processing else "readonly"
-        entry_state = "disabled" if processing else "normal"
-
-        self.student_combobox.config(state=state)
-        self.month_combobox.config(state=state)
-        self.amount_entry.config(state=entry_state)
+        self.student_combobox.config("disabled" if processing else "normal")
         self.register_button.config(
-            state="disabled" if processing else "normal",
             text="Procesando..." if processing else "Registrar Pago",
         )
+        self._enable_payment_controls(not processing)
 
         self.frame.config(cursor="watch" if processing else "")
         self.frame.update_idletasks()
