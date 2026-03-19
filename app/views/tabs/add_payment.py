@@ -378,6 +378,9 @@ Monto: {currency_format(amount)}
                 self.month_combobox.set("")
                 self.amount_entry.delete(0, "end")
                 self._disable_payment_controls()
+                self.student_combobox.set("")
+                self.student_combobox.configure(state="normal")
+                self.student_combobox.focus()
 
     def _set_processing_state(self, processing: bool):
         """Enable/disable UI while processing payment."""
