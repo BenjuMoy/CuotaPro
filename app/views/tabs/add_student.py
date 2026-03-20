@@ -162,7 +162,9 @@ class AddStudentTab(BaseStudentFormTab):
                 self.clear_form_styles()
                 self.form_fields["teacher"].set("")
                 self.form_fields["book"].set("")
-                self.form_fields["last_name"].focus_set()
+                self.form_fields["course"].set("")
+                self.form_fields["year"].set("")
+                next(iter(self.form_fields.values())).focus_set()
 
         except AppValidationError as e:
             show_toast(self.frame, str(e), "error")
