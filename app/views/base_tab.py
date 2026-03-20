@@ -1,5 +1,4 @@
 import logging
-from collections import defaultdict
 from sqlite3 import DatabaseError
 from typing import Callable, get_type_hints
 
@@ -13,16 +12,13 @@ from ttkbootstrap.dialogs import Messagebox
 from app.models.models import (
     BaseModel,
     FieldConfig,
-    Movement,
-    MovementType,
-    Student,
 )
 from app.services.application_service import (
     AppValidationError,
     ConflictError,
     NotFound,
 )
-from app.utils.constantes import FONT_TITLE, NUM_TO_MONTH, PAD_X, PAD_Y
+from app.utils.constantes import FONT_TITLE, PAD_X, PAD_Y
 from app.views.helpers_gui import (
     clear_inputs,
     clear_style,
@@ -341,9 +337,9 @@ class BaseMetricsTab:
 
     def draw_charts(
         self,
-        students: list[Student],
-        movements: list[Movement],
-        balances: dict[int, int],
+        income_by_month: dict[str, int],
+        teacher_count: dict[str, int],
+        debt_bucket: dict[str, int],
     ):
         if not hasattr(self, "chart_frame"):
             self.chart_frame = ttk.Frame(self.frame)
@@ -357,9 +353,9 @@ class BaseMetricsTab:
         fig = plt.figure(figsize=(10, 6))
         gs = fig.add_gridspec(2, 2)
 
-        self._draw_income_chart(fig.add_subplot(gs[0, :]), movements)
-        self._draw_teacher_chart(fig.add_subplot(gs[1, 0]), students)
-        self._draw_debt_chart(fig.add_subplot(gs[1, 1]), students, balances)
+        self._draw_income_chart(fig.add_subplot(gs[0, :]), income_by_month)
+        self._draw_teacher_chart(fig.add_subplot(gs[1, 0]), teacher_count)
+        self._draw_debt_chart(fig.add_subplot(gs[1, 1]), debt_bucket)
 
         fig.tight_layout()
 
@@ -373,20 +369,8 @@ class BaseMetricsTab:
     # Income last 6 months
     # -------------------------
 
-    def _draw_income_chart(self, income_ax: Axes, movements: list[Movement]):
-        income_by_month = defaultdict(int)
-
-        for m in movements:
-            if m.type == MovementType.PAYMENT:
-                key = (m.year, m.month)
-                income_by_month[key] += m.amount
-
-        months_sorted = sorted(income_by_month.keys())[-6:]
-
-        labels = [f"{NUM_TO_MONTH[m]} / {y}" for y, m in months_sorted]
-        values = [income_by_month[(y, m)] for y, m in months_sorted]
-
-        income_ax.bar(labels, values)
+    def _draw_income_chart(self, income_ax: Axes, income_by_month: dict[str, int]):
+        income_ax.bar(list(income_by_month.keys()), list(income_by_month.values()))
         income_ax.set_title("Ingresos últimos 6 meses")
         income_ax.tick_params(axis="x", rotation=45)
 
@@ -394,60 +378,15 @@ class BaseMetricsTab:
     # Students per teacher
     # -------------------------
 
-    def _draw_teacher_chart(self, teacher_ax: Axes, students: list[Student]):
-        teacher_count = defaultdict(int)
-
-        for s in students:
-            teacher_count[s.teacher] += 1
-
-        sorted_teachers = sorted(
-            teacher_count.items(),
-            key=lambda x: x[1],
-            reverse=True,
-        )
-
-        teachers, counts = [], []
-
-        for t, c in sorted_teachers:
-            teachers.append(t)
-            counts.append(c)
-
-        teacher_ax.barh(teachers, counts)
+    def _draw_teacher_chart(self, teacher_ax: Axes, teacher_count: dict[str, int]):
+        teacher_ax.barh(list(teacher_count.keys()), list(teacher_count.values()))
         teacher_ax.set_title("Estudiantes por Profesor")
 
     # -------------------------
     # Payment status
     # -------------------------
 
-    def _draw_debt_chart(
-        self, debt_ax: Axes, students: list[Student], balances: dict[int, int]
-    ):
-        debt_buckets = {
-            "Al día": 0,
-            "1 mes": 0,
-            "2 meses": 0,
-            "3+ meses": 0,
-        }
-
-        for s in students:
-            if s.id not in balances:
-                continue
-
-            balance = balances[s.id]
-
-            if balance >= 0:
-                debt_buckets["Al día"] += 1
-                continue
-
-            months = abs(balance) // s.monthly_fee
-
-            if months == 1:
-                debt_buckets["1 mes"] += 1
-            elif months == 2:
-                debt_buckets["2 meses"] += 1
-            else:
-                debt_buckets["3+ meses"] += 1
-
+    def _draw_debt_chart(self, debt_ax: Axes, debt_buckets: dict[str, int]):
         values = list(debt_buckets.values())
         labels = list(debt_buckets.keys())
 

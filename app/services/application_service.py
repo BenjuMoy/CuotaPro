@@ -16,11 +16,13 @@ from app.models.exceptions import (
 from app.models.models import (
     DashboardMetrics,
     Movement,
+    MovementType,
     RefreshType,
     Student,
     StudentOverview,
 )
 from app.services.service_container import ServiceContainer
+from app.utils.constantes import NUM_TO_MONTH
 
 
 class ApplicationService:
@@ -291,8 +293,60 @@ class ApplicationService:
             total_debt=debt_total,
         )
 
-    def get_graphic_metrics(self) -> tuple[list[Student], list[Movement]]:
-        return (self.get_all_active_students(), self.get_all_movements())
+    def get_graphic_metrics(self):
+        students = self.get_all_active_students()
+        movements = self.get_all_movements()
+        balances = self.get_balances_for_students()
+
+        # Income by month
+
+        income_by_month = defaultdict(int)
+
+        for m in movements:
+            if m.type == MovementType.PAYMENT:
+                key = (m.year, m.month)
+                income_by_month[key] += m.amount
+
+        months_sorted = dict(sorted(income_by_month.keys())[-6:])
+
+        # teacher_count
+
+        teacher_count = defaultdict(int)
+
+        for s in students:
+            teacher_count[s.teacher] += 1
+
+        teacher_sorted = dict(sorted(teacher_count.items(), key=lambda x: x[1]))
+
+        # Debt bucket
+
+        debt_buckets = {
+            "Al día": 0,
+            "1 mes": 0,
+            "2 meses": 0,
+            "3+ meses": 0,
+        }
+
+        for s in students:
+            if s.id not in balances:
+                continue
+
+            balance = balances[s.id]
+
+            if balance >= 0:
+                debt_buckets["Al día"] += 1
+                continue
+
+            months = abs(balance) // s.monthly_fee
+
+            if months == 1:
+                debt_buckets["1 mes"] += 1
+            elif months == 2:
+                debt_buckets["2 meses"] += 1
+            else:
+                debt_buckets["3+ meses"] += 1
+
+        return months_sorted, teacher_sorted, debt_buckets
 
     # --- Informes ---
 
