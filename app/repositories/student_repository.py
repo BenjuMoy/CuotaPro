@@ -4,10 +4,9 @@ from sqlite3.dbapi2 import Connection
 from app.models.exceptions import NotFound
 from app.models.models import Student
 
-STUDENT_COLUMNS = """
-id, active, last_name, first_name, phone1, phone2,
-phone3, teacher, book, course, school, year, monthly_fee
-"""
+STUDENT_COLUMNS = "id, active, last_name, first_name, phone1, phone2, phone3, teacher, book, course, school, year, monthly_fee"
+
+BASE_SELECT = f"SELECT {STUDENT_COLUMNS} FROM students"
 
 
 class StudentRepository:
@@ -131,8 +130,7 @@ class StudentRepository:
         """Search students by name or partial name."""
         search_pattern = f"%{search_term}%"
         query = f"""
-            SELECT {STUDENT_COLUMNS}
-            FROM students
+            {BASE_SELECT}
             WHERE last_name LIKE ? COLLATE NOCASE
                OR first_name LIKE ? COLLATE NOCASE
                OR last_name || ' ' || first_name LIKE ? COLLATE NOCASE
@@ -149,8 +147,7 @@ class StudentRepository:
         """Search students by teacher name."""
         search_pattern = f"%{teacher_name}%"
         query = f"""
-            SELECT {STUDENT_COLUMNS}
-            FROM students
+            {BASE_SELECT}
             WHERE teacher LIKE ? COLLATE NOCASE
             ORDER BY last_name, first_name"""
         cursor = conn.execute(query, (search_pattern,))
@@ -161,8 +158,7 @@ class StudentRepository:
     def get_all(self, conn: Connection) -> list[Student]:
         """Retrieve all students from the database."""
         query = f"""
-            SELECT {STUDENT_COLUMNS}
-            FROM students
+            {BASE_SELECT}
             ORDER BY last_name, first_name
         """
         cursor = conn.execute(query)
@@ -171,8 +167,7 @@ class StudentRepository:
     def get_by_id(self, student_id: int, conn: Connection) -> Student:
         """Retrieve a specific student by ID efficiently."""
         query = f"""
-            SELECT {STUDENT_COLUMNS}
-            FROM students
+            {BASE_SELECT}
             WHERE id=?
         """
         cursor = conn.execute(query, (student_id,))
@@ -205,10 +200,9 @@ class StudentRepository:
 
     def get_all_active_students(self, conn: Connection) -> list[Student]:
         query = f"""
-        SELECT {STUDENT_COLUMNS}
-        FROM students
-        WHERE active = 1
-        ORDER BY last_name, first_name
+            {BASE_SELECT}
+            WHERE active = 1
+            ORDER BY last_name, first_name
         """
         cursor = conn.execute(query)
         return self._fetch_all(cursor)
@@ -236,9 +230,9 @@ class StudentRepository:
     def count_students_by_monthly_fee(self, monthly_fee: int, conn: Connection) -> int:
         """Returns the sum of students with that monthly_fee"""
         query = """
-        SELECT COUNT(*) AS count
-        FROM students
-        WHERE monthly_fee = ? AND active = 1
+            SELECT COUNT(*) AS count
+            FROM students
+            WHERE monthly_fee = ? AND active = 1
         """
 
         cursor = conn.execute(
