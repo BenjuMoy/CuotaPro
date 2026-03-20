@@ -31,7 +31,7 @@ INFO_LABELS = {
     "id_label": "ID:",
     "monthly_fee_label": "Cuota Mensual:",
     "balance_label": "Balance Actual:",
-    "ultimo_mes_pagado_label": "Última Fecha Pagada:",
+    "last_paid_month_label": "Última Fecha Pagada:",
 }
 
 
@@ -43,7 +43,7 @@ class PaymentTab:
         self.id_label: ttk.Label
         self.monthly_fee_label: ttk.Label
         self.balance_label: ttk.Label
-        self.ultimo_mes_pagado_label: ttk.Label
+        self.last_paid_month_label: ttk.Label
         self.student_combobox: ttk.Combobox
         self.month_combobox: ttk.Combobox
         self.amount_entry: ttk.Entry
@@ -83,8 +83,7 @@ class PaymentTab:
         )
 
     @staticmethod
-    def format_last_payment(movement) -> str:
-
+    def format_last_payment(movement: Movement | None) -> str:
         if not movement:
             return "Ningún pago registrado"
 
@@ -217,8 +216,8 @@ class PaymentTab:
 
         # Update last paid month
 
-        ultimo_text = self.format_last_payment(last_payment)
-        self.ultimo_mes_pagado_label.config(text=ultimo_text)
+        last_month_text = self.format_last_payment(last_payment)
+        self.last_paid_month_label.config(text=last_month_text)
 
         # Update balance with color coding
         balance_text = currency_format(balance)
@@ -246,18 +245,13 @@ class PaymentTab:
         self.amount_entry.focus()
 
     def _enable_payment_controls(self, value: bool = True):
-        """Enable payment-related controls with appropriate defaults."""
+        """Enable/Disable payment-related controls with appropriate defaults."""
         self.month_combobox.config(state="readonly" if value else "disabled")
         self.amount_entry.config(state="normal" if value else "disabled")
         self.register_button.config(state="normal" if value else "disabled")
 
     def _set_default_payment_values(self, month_list: list[str]) -> None:
         # Set default month to next payable month
-        if not month_list:
-            self.month_combobox.set("")
-            self.register_button.config(state="disabled")
-            return
-
         self.month_combobox.set(month_list[0])
 
         # Set default amount to student's monthly_fee
@@ -295,8 +289,7 @@ class PaymentTab:
 
         month_year = self.month_combobox.get()
         date = month_year.split()
-        month_name = date[0]
-        year = int(date[1])
+        month_name, year = date[0], int(date[1])
 
         amount_text = self.amount_entry.get().strip()
         if not amount_text or amount_text == "0":
@@ -319,11 +312,10 @@ class PaymentTab:
         try:
             self._processing = True
             self._set_processing_state(True)
-            month_num = MONTH_TO_NUM[month_name]
 
             student_overview = self.main_service.add_payment_to_student(
                 student_id=self.current_student.id,
-                month=month_num,
+                month=MONTH_TO_NUM[month_name],
                 year=year,
                 amount=amount,
             )
@@ -360,7 +352,7 @@ class PaymentTab:
 
     def _set_processing_state(self, processing: bool = True):
         """Enable/disable UI while processing payment."""
-        self.student_combobox.config("disabled" if processing else "normal")
+        self.student_combobox.config(state="disabled" if processing else "normal")
         self.register_button.config(
             text="Procesando..." if processing else "Registrar Pago",
         )
@@ -369,10 +361,10 @@ class PaymentTab:
         self.frame.config(cursor="watch" if processing else "")
         self.frame.update_idletasks()
 
-    def format_message(self, month_name, year, amount):
-        return f"""👤 {self.current_student.first_name} {self.current_student.last_name}
-📅 {month_name} De {year}
-💰 {currency_format(amount)}
+    def format_message(self, month_name: str, year: int, amount: int):
+        return f"""👤: {self.current_student.first_name} {self.current_student.last_name}
+📅: {month_name} De {year}
+💰: {currency_format(amount)}
 ¿Confirmar pago?"""
 
     def refresh_students(self):
