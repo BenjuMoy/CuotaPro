@@ -19,6 +19,23 @@ class StudentRepository:
         """Converts a database row tuple into a Student Pydantic model."""
         return Student.model_validate(dict(row))
 
+    @staticmethod
+    def _student_to_tuple(student: Student):
+        return (
+            student.active,
+            student.last_name,
+            student.first_name,
+            student.phone1,
+            student.phone2,
+            student.phone3,
+            student.teacher,
+            student.book,
+            student.course,
+            student.school,
+            student.year,
+            student.monthly_fee,
+        )
+
     def _fetch_all(self, cursor: sqlite3.Cursor) -> list[Student]:
         return [self._row_to_student(row) for row in cursor.fetchall()]
 
@@ -44,23 +61,7 @@ class StudentRepository:
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
-        cursor = conn.execute(
-            query,
-            (
-                student.active,
-                student.last_name,
-                student.first_name,
-                student.phone1,
-                student.phone2,
-                student.phone3,
-                student.teacher,
-                student.book,
-                student.course,
-                student.school,
-                student.year,
-                student.monthly_fee,
-            ),
-        )
+        cursor = conn.execute(query, (self._student_to_tuple(student)))
 
         # Get the new ID
         student_id = cursor.lastrowid
@@ -77,24 +78,7 @@ class StudentRepository:
                 WHERE id=?
             """
 
-        cursor = conn.execute(
-            query,
-            (
-                student.active,
-                student.last_name,
-                student.first_name,
-                student.phone1,
-                student.phone2,
-                student.phone3,
-                student.teacher,
-                student.book,
-                student.course,
-                student.school,
-                student.year,
-                student.monthly_fee,
-                student.id,
-            ),
-        )
+        cursor = conn.execute(query, (self._student_to_tuple(student)))
 
         if cursor.rowcount == 0:
             raise NotFound(f"Student with id {student.id} not found")
