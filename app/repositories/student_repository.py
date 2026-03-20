@@ -20,6 +20,9 @@ class StudentRepository:
         """Converts a database row tuple into a Student Pydantic model."""
         return Student.model_validate(dict(row))
 
+    def _fetch_all(self, cursor: sqlite3.Cursor) -> list[Student]:
+        return [self._row_to_student(row) for row in cursor.fetchall()]
+
     # --- CRUD Operations --- #
 
     def add(self, student: Student, conn: Connection) -> Student:
@@ -140,7 +143,7 @@ class StudentRepository:
             query, (search_pattern, search_pattern, search_pattern, search_pattern)
         )
 
-        return [self._row_to_student(row) for row in cursor.fetchall()]
+        return self._fetch_all(cursor)
 
     def search_by_teacher(self, teacher_name: str, conn: Connection) -> list[Student]:
         """Search students by teacher name."""
@@ -151,7 +154,7 @@ class StudentRepository:
             WHERE teacher LIKE ? COLLATE NOCASE
             ORDER BY last_name, first_name"""
         cursor = conn.execute(query, (search_pattern,))
-        return [self._row_to_student(row) for row in cursor.fetchall()]
+        return self._fetch_all(cursor)
 
     # --- Getters --- #
 
@@ -163,7 +166,7 @@ class StudentRepository:
             ORDER BY last_name, first_name
         """
         cursor = conn.execute(query)
-        return [self._row_to_student(row) for row in cursor.fetchall()]
+        return self._fetch_all(cursor)
 
     def get_by_id(self, student_id: int, conn: Connection) -> Student:
         """Retrieve a specific student by ID efficiently."""
@@ -192,7 +195,7 @@ class StudentRepository:
         WHERE b.balance < 0"""
 
         cursor = conn.execute(query)
-        return [self._row_to_student(row) for row in cursor.fetchall()]
+        return self._fetch_all(cursor)
 
     def get_active_student_count(self, conn: Connection) -> int:
         """Gets the amount of active students."""
@@ -208,7 +211,7 @@ class StudentRepository:
         ORDER BY last_name, first_name
         """
         cursor = conn.execute(query)
-        return [self._row_to_student(row) for row in cursor.fetchall()]
+        return self._fetch_all(cursor)
 
     def get_students_without_fee(
         self, month: int, year: int, conn: Connection
@@ -228,7 +231,7 @@ class StudentRepository:
         """
         cursor = conn.execute(query, (month, year))
 
-        return [self._row_to_student(row) for row in cursor.fetchall()]
+        return self._fetch_all(cursor)
 
     def count_students_by_monthly_fee(self, monthly_fee: int, conn: Connection) -> int:
         """Returns the sum of students with that monthly_fee"""

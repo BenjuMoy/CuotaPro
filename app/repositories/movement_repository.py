@@ -18,9 +18,16 @@ AND r.id IS NULL
 
 
 class MovementRepository:
+    # --- Helper Methods --- #
+
     @staticmethod
     def _row_to_movement(row: sqlite3.Row) -> Movement:
         return Movement.model_validate(dict(row))
+
+    def _fetch_all(self, cursor: sqlite3.Cursor) -> list[Movement]:
+        return [self._row_to_movement(row) for row in cursor.fetchall()]
+
+    # --- CRUD Operations --- #
 
     def add(self, movement: Movement, conn: Connection) -> Movement:
         query = """
@@ -71,7 +78,7 @@ class MovementRepository:
         """
 
         cursor = conn.execute(query)
-        return [self._row_to_movement(row) for row in cursor.fetchall()]
+        return self._fetch_all(cursor)
 
     def get_effective_payments(self, conn: Connection) -> list[Movement]:
         query = f"""SELECT m.*
@@ -82,7 +89,7 @@ class MovementRepository:
         AND m.type = 'PAYMENT'
         ORDER BY m.year DESC, m.month DESC, m.id DESC"""
         cursor = conn.execute(query)
-        return [self._row_to_movement(row) for row in cursor.fetchall()]
+        return self._fetch_all(cursor)
 
     def get_effective_fees(self, conn: Connection) -> list[Movement]:
         query = f"""SELECT m.*
@@ -93,7 +100,7 @@ class MovementRepository:
         AND m.type = 'FEE'
         ORDER BY m.year DESC, m.month DESC, m.id DESC"""
         cursor = conn.execute(query)
-        return [self._row_to_movement(row) for row in cursor.fetchall()]
+        return self._fetch_all(cursor)
 
     def get_effective_movements_by_id(
         self, student_id: int, conn: Connection
@@ -106,7 +113,7 @@ class MovementRepository:
         AND m.student_id = ?
         ORDER BY m.year DESC, m.month DESC, m.id DESC"""
         cursor = conn.execute(query, (student_id,))
-        return [self._row_to_movement(row) for row in cursor.fetchall()]
+        return self._fetch_all(cursor)
 
     def get_by_id(self, movement_id: int, conn: Connection) -> Movement:
         query = f"SELECT {MOVEMENT_COLUMNS} FROM movements WHERE id = ?"
@@ -135,7 +142,7 @@ class MovementRepository:
             ORDER BY year DESC, month DESC, id DESC"""
         cursor = conn.execute(query, (student_id,))
 
-        return [self._row_to_movement(row) for row in cursor.fetchall()]
+        return self._fetch_all(cursor)
 
     def get_student_last_payment(
         self, student_id: int, conn: Connection
