@@ -1,6 +1,5 @@
 from app.database.connection import DatabaseManager
 from app.models.models import Student
-from app.models.reportes import SalaryReport
 from app.repositories.student_repository import StudentRepository
 
 
