@@ -9,7 +9,7 @@ from app.database.connection import DatabaseManager
 class MaintenanceService:
     def __init__(self, db_manager: DatabaseManager):
         self.db = db_manager
-        self.config = db_manager.db_config
+        self.config = db_manager.config
 
     # -------------------------
     # BACKUP
@@ -59,9 +59,6 @@ class MaintenanceService:
 
         # Safety backup before restore
         self.create_backup()
-
-        # Close active connection
-        self.db.close()
 
         with sqlite3.connect(backup_path) as source_conn:
             with sqlite3.connect(self.config.db_path) as dest_conn:

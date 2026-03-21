@@ -67,9 +67,6 @@ class Application:
         except Exception:
             logger.exception("Backup failed during shutdown")
 
-        if self._initializer:
-            self._initializer.shutdown()
-
         if self._root:
             try:
                 self._root.destroy()

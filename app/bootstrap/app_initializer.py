@@ -70,6 +70,3 @@ class AppInitializer:
             reporting=reporting_service,
             maintenance=maintenance_service,
         )
-
-    def shutdown(self):
-        self.db.close()
