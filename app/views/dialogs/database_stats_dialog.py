@@ -4,7 +4,7 @@ from app.services.application_service import ApplicationService
 from app.views.helpers_gui import center_window
 
 
-class ShowDatabasrStatsDialog:
+class ShowDatabaseStatsDialog:
     def __init__(self, root: ttk.Window, main_service: ApplicationService):
         self.root = root
         self.main_service = main_service

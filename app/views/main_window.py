@@ -4,7 +4,7 @@ from ttkbootstrap.dialogs import Messagebox
 from app.models.models import RefreshType
 from app.services.application_service import ApplicationService
 from app.views.dialogs.about_dialog import show_about
-from app.views.dialogs.database_stats_dialog import ShowDatabasrStatsDialog
+from app.views.dialogs.database_stats_dialog import ShowDatabaseStatsDialog
 from app.views.dialogs.restore_backup_dialog import RestoreBackupDialog
 from app.views.tabs.add_payment import PaymentTab
 from app.views.tabs.add_student import AddStudentTab
@@ -202,7 +202,7 @@ class MainWindow:
     def show_database_stats(self):
         """Show database statistics."""
         try:
-            ShowDatabasrStatsDialog(self.root, self.main_service)
+            ShowDatabaseStatsDialog(self.root, self.main_service)
 
             self.update_status("Estadísticas de base de datos mostradas")
         except Exception as e:
