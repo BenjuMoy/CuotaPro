@@ -1,6 +1,5 @@
 import logging
 from dataclasses import dataclass
-from typing import Literal
 
 import ttkbootstrap as ttk
 
@@ -25,56 +24,49 @@ class Application:
         self._config = AppConfig()
         self._db_config = DatabaseConfig()
 
-        # Set to None for safe shutdown
-        self._root: ttk.Window | None = None
-        self._services: ApplicationService | None = None
-        self._initializer: AppInitializer | None = None
-        self.main_window: MainWindow | None = None
-
     def bootstrap(self):
         logger.info("Bootstrapping application")
 
-        self._root = TkAppFactory.create_root(
-            self._config.theme,
-            self._config.window_title,
-        )
-        self._root.protocol("WM_DELETE_WINDOW", self.shutdown)
-
-        GlobalErrorHandler(self._root).install()
-
-        self._initializer = AppInitializer(self._db_config)
-
-        self._services = self._initializer.initialize()
-        self.main_window = MainWindow(self._root, self._services)
+        root = TkAppFactory.create_root(self._config.theme, self._config.window_title)
+        GlobalErrorHandler(root).install()
+        initializer = AppInitializer(self._db_config)
+        services = initializer.initialize()
+        main_window = MainWindow(root, services)
 
         logger.info("Application bootstrapped successfully")
 
+        return root, initializer, services, main_window
+
     def run(self) -> int:
+        root, initializer, services, _ = self.bootstrap()
         try:
-            self.bootstrap()
-            self._root.mainloop()
-            return 0
+            root.mainloop()
 
         except Exception:
             logger.exception("Fatal error during runtime")
             raise
 
         finally:
-            self.shutdown()
+            self.shutdown(root, initializer, services)
 
-    def shutdown(self):
+        return 0
+
+    def shutdown(
+        self,
+        root: ttk.Window,
+        initializer: AppInitializer,
+        services: ApplicationService,
+    ):
         logger.info("Shutting down application")
 
         try:
-            if self._services:
-                self._services.create_backup()
+            services.create_backup()
         except Exception:
             logger.exception("Backup failed during shutdown")
 
-        if self._root:
-            try:
-                self._root.destroy()
-            except Exception:
-                pass
+        try:
+            root.destroy()
+        except Exception:
+            pass
 
         logger.info("Application shutdown complete")
