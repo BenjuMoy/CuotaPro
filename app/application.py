@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from typing import Literal
 
 import ttkbootstrap as ttk
 
@@ -48,13 +49,16 @@ class Application:
 
         logger.info("Application bootstrapped successfully")
 
-    def run(self):
+    def run(self) -> int:
         try:
             self.bootstrap()
             self._root.mainloop()
+            return 0
+
         except Exception:
             logger.exception("Fatal error during runtime")
             raise
+
         finally:
             self.shutdown()
 

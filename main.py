@@ -5,11 +5,7 @@ from app.utils.logger import setup_logging
 def main() -> int:
     """Entry point for the application."""
     setup_logging()
-
-    app = Application()
-    app.run()
-
-    return 0
+    return Application().run()
 
 
 if __name__ == "__main__":
