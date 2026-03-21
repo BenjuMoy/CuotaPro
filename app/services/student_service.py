@@ -89,25 +89,3 @@ class StudentService:
     def get_fees_list(self) -> list[tuple[int, int]]:
         with self.db.connect() as conn:
             return self.repo.get_fees_list(conn)
-
-    # Reports
-
-    def get_salary(self, professor_name: str):
-        """
-        Calculates the total payment for a specific professor based on active student fees.
-
-        Returns:
-            dict: {
-                'professor': str,
-                'total': int,
-                'student_count': int,
-                'details': list[dict]  # Each dict contains student name and fee
-            }
-
-        Raises:
-            ValueError: If professor is not found or has no students.
-        """
-        with self.db.connect() as conn:
-            student_list = self.repo.get_all_active_students(conn)
-            report = SalaryReport(student_list)
-            return report.generar_salario_teacher(professor_name)

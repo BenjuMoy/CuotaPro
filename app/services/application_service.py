@@ -272,81 +272,10 @@ class ApplicationService:
     #  Dashboard
     def get_kpi_metrics(self) -> DashboardMetrics:
         """Get dashboard metrics"""
-        now = datetime.now()
-
-        students = self.get_all_active_students()
-
-        expected = sum(s.monthly_fee for s in students)
-
-        collected = self.services.accounting.get_total_collected_this_month(
-            now.month, now.year
-        )
-
-        balances = self.get_balances_for_students()
-
-        debt_total = sum(balances.get(s.id, 0) for s in students)
-
-        return DashboardMetrics(
-            active_students=len(students),
-            expected_income=expected,
-            collected=collected,
-            total_debt=debt_total,
-        )
+        return self.services.reporting.get_kpi_metrics()
 
     def get_graphic_metrics(self):
-        students = self.get_all_active_students()
-        movements = self.get_all_movements()
-        balances = self.get_balances_for_students()
-
-        # Income by month
-
-        income_by_month = defaultdict(int)
-
-        for m in movements:
-            if m.type == MovementType.PAYMENT:
-                key = (m.year, m.month)
-                income_by_month[key] += m.amount
-
-        months_sorted = dict(sorted(income_by_month.keys())[-6:])
-
-        # teacher_count
-
-        teacher_count = defaultdict(int)
-
-        for s in students:
-            teacher_count[s.teacher] += 1
-
-        teacher_sorted = dict(sorted(teacher_count.items(), key=lambda x: x[1]))
-
-        # Debt bucket
-
-        debt_buckets = {
-            "Al día": 0,
-            "1 mes": 0,
-            "2 meses": 0,
-            "3+ meses": 0,
-        }
-
-        for s in students:
-            if s.id not in balances:
-                continue
-
-            balance = balances[s.id]
-
-            if balance >= 0:
-                debt_buckets["Al día"] += 1
-                continue
-
-            months = abs(balance) // s.monthly_fee
-
-            if months == 1:
-                debt_buckets["1 mes"] += 1
-            elif months == 2:
-                debt_buckets["2 meses"] += 1
-            else:
-                debt_buckets["3+ meses"] += 1
-
-        return months_sorted, teacher_sorted, debt_buckets
+        return self.services.reporting.get_graphic_metrics()
 
     # --- Informes ---
 
@@ -365,7 +294,7 @@ class ApplicationService:
         Raises:
             ValueError: If professor is not found or has no students.
         """
-        return self.services.student.get_salary(professor_name)
+        return self.services.reporting.get_salary(professor_name)
 
     # -------- Maintenance --------
 

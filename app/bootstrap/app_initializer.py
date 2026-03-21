@@ -9,6 +9,7 @@ from app.repositories.student_repository import StudentRepository
 from app.services.accounting_service import AccountingService
 from app.services.application_service import ApplicationService
 from app.services.maintenance_service import MaintenanceService
+from app.services.reporting_service import ReportingService
 from app.services.service_container import ServiceContainer
 from app.services.student_service import StudentService
 
@@ -60,11 +61,13 @@ class AppInitializer:
 
         student_service = StudentService(student_repo, self.db)
         accounting_service = AccountingService(movement_repo, student_repo, self.db)
+        reporting_service = ReportingService(student_repo, movement_repo, self.db)
         maintenance_service = MaintenanceService(self.db)
 
         return ServiceContainer(
             student=student_service,
             accounting=accounting_service,
+            reporting=reporting_service,
             maintenance=maintenance_service,
         )
 
