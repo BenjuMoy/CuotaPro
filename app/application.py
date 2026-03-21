@@ -29,16 +29,15 @@ class Application:
 
         root = TkAppFactory.create_root(self._config.theme, self._config.window_title)
         GlobalErrorHandler(root).install()
-        initializer = AppInitializer(self._db_config)
-        services = initializer.initialize()
-        main_window = MainWindow(root, services)
+        app_service = ApplicationService(AppInitializer(self._db_config).initialize())
+        main_window = MainWindow(root, app_service)
 
         logger.info("Application bootstrapped successfully")
 
-        return root, initializer, services, main_window
+        return root, app_service, main_window
 
     def run(self) -> int:
-        root, initializer, services, _ = self.bootstrap()
+        root, services, _ = self.bootstrap()
         try:
             root.mainloop()
 
@@ -47,16 +46,11 @@ class Application:
             raise
 
         finally:
-            self.shutdown(root, initializer, services)
+            self.shutdown(root, services)
 
         return 0
 
-    def shutdown(
-        self,
-        root: ttk.Window,
-        initializer: AppInitializer,
-        services: ApplicationService,
-    ):
+    def shutdown(self, root: ttk.Window, services: ApplicationService):
         logger.info("Shutting down application")
 
         try:

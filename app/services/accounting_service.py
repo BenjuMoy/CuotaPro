@@ -10,8 +10,8 @@ from app.repositories.student_repository import StudentRepository
 class AccountingService:
     def __init__(
         self,
-        movement_repo: MovementRepository,
         student_repo: StudentRepository,
+        movement_repo: MovementRepository,
         db: DatabaseManager,
     ):
         self.movements = movement_repo

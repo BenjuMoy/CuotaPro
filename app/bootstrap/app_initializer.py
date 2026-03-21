@@ -7,7 +7,6 @@ from app.database.schema import bootstrap_database, database_initialized
 from app.repositories.movement_repository import MovementRepository
 from app.repositories.student_repository import StudentRepository
 from app.services.accounting_service import AccountingService
-from app.services.application_service import ApplicationService
 from app.services.maintenance_service import MaintenanceService
 from app.services.reporting_service import ReportingService
 from app.services.service_container import ServiceContainer
@@ -26,20 +25,19 @@ class AppInitializer:
     """
 
     def __init__(self, db_config: DatabaseConfig):
-        self.db_config = db_config
         self.db = DatabaseManager(db_config)
 
     # ------------------------
     # PUBLIC ENTRY POINT
     # ------------------------
 
-    def initialize(self) -> ApplicationService:
+    def initialize(self) -> ServiceContainer:
         logger.info("Preparing database")
         self._prepare_database()
 
         logger.info("Building services")
         services = self._build_services()
-        return ApplicationService(services)
+        return services
 
     # ------------------------
     # INTERNAL STEPS
@@ -56,12 +54,11 @@ class AppInitializer:
                 migrate(conn)
 
     def _build_services(self) -> ServiceContainer:
-        student_repo = StudentRepository()
-        movement_repo = MovementRepository()
+        repos = self._build_repositories()
 
-        student_service = StudentService(student_repo, self.db)
-        accounting_service = AccountingService(movement_repo, student_repo, self.db)
-        reporting_service = ReportingService(student_repo, movement_repo, self.db)
+        student_service = StudentService(repos[0], self.db)
+        accounting_service = AccountingService(*repos, self.db)
+        reporting_service = ReportingService(*repos, self.db)
         maintenance_service = MaintenanceService(self.db)
 
         return ServiceContainer(
@@ -70,3 +67,6 @@ class AppInitializer:
             reporting=reporting_service,
             maintenance=maintenance_service,
         )
+
+    def _build_repositories(self):
+        return StudentRepository(), MovementRepository()
