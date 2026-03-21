@@ -32,9 +32,6 @@ class AccountingService:
         with self.db.transaction() as conn:
             student = self.students.get_by_id(student_id, conn)
 
-            if not student:
-                raise NotFound("Estudiante no encontrado")
-
             if not student.active:
                 raise NotFound("Estudiante inactivo")
 
