@@ -100,6 +100,13 @@ class MainWindow:
         self.notebook: ttk.Notebook
         self.status_bar: ttk.Label
 
+        self._commands = {
+            "create_backup": self.create_backup,
+            "restore_backup": self.restore_backup,
+            "verify_integrity": self.verify_integrity,
+            "show_about": self.show_about,
+        }
+
         # Create UI components
         self._create_ui()
 
@@ -112,13 +119,6 @@ class MainWindow:
         self._setup_status_bar()
 
     def _build_menu(self, layout):
-        COMMANDS = {
-            "create_backup": self.create_backup,
-            "restore_backup": self.restore_backup,
-            "verify_integrity": self.verify_integrity,
-            "show_about": self.show_about,
-        }
-
         menubar = ttk.Menu(self.root)
         self.root.config(menu=menubar)
 
@@ -132,7 +132,7 @@ class MainWindow:
                 else:
                     (
                         menu.add_command(
-                            label=item["label"], command=COMMANDS[item["command"]]
+                            label=item["label"], command=self._commands[item["command"]]
                         )
                     )
 
