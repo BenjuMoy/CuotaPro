@@ -18,6 +18,7 @@ class TkAppFactory:
 
     @staticmethod
     def create_root(theme: str, title: str) -> ttk.Window:
+        """Creates and fully configures the root Tk window (theme, styles, fonts, icon)."""
         root = ttk.Window(themename=theme)
         root.title(title)
 
@@ -25,6 +26,7 @@ class TkAppFactory:
 
         root.minsize(1280, 800)
 
+        # Prevent garbage collection of icon
         root._icon = ttk.PhotoImage(file=ICON_PATH)
         root.iconphoto(True, root._icon)
 
