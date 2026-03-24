@@ -49,42 +49,42 @@ class StudentService:
 
     def get_all(self) -> list[Student]:
         """Get all students from db."""
-        with self.db.connect() as conn:
+        with self.db.transaction() as conn:
             return self.repo.get_all(conn)
 
     def get_all_active(self) -> list[Student]:
-        with self.db.connect() as conn:
+        with self.db.transaction() as conn:
             return self.repo.get_all_active_students(conn)
 
     def get_by_id(self, student_id: int) -> Student:
         """Retrieves a single student by their ID."""
-        with self.db.connect() as conn:
+        with self.db.transaction() as conn:
             return self.repo.get_by_id(student_id, conn)
 
     def get_debtors(self) -> list[Student]:
         """Search students by debt."""
-        with self.db.connect() as conn:
+        with self.db.transaction() as conn:
             return self.repo.get_debtors(conn)
 
     def search_by_name(self, name: str) -> list[Student]:
         """Search students by name."""
-        with self.db.connect() as conn:
+        with self.db.transaction() as conn:
             return self.repo.search_by_name(name, conn)
 
     def search_by_teacher(self, teacher_name: str) -> list[Student]:
         """Search students by teacher name."""
-        with self.db.connect() as conn:
+        with self.db.transaction() as conn:
             return self.repo.search_by_teacher(teacher_name, conn)
 
     def count_by_monthly_fee(self, monthly_fee: int) -> int:
         """Search students by monthly fee."""
-        with self.db.connect() as conn:
+        with self.db.transaction() as conn:
             return self.repo.count_students_by_monthly_fee(monthly_fee, conn)
 
     def get_active_count(self) -> int:
-        with self.db.connect() as conn:
+        with self.db.transaction() as conn:
             return self.repo.get_active_student_count(conn)
 
     def get_fees_list(self) -> list[tuple[int, int]]:
-        with self.db.connect() as conn:
+        with self.db.transaction() as conn:
             return self.repo.get_fees_list(conn)

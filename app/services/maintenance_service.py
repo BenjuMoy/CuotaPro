@@ -24,9 +24,9 @@ class MaintenanceService:
 
         self.config.db_backup_dir.mkdir(parents=True, exist_ok=True)
 
-        source_conn = self.db.connect()
+        source_conn = self.db.transaction()
 
-        dest_conn = sqlite3.connect(backup_path)
+        dest_conn = sqlite3.transaction(backup_path)
 
         try:
             with dest_conn:
@@ -60,8 +60,8 @@ class MaintenanceService:
         # Safety backup before restore
         self.create_backup()
 
-        with sqlite3.connect(backup_path) as source_conn:
-            with sqlite3.connect(self.config.db_path) as dest_conn:
+        with sqlite3.transaction(backup_path) as source_conn:
+            with sqlite3.transaction(self.config.db_path) as dest_conn:
                 source_conn.backup(dest_conn)
 
         return True

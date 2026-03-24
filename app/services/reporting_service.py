@@ -35,7 +35,7 @@ class ReportingService:
         Raises:
             ValueError: If professor is not found or has no students.
         """
-        with self.db.connect() as conn:
+        with self.db.transaction() as conn:
             student_list = self.students.get_all_active_students(conn)
             report = SalaryReport(student_list)
             return report.generar_salario_teacher(professor_name)
@@ -43,7 +43,7 @@ class ReportingService:
     def get_kpi_metrics(self) -> DashboardMetrics:
         now = datetime.now()
 
-        with self.db.connect() as conn:
+        with self.db.transaction() as conn:
             students = self.students.get_all_active_students(conn)
 
             collected = self.movements.total_collected_this_month(
@@ -64,7 +64,7 @@ class ReportingService:
         )
 
     def get_graphic_metrics(self):
-        with self.db.connect() as conn:
+        with self.db.transaction() as conn:
             students = self.students.get_all_active_students(conn)
             movements = self.movements.get_all(conn)
             balances = self.movements.get_balances_for_students(conn)
