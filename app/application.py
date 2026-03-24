@@ -61,6 +61,6 @@ class Application:
         try:
             root.destroy()
         except Exception:
-            pass
+            logger.exception("Failed to destroy root window")
 
         logger.info("Application shutdown complete")
