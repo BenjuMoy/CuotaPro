@@ -78,7 +78,7 @@ class StudentRepository:
                 WHERE id=?
             """
 
-        cursor = conn.execute(query, (self._student_to_tuple(student)))
+        cursor = conn.execute(query, (*self._student_to_tuple(student), student.id))
 
         if cursor.rowcount == 0:
             raise NotFound(f"Student with id {student.id} not found")
