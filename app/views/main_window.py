@@ -110,7 +110,7 @@ class MainWindow:
         # Create UI components
         self._create_ui()
 
-        self.main_service.subscribe(RefreshType.STUDENTS, self.refresh_students)
+        self.main_service.event.subscribe(RefreshType.STUDENTS, self.refresh_students)
 
     def _create_ui(self):
         """Create the user interface components."""
