@@ -22,16 +22,11 @@ from app.models.models import (
 )
 from app.services.service_container import ServiceContainer
 
+logger = logging.getLogger(__name__)
 
-class ApplicationService:
-    """
-    Central main service for the application using SQLite database.
-    Manages state and coordinates between the data layer and the UI.
-    """
 
-    def __init__(self, services: ServiceContainer):
-        self.services = services
-        self.logger = logging.getLogger(__name__)
+class EventBus:
+    def __init__(self):
         self._subscribers: dict[RefreshType, list[Callable]] = defaultdict(list)
 
     # --- Subscription Pattern for UI Updates ---
@@ -49,7 +44,18 @@ class ApplicationService:
             try:
                 callback(**data)
             except Exception as e:
-                self.logger.exception(f"Subscriber error: {e}")
+                logger.exception(f"Subscriber error: {e}")
+
+
+class ApplicationService:
+    """
+    Central main service for the application using SQLite database.
+    Manages state and coordinates between the data layer and the UI.
+    """
+
+    def __init__(self, services: ServiceContainer):
+        self.services = services
+        self.event = EventBus()
 
     # --- Centralized Error Handling ---
     @staticmethod
@@ -71,7 +77,7 @@ class ApplicationService:
         try:
             saved_student = self.services.student.add(data)
 
-            self.logger.info(
+            logger.info(
                 "Student created | id=%s last_name=%s first_name=%s fee=%s",
                 saved_student.id,
                 saved_student.last_name,
@@ -79,7 +85,7 @@ class ApplicationService:
                 saved_student.monthly_fee,
             )
 
-            self._notify(RefreshType.STUDENTS)
+            self.event._notify(RefreshType.STUDENTS)
             return saved_student
 
         except ValidationError as e:
@@ -94,14 +100,14 @@ class ApplicationService:
         try:
             updated_student = self.services.student.update(student_id, data)
 
-            self.logger.info(
+            logger.info(
                 "Student updated | id=%s last_name=%s first_name=%s monthly_fee=%s",
                 updated_student.id,
                 updated_student.last_name,
                 updated_student.first_name,
                 updated_student.monthly_fee,
             )
-            self._notify(RefreshType.STUDENTS)
+            self.event._notify(RefreshType.STUDENTS)
             return updated_student
 
         except ValidationError as e:
@@ -116,8 +122,8 @@ class ApplicationService:
         try:
             updated_student = self.services.student.switch_state(student_id)
 
-            self.logger.info("Student with id=%s switched state.", updated_student.id)
-            self._notify(RefreshType.STUDENTS)
+            logger.info("Student with id=%s switched state.", updated_student.id)
+            self.event._notify(RefreshType.STUDENTS)
             return updated_student
 
         except NotFound:
@@ -167,7 +173,7 @@ class ApplicationService:
             student_id, month, year, amount
         )
 
-        self.logger.info(
+        logger.info(
             "Payment added | student_id=%s month=%s year=%s amount=%s new_balance=%s",
             movement.student_id,
             movement.month,
@@ -175,7 +181,7 @@ class ApplicationService:
             movement.amount,
             new_balance,
         )
-        self._notify(RefreshType.MOVEMENTS)
+        self.event._notify(RefreshType.MOVEMENTS)
 
         return self.get_student_payment_overview(student_id)
 
@@ -224,13 +230,13 @@ class ApplicationService:
 
         applied_count = self.services.accounting.add_fee(month, year)
 
-        self.logger.info(
+        logger.info(
             "Monthly fees applied | month=%s year=%s students=%s",
             month,
             year,
             applied_count,
         )
-        self._notify(RefreshType.MOVEMENTS)
+        self.event._notify(RefreshType.MOVEMENTS)
         return applied_count
 
     def increase_fee_amount(self, old_monthly_fee: int, new_monthly_fee: int) -> int:
@@ -239,8 +245,8 @@ class ApplicationService:
             old_monthly_fee, new_monthly_fee
         )
 
-        self.logger.info("Fees increased for %s students", affected_students)
-        self._notify(RefreshType.STUDENTS)
+        logger.info("Fees increased for %s students", affected_students)
+        self.event._notify(RefreshType.STUDENTS)
         return affected_students
 
     def reverse_movement(self, pago_id: int) -> None:
@@ -248,13 +254,13 @@ class ApplicationService:
         try:
             movement = self.services.accounting.reverse(pago_id)
 
-            self.logger.info(
+            logger.info(
                 "Reversing movement entry | id=%s, month=%s year=%s",
                 movement.id,
                 movement.month,
                 movement.year,
             )
-            self._notify(RefreshType.MOVEMENTS)
+            self.event._notify(RefreshType.MOVEMENTS)
 
         except BusinessRuleError:
             raise
