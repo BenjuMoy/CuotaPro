@@ -1,3 +1,4 @@
+import sqlite3
 from datetime import datetime
 
 from app.database.connection import DatabaseManager
@@ -80,7 +81,10 @@ class AccountingService:
                 for student in students
             ]
 
-            self.movements.apply_fees(data, conn)
+            try:
+                self.movements.apply_fees(data, conn)
+            except sqlite3.IntegrityError:
+                raise BusinessRuleError("Fees already applied")
 
             return len(students)
 
