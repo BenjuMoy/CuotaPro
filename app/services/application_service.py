@@ -89,7 +89,7 @@ class ApplicationService:
         except IntegrityError as e:
             raise ConflictError(str(e)) from e
 
-    def update_student(self, student_id: int, data: dict[str, Any]) -> Student | None:
+    def update_student(self, student_id: int, data: dict[str, Any]) -> Student:
         """Updates a student, updates state, and saves."""
         try:
             updated_student = self.services.student.update(student_id, data)
