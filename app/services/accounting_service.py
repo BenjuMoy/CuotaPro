@@ -119,9 +119,6 @@ class AccountingService:
             if orig.type not in (MovementType.PAYMENT, MovementType.FEE):
                 raise BusinessRuleError("Movimiento no reversible")
 
-            if orig.reference_id:
-                raise BusinessRuleError("Movimiento ya revertido")
-
             if self.movements.has_reversal(orig.id, conn):
                 raise BusinessRuleError("Movimiento ya revertido")
 
