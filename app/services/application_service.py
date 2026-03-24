@@ -16,13 +16,11 @@ from app.models.exceptions import (
 from app.models.models import (
     DashboardMetrics,
     Movement,
-    MovementType,
     RefreshType,
     Student,
     StudentOverview,
 )
 from app.services.service_container import ServiceContainer
-from app.utils.constantes import NUM_TO_MONTH
 
 
 class ApplicationService:
@@ -34,18 +32,18 @@ class ApplicationService:
     def __init__(self, services: ServiceContainer):
         self.services = services
         self.logger = logging.getLogger(__name__)
-        self._subscribers: dict[str, list[Callable]] = defaultdict(list)
+        self._subscribers: dict[RefreshType, list[Callable]] = defaultdict(list)
 
     # --- Subscription Pattern for UI Updates ---
-    def subscribe(self, event: str, callback: Callable):
+    def subscribe(self, event: RefreshType, callback: Callable):
         """Allows a UI component to subscribe to data changes."""
         self._subscribers[event].append(callback)
 
-    def unsubscribe(self, event: str, callback: Callable):
+    def unsubscribe(self, event: RefreshType, callback: Callable):
         if callback in self._subscribers[event]:
             self._subscribers[event].remove(callback)
 
-    def _notify(self, event: str, **data) -> None:
+    def _notify(self, event: RefreshType, **data) -> None:
         """Notifies all subscribed components that data has changed."""
         for callback in list(self._subscribers[event]):
             try:

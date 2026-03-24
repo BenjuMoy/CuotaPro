@@ -143,7 +143,9 @@ def mark_valid(widget):
 
 
 def center_window(
-    root: ttk.Window, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT
+    root: ttk.Window | ttk.Toplevel,
+    width: int = DEFAULT_WIDTH,
+    height: int = DEFAULT_HEIGHT,
 ):
     """Recieves a window and centers it in the screen.
 
