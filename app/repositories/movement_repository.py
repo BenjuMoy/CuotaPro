@@ -143,13 +143,13 @@ class MovementRepository:
 
     def get_balance(self, student_id: int, conn: Connection) -> int:
         query = f"""
-            SELECT COALESCE(SUM(m.amount), 0)
+            SELECT COALESCE(SUM(m.amount), 0) as amount
             {BASE_EFFECTIVE_QUERY}
             AND m.student_id = ?
         """
 
         cursor = conn.execute(query, (student_id,))
-        return cursor.fetchone()[0]
+        return cursor.fetchone()["amount"]
 
     def get_student_movements(
         self, student_id: int, conn: Connection
@@ -237,12 +237,13 @@ class MovementRepository:
     ) -> int:
         """"""
         query = f"""
+            SELECT SUM(m.amount) as amount
             {BASE_EFFECTIVE_QUERY}
             AND m.student_id=? AND m.month=? AND m.year=?
         """
 
         cursor = conn.execute(query, (student_id, month, year))
-        return cursor.fetchone()[0]
+        return cursor.fetchone()["amount"]
 
     def has_reversal(self, movement_id: int, conn: Connection) -> bool:
         """Cecks if movement has been reversed.
@@ -295,10 +296,10 @@ class MovementRepository:
             dict[int, int]: The dictionary containing the debts
         """
         query = f"""
-            SELECT m.student_id, SUM(m.amount) as balance
+            SELECT m.student_id as id, SUM(m.amount) as balance
             {BASE_EFFECTIVE_QUERY}
             GROUP BY m.student_id;
         """
 
         cursor = conn.execute(query)
-        return {row[0]: row["balance"] for row in cursor.fetchall()}
+        return {row["id"]: row["balance"] for row in cursor.fetchall()}
