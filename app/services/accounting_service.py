@@ -160,6 +160,10 @@ class AccountingService:
         with self.db.transaction() as conn:
             return self.movements.get_effective_fees(conn)
 
+    def get_effective_movements_by_id(self, student_id: int):
+        with self.db.transaction() as conn:
+            return self.movements.get_effective_movements_by_id(student_id, conn)
+
     def get_balance_by_id(self, student_id: int) -> int:
         with self.db.transaction() as conn:
             return self.movements.get_balance(student_id, conn)

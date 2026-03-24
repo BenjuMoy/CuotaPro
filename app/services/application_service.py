@@ -183,7 +183,12 @@ class ApplicationService:
         )
         self.event._notify(RefreshType.MOVEMENTS)
 
-        return self.get_student_payment_overview(student_id)
+        return StudentOverview(
+            student=student,
+            last_payment=movement,
+            balance=new_balance,
+            movements=self.get_effective_movements_by_id(student_id),
+        )
 
     # Payment getters
 
@@ -195,6 +200,9 @@ class ApplicationService:
 
     def get_effective_fees(self) -> list[Movement]:
         return self.services.accounting.get_effective_fees()
+
+    def get_effective_movements_by_id(self, student_id: int):
+        return self.services.accounting.get_effective_movements_by_id(student_id)
 
     def get_balance_by_id(self, student_id: int) -> int:
         return self.services.accounting.get_balance_by_id(student_id)
