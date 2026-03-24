@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 
 from app.database.config import DatabaseConfig
 from app.database.connection import DatabaseManager
@@ -13,6 +14,12 @@ from app.services.service_container import ServiceContainer
 from app.services.student_service import StudentService
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class Repositories:
+    student: StudentRepository
+    movement: MovementRepository
 
 
 class AppInitializer:
@@ -54,11 +61,15 @@ class AppInitializer:
                 migrate(conn)
 
     def _build_services(self) -> ServiceContainer:
-        repos = self._build_repositories()
+        repos = Repositories(student=StudentRepository(), movement=MovementRepository())
 
-        student_service = StudentService(repos[0], self.db)
-        accounting_service = AccountingService(*repos, self.db)
-        reporting_service = ReportingService(*repos, self.db)
+        student_service = StudentService(repos.student, self.db)
+
+        accounting_service = AccountingService(
+            student_repo=repos.student, movement_repo=repos.movement, db=self.db
+        )
+
+        reporting_service = ReportingService(repos.student, repos.movement, self.db)
         maintenance_service = MaintenanceService(self.db)
 
         return ServiceContainer(

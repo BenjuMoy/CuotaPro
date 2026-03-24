@@ -13,6 +13,13 @@ from app.views.main_window import MainWindow
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class AppContext:
+    root: ttk.Window
+    services: ApplicationService
+    main_window: MainWindow
+
+
 @dataclass(frozen=True)
 class AppConfig:
     window_title: str = "Cuota Pro"
@@ -34,32 +41,32 @@ class Application:
 
         logger.info("Application bootstrapped successfully")
 
-        return root, app_service, main_window
+        return AppContext(root, app_service, main_window)
 
     def run(self) -> int:
-        root, services, _ = self.bootstrap()
+        context = self.bootstrap()
         try:
-            root.mainloop()
+            context.root.mainloop()
 
         except Exception:
             logger.exception("Fatal error during runtime")
             raise
 
         finally:
-            self.shutdown(root, services)
+            self.shutdown(context)
 
         return 0
 
-    def shutdown(self, root: ttk.Window, services: ApplicationService):
+    def shutdown(self, context: AppContext):
         logger.info("Shutting down application")
 
         try:
-            services.create_backup()
+            context.services.create_backup()
         except Exception:
             logger.exception("Backup failed during shutdown")
 
         try:
-            root.destroy()
+            context.root.destroy()
         except Exception:
             logger.exception("Failed to destroy root window")
 
