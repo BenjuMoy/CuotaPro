@@ -38,7 +38,7 @@ class MovementTablePanel:
         self.main_service = service
         self._processing = False
 
-        self.main_service.subscribe(RefreshType.MOVEMENTS, self.refresh_table)
+        self.main_service.event.subscribe(RefreshType.MOVEMENTS, self.refresh_table)
 
         self._create_table()
 

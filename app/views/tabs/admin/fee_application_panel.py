@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 import ttkbootstrap as ttk
@@ -9,6 +10,8 @@ from app.models.exceptions import NotFound
 from app.services.application_service import ApplicationService
 from app.utils.constantes import FONT_BODY, FONT_HEADER, NUM_TO_MONTH, PAD_X, PAD_Y
 from app.views.toast import show_toast
+
+logger = logging.getLogger(__name__)
 
 
 class FeeApplicationPanel:
@@ -99,7 +102,7 @@ class FeeApplicationPanel:
             self.apply_fees_button.config(state="normal")
 
         except Exception:
-            self.main_service.logger.exception("Failed to apply monthly fees")
+            logger.exception("Failed to apply monthly fees")
             self.apply_fees_button.config(state="normal")
             Messagebox.show_error("Error al aplicar cuotas", "error")
 

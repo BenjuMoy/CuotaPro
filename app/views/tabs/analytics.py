@@ -25,8 +25,8 @@ class AnalyticsTab(BaseMetricsTab):
         self.draw_charts(*self.main_service.get_graphic_metrics())
         self.refresh()
 
-        self.main_service.subscribe(RefreshType.STUDENTS, self.refresh)
-        self.main_service.subscribe(RefreshType.MOVEMENTS, self.refresh)
+        self.main_service.event.subscribe(RefreshType.STUDENTS, self.refresh)
+        self.main_service.event.subscribe(RefreshType.MOVEMENTS, self.refresh)
 
     # -------------------------
     # DATA

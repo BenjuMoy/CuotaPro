@@ -29,8 +29,8 @@ class DashboardTab(BaseMetricsTab):
         self.build_buttons(BUTTONS)
         self.refresh()
 
-        main_service.subscribe(RefreshType.STUDENTS, self.refresh)
-        main_service.subscribe(RefreshType.MOVEMENTS, self.refresh)
+        main_service.event.subscribe(RefreshType.STUDENTS, self.refresh)
+        main_service.event.subscribe(RefreshType.MOVEMENTS, self.refresh)
 
     # -------------------------
     # DATA

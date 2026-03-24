@@ -1,3 +1,5 @@
+import logging
+
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import DANGER, SUCCESS
 from ttkbootstrap.dialogs import Messagebox
@@ -34,6 +36,8 @@ INFO_LABELS = {
     "last_paid_month_label": "Última Fecha Pagada:",
 }
 
+logger = logging.getLogger(__name__)
+
 
 class PaymentTab:
     def __init__(self, parent: ttk.Notebook, main_service: ApplicationService):
@@ -60,8 +64,8 @@ class PaymentTab:
         self._create_payment_history_table()
         self._create_payment_frame()
 
-        self.main_service.subscribe(RefreshType.STUDENTS, self.refresh_students)
-        self.main_service.subscribe(RefreshType.MOVEMENTS, self.refresh_payments)
+        self.main_service.event.subscribe(RefreshType.STUDENTS, self.refresh_students)
+        self.main_service.event.subscribe(RefreshType.MOVEMENTS, self.refresh_payments)
 
     # Static helpers
 
@@ -337,7 +341,7 @@ class PaymentTab:
             show_toast(self.frame, str(e), "error")
 
         except Exception as e:
-            self.main_service.logger.exception("Unexpected payment error")
+            logger.exception("Unexpected payment error")
             Messagebox.show_error(f"Error inesperado: {e}", "Error")
 
         finally:

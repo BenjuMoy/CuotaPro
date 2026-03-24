@@ -153,7 +153,9 @@ class UpdateStudentTab(BaseStudentFormTab):
         self.bind_required_validation()
         self._set_state(False)
 
-        self.main_service.subscribe(RefreshType.STUDENTS, self.refresh_student_list)
+        self.main_service.event.subscribe(
+            RefreshType.STUDENTS, self.refresh_student_list
+        )
 
     def _setup_layout(self):
         """Configure main layout structure."""

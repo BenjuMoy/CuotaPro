@@ -1,3 +1,5 @@
+import logging
+
 import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 
@@ -14,6 +16,8 @@ from app.views.helpers_gui import (
 )
 from app.views.toast import show_toast
 
+logger = logging.getLogger(__name__)
+
 
 class FeeIncreasePanel:
     def __init__(self, frame: ttk.Frame, service: ApplicationService):
@@ -22,7 +26,7 @@ class FeeIncreasePanel:
         self.main_service = service
         self.fee_map = {}
 
-        self.main_service.subscribe(RefreshType.MOVEMENTS, self.refresh_fee_combo)
+        self.main_service.event.subscribe(RefreshType.MOVEMENTS, self.refresh_fee_combo)
 
         self._create_widgets()
 
@@ -130,7 +134,7 @@ class FeeIncreasePanel:
             show_toast(self.frame, f"Error: {str(e)}", "error")
 
         except Exception as e:
-            self.main_service.logger.exception("Fee increase failed")
+            logger.exception("Fee increase failed")
             show_toast(self.frame, f"Error al actualizar cuotas: {e}", "error")
 
         finally:

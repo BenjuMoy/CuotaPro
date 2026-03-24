@@ -19,7 +19,9 @@ class ReportsTab:
         self.main_service: ApplicationService = main_service
         self.frame = ttk.Frame(parent)
 
-        self.main_service.subscribe(RefreshType.STUDENTS, self.refresh_student_list)
+        self.main_service.event.subscribe(
+            RefreshType.STUDENTS, self.refresh_student_list
+        )
 
         self._create_widgets()
         self._create_results_table()
