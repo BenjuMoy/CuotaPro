@@ -303,3 +303,14 @@ class MovementRepository:
 
         cursor = conn.execute(query)
         return {row["id"]: row["balance"] for row in cursor.fetchall()}
+
+    def get_income_by_month(self, conn) -> dict[tuple[int, int], int]:
+        query = """
+            SELECT year as year, month as month, COALESCE(SUM(amount), 0) as amount
+            FROM movements
+            WHERE type = 'PAYMENT'
+            GROUP BY year, month
+        """
+
+        cursor = conn.execute(query)
+        return {(row["month"], row["year"]): row["amount"] for row in cursor.fetchall()}

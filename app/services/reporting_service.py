@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import datetime
 
 from app.database.connection import DatabaseManager
-from app.models.models import DashboardMetrics, MovementType
+from app.models.models import DashboardMetrics, Student
 from app.models.reportes import SalaryReport
 from app.repositories.movement_repository import MovementRepository
 from app.repositories.student_repository import StudentRepository
@@ -64,22 +64,28 @@ class ReportingService:
         )
 
     def get_graphic_metrics(self):
+        income_by_month = defaultdict(int)
         with self.db.transaction() as conn:
             students = self.students.get_all_active_students(conn)
-            movements = self.movements.get_all(conn)
             balances = self.movements.get_balances_for_students(conn)
+            income_by_month = self.movements.get_income_by_month(conn)
 
-        income_by_month = defaultdict(int)
+        # Income dist
+        months_sorted = self.get_income_trend(income_by_month)
 
-        for m in movements:
-            if m.type == MovementType.PAYMENT:
-                key = (m.year, m.month)
-                income_by_month[key] += m.amount
+        # teacher count
+        teacher_sorted = self.get_teacher_distribution(students)
 
+        # Debt bucket
+        debt_buckets = self.get_debt_distribution(students, balances)
+
+        return months_sorted, teacher_sorted, debt_buckets
+
+    def get_income_trend(self, income_by_month: dict[tuple[int, int], int]):
         months_sorted = dict(sorted(income_by_month.keys())[-6:])
+        return months_sorted
 
-        # teacher_count
-
+    def get_teacher_distribution(self, students: list[Student]):
         teacher_count = defaultdict(int)
 
         for s in students:
@@ -87,8 +93,9 @@ class ReportingService:
 
         teacher_sorted = dict(sorted(teacher_count.items(), key=lambda x: x[1]))
 
-        # Debt bucket
+        return teacher_sorted
 
+    def get_debt_distribution(self, students: list[Student], balances: dict[int, int]):
         debt_buckets = {
             "Al día": 0,
             "1 mes": 0,
@@ -115,4 +122,4 @@ class ReportingService:
             else:
                 debt_buckets["3+ meses"] += 1
 
-        return months_sorted, teacher_sorted, debt_buckets
+        return debt_buckets
