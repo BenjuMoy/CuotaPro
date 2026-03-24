@@ -69,7 +69,14 @@ class AccountingService:
                 raise NotFound("No ha estudiantes para aplicar")
 
             data = [
-                (student.id, None, "FEE", -student.monthly_fee, month, year)
+                (
+                    student.id,
+                    None,
+                    MovementType.FEE.value,
+                    -student.monthly_fee,
+                    month,
+                    year,
+                )
                 for student in students
             ]
 
