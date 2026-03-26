@@ -98,7 +98,7 @@ class MovementRepository:
             ORDER BY year DESC, month DESC, id DESC
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query)
             return self._fetch_all(cursor)
 
@@ -110,7 +110,7 @@ class MovementRepository:
             ORDER BY m.year DESC, m.month DESC, m.id DESC
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query)
             return self._fetch_all(cursor)
 
@@ -122,7 +122,7 @@ class MovementRepository:
             ORDER BY m.year DESC, m.month DESC, m.id DESC
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query)
             return self._fetch_all(cursor)
 
@@ -134,7 +134,7 @@ class MovementRepository:
         ORDER BY m.year DESC, m.month DESC, m.id DESC
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query, (student_id,))
             return self._fetch_all(cursor)
 
@@ -145,7 +145,7 @@ class MovementRepository:
             WHERE id = ?
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query, (movement_id,))
             row = cursor.fetchone()
 
@@ -160,9 +160,9 @@ class MovementRepository:
             AND m.student_id = ?
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query, (student_id,))
-            return cursor.fetchone()["amount"]
+            return cursor.fetchone()["amount"] or 0
 
     def get_student_movements(self, student_id: int) -> list[Movement]:
         query = f"""
@@ -172,7 +172,7 @@ class MovementRepository:
             ORDER BY year DESC, month DESC, id DESC
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query, (student_id,))
             return self._fetch_all(cursor)
 
@@ -185,7 +185,7 @@ class MovementRepository:
             LIMIT 1
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query, (student_id,))
             row = cursor.fetchone()
 
@@ -197,10 +197,11 @@ class MovementRepository:
             SELECT month, year 
             FROM movements 
             WHERE type = 'FEE' 
-            ORDER BY year DESC, month DESC, id DESC LIMIT 1
+            ORDER BY year DESC, month DESC, id DESC
+            LIMIT 1
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query)
             row = cursor.fetchone()
 
@@ -220,10 +221,11 @@ class MovementRepository:
         query = """
             SELECT 1 
             FROM movements 
-            WHERE type='FEE' AND month=? AND year=? LIMIT 1
+            WHERE type='FEE' AND month=? AND year=?
+            LIMIT 1
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             return conn.execute(query, (month, year)).fetchone() is None
 
     def fees_not_applied_for_period_for_student(
@@ -240,9 +242,15 @@ class MovementRepository:
         Returns:
             bool: True if fee not apllied, else False
         """
-        query = "SELECT 1 FROM movements WHERE type = 'FEE' AND student_id = ? AND month = ? AND year = ? LIMIT 1"
+        query = """
+            SELECT 1
+            FROM movements
+            WHERE type = 'FEE' AND student_id = ?
+            AND month = ? AND year = ? 
+            LIMIT 1
+        """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query, (student_id, month, year))
             return cursor.fetchone() is None
 
@@ -254,7 +262,7 @@ class MovementRepository:
             AND m.student_id=? AND m.month=? AND m.year=?
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query, (student_id, month, year))
             return cursor.fetchone()["amount"] or 0
 
@@ -269,7 +277,7 @@ class MovementRepository:
             bool: True if movement was reversed, else False.
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             existing_reversal = conn.execute(
                 "SELECT id FROM movements WHERE reference_id=? AND type='REVERSED'",
                 (movement_id,),
@@ -286,9 +294,9 @@ class MovementRepository:
             GROUP BY year, month
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query, (student_id,))
-            return [(row["month"], row["year"], row["total"]) for row in cursor]
+            return [(row["month"], row["year"], row["total"] or 0) for row in cursor]
 
     def total_collected_this_month(self, month: int, year: int) -> int:
         query = f"""
@@ -298,9 +306,9 @@ class MovementRepository:
             AND m.month=? AND m.year=?
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query, (month, year))
-            return cursor.fetchone()["amount"]
+            return cursor.fetchone()["amount"] or 0
 
     def get_balances_for_students(self) -> dict[int, int]:
         """Gets balances for all students in format {student_id, balance}
@@ -314,9 +322,9 @@ class MovementRepository:
             GROUP BY m.student_id;
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query)
-            return {row["id"]: row["balance"] for row in cursor.fetchall()}
+            return {row["id"]: row["balance"] or 0 for row in cursor.fetchall()}
 
     def get_income_by_month(self) -> dict[tuple[int, int], int]:
         query = """
@@ -326,8 +334,9 @@ class MovementRepository:
             GROUP BY year, month
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query)
             return {
-                (row["month"], row["year"]): row["amount"] for row in cursor.fetchall()
+                (row["month"], row["year"]): row["amount"] or 0
+                for row in cursor.fetchall()
             }

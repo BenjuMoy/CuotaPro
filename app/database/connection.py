@@ -21,6 +21,7 @@ class DatabaseManager:
         return conn
 
     def _apply_pragmas(self, conn: Connection):
+        """Apply pragmas to connection."""
         conn.execute("PRAGMA journal_mode = WAL;")
         conn.execute("PRAGMA synchronous = NORMAL;")
         conn.execute("PRAGMA foreign_keys = ON;")
@@ -28,6 +29,7 @@ class DatabaseManager:
 
     @contextmanager
     def transaction(self) -> Generator:
+        """Opens connection to write in db file."""
         conn = self.connect()
         try:
             yield conn
@@ -35,5 +37,14 @@ class DatabaseManager:
         except Exception:
             conn.rollback()
             raise
+        finally:
+            conn.close()
+
+    @contextmanager
+    def read(self) -> Generator:
+        """Opens connection to read db file."""
+        conn = self.connect()
+        try:
+            yield conn
         finally:
             conn.close()

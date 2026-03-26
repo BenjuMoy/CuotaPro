@@ -164,7 +164,8 @@ class StudentRepository:
         """Retrieve a specific student by ID efficiently."""
         query = f"""
             {BASE_SELECT}
-            WHERE id=?
+            WHERE id=? 
+            LIMIT 1
         """
 
         with self.db.transaction() as conn:
