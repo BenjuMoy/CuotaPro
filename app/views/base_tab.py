@@ -1,19 +1,16 @@
 import logging
+from dataclasses import dataclass
 from sqlite3 import DatabaseError
-from typing import Callable, get_type_hints
+from typing import Any, Callable, get_type_hints
 
 import matplotlib.pyplot as plt
 import ttkbootstrap as ttk
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from pydantic import ValidationError
+from pydantic import BaseModel
 from ttkbootstrap.dialogs import Messagebox
 
-from app.models.models import (
-    BaseModel,
-    FieldConfig,
-)
-from app.services.application_service import (
+from app.models.exceptions import (
     AppValidationError,
     ConflictError,
     NotFound,
@@ -33,6 +30,19 @@ from app.views.widgets.kpi_card import KpiCard
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class FieldConfig:
+    name: str
+    label: str
+    type: type[ttk.Entry | ttk.Combobox]
+    converter: type[str | int]
+    required: bool = False
+    focus: bool = False
+    numeric: bool = False
+    values: list[str] | None = None
+    readonly: bool = False
+
+
 class BaseStudentFormTab:
     """
     A base class for creating tabs that contain a form for a Pydantic model.
@@ -46,7 +56,7 @@ class BaseStudentFormTab:
         self,
         parent: ttk.Notebook,
         form_title: str,
-        layout: list[dict[str, str | FieldConfig]],
+        layout: list[dict[str, Any]],
         model_class: type[BaseModel],
     ):
         """
@@ -61,16 +71,16 @@ class BaseStudentFormTab:
         self.frame = ttk.Frame(parent)
 
         self.model_class = model_class
-
         self.layout = layout
+
         self.form_fields: dict[str, ttk.Entry | ttk.Combobox] = {}
-        self.field_meta = {}
+        self.field_meta: dict[str, FieldConfig] = {}
+
+        self.readonly_fields: set[str] = set()
 
         self.form_frame = ttk.Labelframe(self.frame, text=form_title)
         self.form_frame.columnconfigure(1, weight=1)
         self.form_frame.configure(style="Bold.TLabelframe")
-
-        self.readonly_fields: set[str] = set()
 
         self.main_frame = ttk.Frame(self.frame)
 
@@ -80,9 +90,9 @@ class BaseStudentFormTab:
 
     def _create_fields_from_layout(self, column_index: int):
         """Create form fields from a declarative layout."""
-        for section_idx, section_config in enumerate(self.layout):
+        for section_idx, section in enumerate(self.layout):
             section_frame = ttk.Labelframe(
-                self.form_frame, text=section_config["section"]
+                self.form_frame, text=section["section"], padding=10
             )
             section_frame.grid(
                 row=section_idx,
@@ -92,97 +102,89 @@ class BaseStudentFormTab:
                 pady=PAD_Y,
             )
             section_frame.configure(style="Bold.TLabelframe")
-            section_frame.configure(padding=15)
             section_frame.columnconfigure(1, weight=1)
 
-            for field_idx, field_config in enumerate(section_config["fields"]):
-                if field_config.type == ttk.Entry:
-                    self.create_entry_field(
-                        section_frame,
-                        field_config.name,
-                        field_config.label,
-                        field_idx,
-                        required=field_config.required,
-                        focus=field_config.focus,
-                    )
-                    self.field_meta[field_config.name] = field_config
-                else:
-                    self.create_combobox_field(
-                        section_frame,
-                        field_config.name,
-                        field_config.label,
-                        field_config.values,
-                        field_idx,
-                        required=field_config.required,
-                    )
-                    self.field_meta[field_config.name] = field_config
-                if field_config.readonly:
-                    self.readonly_fields.add(field_config.name)
+            for idx, field in enumerate(section["fields"]):
+                widget = self._create_field(section_frame, field, idx)
 
-    def create_entry_field(self, parent, attr_name, label, row, **kwargs):
-        entry = create_label_entry(
-            parent=parent,
-            text=label,
-            row=row,
-            column=0,
-            **kwargs,
-        )
-        self.form_fields[attr_name] = entry
-        return entry
+                self.form_fields[field.name] = widget
+                self.field_meta[field.name] = field
 
-    def create_combobox_field(
-        self, parent, attr_name: str, label: str, values: list[str], idx, **kwargs
-    ):
-        cb = create_label_combobox(
-            parent=parent,
-            text=label,
-            row=idx,
-            column=0,
-            values=values,
-            **kwargs,
-        )
-        self.form_fields[attr_name] = cb
+                if field.readonly:
+                    self.readonly_fields.add(field.name)
+
+    def _create_field(self, parent, field: FieldConfig, row: int):
+        if field.type == ttk.Entry:
+            return create_label_entry(
+                parent,
+                field.label,
+                row,
+                0,
+                focus=field.focus,
+                required=field.required,
+            )
+        else:
+            return create_label_combobox(
+                parent,
+                field.label,
+                row,
+                0,
+                values=field.values or [],
+                required=field.required,
+            )
 
     # --------------------------------------------------
     # VALIDATION
     # --------------------------------------------------
 
-    def build_model(self):
-        data = self.get_form_data()
-
-        try:
-            return self.model_class(**data)
-
-        except ValidationError as e:
-            raise AppValidationError(str(e))
-
     def bind_required_validation(self):
-        for section in self.layout:
-            for field in section["fields"]:
-                if field.required:
-                    widget = self.form_fields.get(field.name)
-                    if widget:
-                        widget.bind("<FocusOut>", self._validate_widget)
-                        if field.numeric:
-                            vcmd = (
-                                self.frame.register(lambda P: P.isdigit() or P == ""),
-                                "%P",
-                            )
-                            widget.config(validate="key", validatecommand=vcmd)
+        for name, widget in self.form_fields.items():
+            meta = self.field_meta.get(name)
+            if not meta:
+                continue
+
+            if meta.required:
+                widget.bind("<FocusOut>", self._validate_widget)
+
+            if meta.numeric:
+                vcmd = (
+                    self.frame.register(lambda P: P.isdigit() or P == ""),
+                    "%P",
+                )
+                widget.config(validate="key", validatecommand=vcmd)
 
     def _validate_widget(self, event):
         widget = event.widget
-        if not widget.get().strip():
+        value = widget.get().strip()
+
+        # Find field name
+        name = next((k for k, v in self.form_fields.items() if v == widget), None)
+        meta = self.field_meta.get(name)
+
+        if not meta:
+            return
+
+        if meta.required and not value:
             mark_invalid(widget)
-        else:
-            clear_style([widget])
+            return
+
+        if meta.numeric and value and not value.isdigit():
+            mark_invalid(widget)
+            return
+
+        clear_style([widget])
 
     def validate_form(self):
         error_messages = []
 
         for name, widget in self.form_fields.items():
-            meta = self.field_meta.get(name, {})
-            if meta.required and not widget.get():
+            meta = self.field_meta.get(name)
+            if not meta:
+                continue
+
+            value = widget.get().strip()
+
+            if meta.required and not value:
                 mark_invalid(widget)
                 widget.focus_set()
                 error_messages.append(f"Campo '{meta.label}' es obligatorio")
@@ -199,49 +201,23 @@ class BaseStudentFormTab:
         data = {}
 
         for name, widget in self.form_fields.items():
+            meta = self.field_meta.get(name)
+            if not meta:
+                continue
+
             value = widget.get().strip()
-            meta = self.field_meta.get(name, {})
 
-            converter = meta.converter
-
-            if converter and value != "":
+            if meta.converter and value:
                 try:
-                    value = converter(value)
+                    value = meta.converter(value)
                 except Exception:
-                    raise AppValidationError(f"Campo '{name}' tiene formato inválido")
+                    raise AppValidationError(
+                        f"Campo '{meta.label}' tiene formato inválido"
+                    )
 
             data[name] = value
 
         return data
-
-    def set_readonly_fields(self):
-        enable_form_fields([self.form_fields[f] for f in self.readonly_fields], False)
-
-    # --------------------------------------------------
-    # ACTION WRAPPER
-    # --------------------------------------------------
-
-    def _run_action(self, action_fn, success_msg):
-        try:
-            result = action_fn()
-            show_toast(self.frame, success_msg, "success")
-            return result
-        except ConflictError as e:
-            show_toast(self.frame, str(e), "error")
-        except NotFound as e:
-            show_toast(self.frame, f"Estudiante no encontrado: {e}", "error")
-            self.form_fields["last_name"].focus_set()
-        except AppValidationError as e:
-            show_toast(self.frame, str(e), "error")
-        except DatabaseError as e:
-            show_toast(self.frame, f"Error de base de datos: {e}", "error")
-        except ValueError as e:
-            show_toast(self.frame, f"ID inválido: {e}", "error")
-        except Exception as e:
-            logger.exception("Unexpected error in form action")
-            Messagebox.show_error(
-                f"Error inesperado.  Contacte al administrador: {e}", "Error"
-            )
 
     # --------------------------------------------------
     # STATE MANAGEMENT
@@ -249,30 +225,66 @@ class BaseStudentFormTab:
 
     def set_form_state(self, enabled: bool = True):
         """Enables or disables all form entry widgets."""
-        entries = list(self.form_fields.values())
-        enable_form_fields(entries, enabled)
+        enable_form_fields(list(self.form_fields.values()), enabled)
+
+    def set_readonly_fields(self):
+        enable_form_fields([self.form_fields[f] for f in self.readonly_fields], False)
+
+    def clear_form(self):
+        """Clears all text from form entry widgets."""
+        clear_inputs(list(self.form_fields.values()))
+
+    def clear_form_styles(self):
+        """Removes any success/danger styling from form entry widgets."""
+        clear_style(list(self.form_fields.values()))
+
+    def reset_comboboxes(self):
+        for widget in self.form_fields.values():
+            if isinstance(widget, ttk.Combobox):
+                widget.set("")
 
     def populate_form(self, data_object: BaseModel):
         """Populates the form fields with data from a Pydantic model instance."""
         self.clear_form()
         for attr_name, entry_widget in self.form_fields.items():
             value = getattr(data_object, attr_name, "")
-            if value is None:
-                value = ""
+            value = "" if value is None else value
+
             if hasattr(entry_widget, "set"):
                 entry_widget.set(value)
             else:
-                entry_widget.insert(0, "" if value is None else str(value))
+                entry_widget.insert(0, str(value))
 
-    def clear_form(self):
-        """Clears all text from form entry widgets."""
-        entries = list(self.form_fields.values())
-        clear_inputs(entries)
+    # --------------------------------------------------
+    # ACTION WRAPPER
+    # --------------------------------------------------
 
-    def clear_form_styles(self):
-        """Removes any success/danger styling from form entry widgets."""
-        entries = list(self.form_fields.values())
-        clear_style(entries)
+    def run_action(self, action_fn, success_msg):
+        try:
+            result = action_fn()
+            show_toast(self.frame, success_msg, "success")
+            return result
+
+        except ConflictError as e:
+            show_toast(self.frame, str(e), "error")
+
+        except NotFound as e:
+            show_toast(self.frame, f"Estudiante no encontrado: {e}", "error")
+
+        except AppValidationError as e:
+            show_toast(self.frame, str(e), "error")
+
+        except DatabaseError as e:
+            show_toast(self.frame, f"Error de base de datos: {e}", "error")
+
+        except ValueError as e:
+            show_toast(self.frame, f"ID inválido: {e}", "error")
+
+        except Exception as e:
+            logger.exception("Unexpected error in form action")
+            Messagebox.show_error(
+                f"Error inesperado.  Contacte al administrador: {e}", "Error"
+            )
 
 
 class BaseMetricsTab:

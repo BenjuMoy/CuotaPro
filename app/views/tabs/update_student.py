@@ -4,7 +4,7 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.widgets.tableview import Tableview
 
 from app.models.exceptions import NotFound
-from app.models.models import FieldConfig, RefreshType, Student
+from app.models.models import RefreshType, Student
 from app.services.application_service import ApplicationService
 from app.utils.constantes import (
     BOOKS,
@@ -16,7 +16,7 @@ from app.utils.constantes import (
     TEACHERS,
     YEAR,
 )
-from app.views.base_tab import BaseStudentFormTab
+from app.views.base_tab import BaseStudentFormTab, FieldConfig
 from app.views.helpers_gui import create_label, enable_form_fields
 from app.views.toast import show_toast
 
@@ -288,7 +288,7 @@ class UpdateStudentTab(BaseStudentFormTab):
 
         self.validate_form()
 
-        result = self._run_action(
+        result = self.run_action(
             lambda: self.main_service.update_student(student_id, data),
             "Se actualizó el estudiante",
         )
@@ -311,7 +311,7 @@ class UpdateStudentTab(BaseStudentFormTab):
 
         student_id = int(self.form_fields["id"].get())
         try:
-            _ = self._run_action(
+            _ = self.run_action(
                 lambda: self.main_service.switch_student_state(student_id),
                 f"Se cambió el estado del estudiante {self.form_fields['first_name'].get()} {self.form_fields['last_name'].get()}",
             )
@@ -325,6 +325,7 @@ class UpdateStudentTab(BaseStudentFormTab):
     def _reset_form_state(self):
         """Reset form after successful operation."""
         self.clear_form()
+        self.reset_comboboxes()
         self.set_form_state(False)
         enable_form_fields([self.update_button, self.deactivate_button], False)
 

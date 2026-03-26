@@ -1,10 +1,10 @@
 import ttkbootstrap as ttk
 
 from app.models.exceptions import AppValidationError
-from app.models.models import FieldConfig, Student
+from app.models.models import Student
 from app.services.application_service import ApplicationService
 from app.utils.constantes import BOOKS, COURSES, ICON_ADD, PAD_X, PAD_Y, TEACHERS, YEAR
-from app.views.base_tab import BaseStudentFormTab
+from app.views.base_tab import BaseStudentFormTab, FieldConfig
 from app.views.toast import show_toast
 
 FORM_LAYOUT = [
@@ -152,7 +152,7 @@ class AddStudentTab(BaseStudentFormTab):
 
             self.add_button.config(text="Guardando...", state="disabled")
 
-            result = self._run_action(
+            result = self.run_action(
                 lambda: self.main_service.add_student(data),
                 f"Se agrego al estudiante {data['first_name']} {data['last_name']}",
             )
@@ -160,10 +160,7 @@ class AddStudentTab(BaseStudentFormTab):
             if result:
                 self.clear_form()
                 self.clear_form_styles()
-                self.form_fields["teacher"].set("")
-                self.form_fields["book"].set("")
-                self.form_fields["course"].set("")
-                self.form_fields["year"].set("")
+                self.reset_comboboxes()
                 next(iter(self.form_fields.values())).focus_set()
 
         except AppValidationError as e:

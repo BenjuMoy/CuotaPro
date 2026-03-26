@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 
-import ttkbootstrap as ttk
 from pydantic import (
     BaseModel,
     Field,
@@ -121,19 +120,6 @@ class StudentOverview(BaseModel):
     balance: int
     last_payment: Movement | None
     movements: list[Movement]
-
-
-@dataclass
-class FieldConfig:
-    name: str
-    label: str
-    type: type[ttk.Entry | ttk.Combobox]
-    converter: type[str | int]
-    required: bool = False
-    focus: bool = False
-    numeric: bool = False
-    values: list[str] | None = None
-    readonly: bool = False
 
 
 class RefreshType(str, Enum):
