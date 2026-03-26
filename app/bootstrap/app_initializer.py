@@ -61,15 +61,17 @@ class AppInitializer:
                 migrate(conn)
 
     def _build_services(self) -> ServiceContainer:
-        repos = Repositories(student=StudentRepository(), movement=MovementRepository())
-
-        student_service = StudentService(repos.student, self.db)
-
-        accounting_service = AccountingService(
-            student_repo=repos.student, movement_repo=repos.movement, db=self.db
+        repos = Repositories(
+            student=StudentRepository(self.db), movement=MovementRepository(self.db)
         )
 
-        reporting_service = ReportingService(repos.student, repos.movement, self.db)
+        student_service = StudentService(repos.student)
+
+        accounting_service = AccountingService(
+            student_repo=repos.student, movement_repo=repos.movement
+        )
+
+        reporting_service = ReportingService(repos.student, repos.movement)
         maintenance_service = MaintenanceService(self.db)
 
         return ServiceContainer(
@@ -80,4 +82,4 @@ class AppInitializer:
         )
 
     def _build_repositories(self):
-        return StudentRepository(), MovementRepository()
+        return StudentRepository(self.db), MovementRepository(self.db)
