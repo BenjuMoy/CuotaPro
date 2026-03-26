@@ -38,7 +38,7 @@ class EventBus:
         if callback in self._subscribers[event]:
             self._subscribers[event].remove(callback)
 
-    def _notify(self, event: RefreshType, **data) -> None:
+    def notify(self, event: RefreshType, **data) -> None:
         """Notifies all subscribed components that data has changed."""
         for callback in list(self._subscribers[event]):
             try:
@@ -85,7 +85,7 @@ class ApplicationService:
                 saved_student.monthly_fee,
             )
 
-            self.event._notify(RefreshType.STUDENTS)
+            self.event.notify(RefreshType.STUDENTS)
             return saved_student
 
         except ValidationError as e:
@@ -107,7 +107,7 @@ class ApplicationService:
                 updated_student.first_name,
                 updated_student.monthly_fee,
             )
-            self.event._notify(RefreshType.STUDENTS)
+            self.event.notify(RefreshType.STUDENTS)
             return updated_student
 
         except ValidationError as e:
@@ -123,7 +123,7 @@ class ApplicationService:
             updated_student = self.services.student.switch_state(student_id)
 
             logger.info("Student with id=%s switched state.", updated_student.id)
-            self.event._notify(RefreshType.STUDENTS)
+            self.event.notify(RefreshType.STUDENTS)
             return updated_student
 
         except NotFound:
@@ -193,7 +193,7 @@ class ApplicationService:
             balance=new_balance,
             movements=self.get_effective_movements_by_id(student_id),
         )
-        self.event._notify(RefreshType.MOVEMENTS)
+        self.event.notify(RefreshType.MOVEMENTS)
         return result
 
     # Payment getters
@@ -250,7 +250,7 @@ class ApplicationService:
             year,
             applied_count,
         )
-        self.event._notify(RefreshType.MOVEMENTS)
+        self.event.notify(RefreshType.MOVEMENTS)
         return applied_count
 
     def increase_fee_amount(self, old_monthly_fee: int, new_monthly_fee: int) -> int:
@@ -260,7 +260,7 @@ class ApplicationService:
         )
 
         logger.info("Fees increased for %s students", affected_students)
-        self.event._notify(RefreshType.STUDENTS)
+        self.event.notify(RefreshType.STUDENTS)
         return affected_students
 
     def reverse_movement(self, pago_id: int) -> None:
@@ -274,7 +274,7 @@ class ApplicationService:
                 movement.month,
                 movement.year,
             )
-            self.event._notify(RefreshType.MOVEMENTS)
+            self.event.notify(RefreshType.MOVEMENTS)
 
         except BusinessRuleError:
             raise
