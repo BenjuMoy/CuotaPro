@@ -292,8 +292,13 @@ class PaymentTab:
             return
 
         month_year = self.month_combobox.get()
-        date = month_year.split()
-        month_name, year = date[0], int(date[1])
+
+        try:
+            month_name, year_str = month_year.split()
+            year = int(year_str)
+        except Exception:
+            show_toast(self.frame, "Fecha inválida", "error")
+            return
 
         amount_text = self.amount_entry.get().strip()
         if not amount_text or amount_text == "0":
