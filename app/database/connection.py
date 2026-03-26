@@ -1,7 +1,7 @@
 import sqlite3
 from contextlib import contextmanager
 from sqlite3 import Connection
-from typing import Generator
+from typing import Any, Generator
 
 from app.database.config import DatabaseConfig
 
@@ -28,7 +28,7 @@ class DatabaseManager:
         conn.execute("PRAGMA wal_autocheckpoint = 1000;")
 
     @contextmanager
-    def transaction(self) -> Generator:
+    def transaction(self) -> Generator[Connection, Any, None]:
         """Opens connection to write in db file."""
         conn = self.connect()
         try:
@@ -41,7 +41,7 @@ class DatabaseManager:
             conn.close()
 
     @contextmanager
-    def read(self) -> Generator:
+    def read(self) -> Generator[Connection, Any, None]:
         """Opens connection to read db file."""
         conn = self.connect()
         try:
