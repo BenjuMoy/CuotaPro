@@ -6,9 +6,10 @@ from app.utils.constantes import LOGS_DIR, LOGS_PATH
 
 def setup_logging():
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
-    logger = logging.getLogger()
+    logger = logging.getLogger("app")
 
     if logger.handlers:
+        logger.debug("Logging already configured")
         return
 
     logger.setLevel(logging.INFO)
