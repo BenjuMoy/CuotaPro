@@ -9,6 +9,7 @@ from app.bootstrap.tk_factory import TkAppFactory
 from app.database.config import DatabaseConfig
 from app.services.application_service import ApplicationService
 from app.views.main_window import MainWindow
+from main import AppConfig
 
 logger = logging.getLogger(__name__)
 
@@ -20,23 +21,19 @@ class AppContext:
     main_window: MainWindow
 
 
-@dataclass(frozen=True)
-class AppConfig:
-    window_title: str = "Cuota Pro"
-    theme: str = "yeti"
-
-
 class Application:
-    def __init__(self):
-        self._config = AppConfig()
-        self._db_config = DatabaseConfig()
+    def __init__(self, config: AppConfig, db_config: DatabaseConfig):
+        self.config = config
+        self.db_config = db_config
 
     def bootstrap(self):
         logger.info("Bootstrapping application")
 
-        root = TkAppFactory.create_root(self._config.theme, self._config.window_title)
+        root = TkAppFactory.create_root(self.config.theme, self.config.window_title)
         GlobalErrorHandler(root).install()
-        app_service = ApplicationService(AppInitializer(self._db_config).initialize())
+        initializer = AppInitializer(self.db_config)
+        container = initializer.initialize()
+        app_service = ApplicationService(container)
         main_window = MainWindow(root, app_service)
 
         logger.info("Application bootstrapped successfully")
