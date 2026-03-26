@@ -31,7 +31,7 @@ class MovementRepository:
 
     @staticmethod
     def _row_to_movement(row: sqlite3.Row) -> Movement:
-        return Movement.model_validate(dict(row))
+        return Movement.model_construct(**dict(row))
 
     def _fetch_all(self, cursor: sqlite3.Cursor) -> list[Movement]:
         return [self._row_to_movement(row) for row in cursor.fetchall()]

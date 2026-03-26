@@ -7,7 +7,6 @@ from app.models.models import Movement, RefreshType
 from app.services.application_service import ApplicationService
 from app.utils.constantes import (
     CAMPO_ID,
-    FECHA_HOY_AHORA_FMT,
     FONT_BODY,
     NUM_TO_MONTH,
     PAD_X,
@@ -89,7 +88,7 @@ class MovementTablePanel:
             currency_format(mov.amount),
             NUM_TO_MONTH[mov.month],
             mov.year,
-            mov.created_at.strftime(FECHA_HOY_AHORA_FMT),
+            mov.created_at,
         )
 
     # Actions
