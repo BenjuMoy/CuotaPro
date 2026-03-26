@@ -1,6 +1,6 @@
 import sqlite3
-from sqlite3.dbapi2 import Connection
 
+from app.database.connection import DatabaseManager
 from app.models.exceptions import NotFound
 from app.models.models import Student
 
@@ -15,6 +15,9 @@ ACTIVE_FILTER = "active = 1"
 
 class StudentRepository:
     """Data Access Object for student operations."""
+
+    def __init__(self, db: DatabaseManager):
+        self.db = db
 
     # --- Helper Methods --- #
 
@@ -45,7 +48,7 @@ class StudentRepository:
 
     # --- CRUD Operations --- #
 
-    def add(self, student: Student, conn: Connection) -> Student:
+    def add(self, student: Student) -> Student:
         """Add a new student to the database."""
         query = """
         INSERT INTO students (
@@ -65,14 +68,15 @@ class StudentRepository:
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
-        cursor = conn.execute(query, (self._student_to_tuple(student)))
+        with self.db.transaction() as conn:
+            cursor = conn.execute(query, (self._student_to_tuple(student)))
 
-        # Get the new ID
-        student_id = cursor.lastrowid
+            # Get the new ID
+            student_id = cursor.lastrowid
 
         return student.model_copy(update={"id": student_id})
 
-    def update(self, student: Student, conn: Connection) -> Student:
+    def update(self, student: Student) -> Student:
         """Update an existing student in the database."""
         if student.id is None:
             raise ValueError("Cannot update without ID")
@@ -82,26 +86,25 @@ class StudentRepository:
                 WHERE id=?
             """
 
-        cursor = conn.execute(query, (*self._student_to_tuple(student), student.id))
+        with self.db.transaction() as conn:
+            cursor = conn.execute(query, (*self._student_to_tuple(student), student.id))
 
-        if cursor.rowcount == 0:
-            raise NotFound(f"Student with id {student.id} not found")
+            if cursor.rowcount == 0:
+                raise NotFound(f"Student with id {student.id} not found")
 
         return student
 
-    def update_active_state(
-        self, student_id: int, new_state: bool, conn: Connection
-    ) -> None:
+    def update_active_state(self, student_id: int, new_state: bool) -> None:
         """Updates the students state by id"""
         query = "UPDATE students SET active=? WHERE id=?"
-        cursor = conn.execute(query, (int(new_state), student_id))
 
-        if cursor.rowcount == 0:
-            raise NotFound(f"Student with id {student_id} could not be activated")
+        with self.db.transaction() as conn:
+            cursor = conn.execute(query, (int(new_state), student_id))
 
-    def increase_fees_for_amount(
-        self, old_fee: int, new_fee: int, conn: Connection
-    ) -> int:
+            if cursor.rowcount == 0:
+                raise NotFound(f"Student with id {student_id} could not be activated")
+
+    def increase_fees_for_amount(self, old_fee: int, new_fee: int) -> int:
         """Increases the fee for all students whose current fee matches `old_fee` in a single query."""
         query = f"""
             UPDATE students
@@ -109,12 +112,12 @@ class StudentRepository:
             WHERE monthly_fee = ? AND {ACTIVE_FILTER}
         """
 
-        cursor = conn.execute(query, (new_fee, old_fee))
-        students_updated = cursor.rowcount
-        return students_updated
+        with self.db.transaction() as conn:
+            cursor = conn.execute(query, (new_fee, old_fee))
+            return cursor.rowcount
 
     # --- Search methods --- #
-    def search_by_name(self, search_term: str, conn: Connection) -> list[Student]:
+    def search_by_name(self, search_term: str) -> list[Student]:
         """Search students by name or partial name."""
         search_pattern = f"%{search_term}%"
         query = f"""
@@ -125,47 +128,55 @@ class StudentRepository:
                OR first_name || ' ' || last_name LIKE ? COLLATE NOCASE
         """
 
-        cursor = conn.execute(
-            query, (search_pattern, search_pattern, search_pattern, search_pattern)
-        )
+        with self.db.transaction() as conn:
+            cursor = conn.execute(
+                query, (search_pattern, search_pattern, search_pattern, search_pattern)
+            )
 
-        return self._fetch_all(cursor)
+            return self._fetch_all(cursor)
 
-    def search_by_teacher(self, teacher_name: str, conn: Connection) -> list[Student]:
+    def search_by_teacher(self, teacher_name: str) -> list[Student]:
         """Search students by teacher name."""
         search_pattern = f"%{teacher_name}%"
         query = f"""
             {BASE_SELECT}
             WHERE teacher LIKE ? COLLATE NOCASE
             {ORDER_BY_STUDENT}"""
-        cursor = conn.execute(query, (search_pattern,))
-        return self._fetch_all(cursor)
+
+        with self.db.transaction() as conn:
+            cursor = conn.execute(query, (search_pattern,))
+            return self._fetch_all(cursor)
 
     # --- Getters --- #
 
-    def get_all(self, conn: Connection) -> list[Student]:
+    def get_all(self) -> list[Student]:
         """Retrieve all students from the database."""
         query = f"""
             {BASE_SELECT}
             {ORDER_BY_STUDENT}
         """
-        cursor = conn.execute(query)
-        return self._fetch_all(cursor)
 
-    def get_by_id(self, student_id: int, conn: Connection) -> Student:
+        with self.db.transaction() as conn:
+            cursor = conn.execute(query)
+            return self._fetch_all(cursor)
+
+    def get_by_id(self, student_id: int) -> Student:
         """Retrieve a specific student by ID efficiently."""
         query = f"""
             {BASE_SELECT}
             WHERE id=?
         """
-        cursor = conn.execute(query, (student_id,))
-        row = cursor.fetchone()
+
+        with self.db.transaction() as conn:
+            cursor = conn.execute(query, (student_id,))
+            row = cursor.fetchone()
+
         if not row:
             raise NotFound(f"Student with id {student_id} not found")
 
         return self._row_to_student(row)
 
-    def get_debtors(self, conn: Connection) -> list[Student]:
+    def get_debtors(self) -> list[Student]:
         """Gets all students with balance < 0"""
         query = """
         SELECT s.*
@@ -177,27 +188,30 @@ class StudentRepository:
         ) b ON b.student_id = s.id
         WHERE b.balance < 0"""
 
-        cursor = conn.execute(query)
-        return self._fetch_all(cursor)
+        with self.db.transaction() as conn:
+            cursor = conn.execute(query)
+            return self._fetch_all(cursor)
 
-    def get_active_student_count(self, conn: Connection) -> int:
+    def get_active_student_count(self) -> int:
         """Gets the amount of active students."""
         query = f"SELECT COUNT(*) AS count FROM students WHERE {ACTIVE_FILTER}"
-        cursor = conn.execute(query)
-        return cursor.fetchone()["count"]
 
-    def get_all_active_students(self, conn: Connection) -> list[Student]:
+        with self.db.transaction() as conn:
+            cursor = conn.execute(query)
+            return cursor.fetchone()["count"]
+
+    def get_all_active_students(self) -> list[Student]:
         query = f"""
             {BASE_SELECT}
             WHERE {ACTIVE_FILTER}
             {ORDER_BY_STUDENT}
         """
-        cursor = conn.execute(query)
-        return self._fetch_all(cursor)
 
-    def get_students_without_fee(
-        self, month: int, year: int, conn: Connection
-    ) -> list[Student]:
+        with self.db.transaction() as conn:
+            cursor = conn.execute(query)
+            return self._fetch_all(cursor)
+
+    def get_students_without_fee(self, month: int, year: int) -> list[Student]:
         query = f"""
         SELECT s.*
             FROM students s
@@ -211,11 +225,12 @@ class StudentRepository:
         AND m.year = ?
         )
         """
-        cursor = conn.execute(query, (month, year))
 
-        return self._fetch_all(cursor)
+        with self.db.transaction() as conn:
+            cursor = conn.execute(query, (month, year))
+            return self._fetch_all(cursor)
 
-    def count_students_by_monthly_fee(self, monthly_fee: int, conn: Connection) -> int:
+    def count_students_by_monthly_fee(self, monthly_fee: int) -> int:
         """Returns the sum of students with that monthly_fee"""
         query = f"""
             SELECT COUNT(*) AS count
@@ -223,14 +238,11 @@ class StudentRepository:
             WHERE monthly_fee = ? AND {ACTIVE_FILTER}
         """
 
-        cursor = conn.execute(
-            query,
-            (monthly_fee,),
-        )
+        with self.db.transaction() as conn:
+            cursor = conn.execute(query, (monthly_fee,))
+            return cursor.fetchone()["count"]
 
-        return cursor.fetchone()["count"]
-
-    def get_fees_list(self, conn: Connection) -> list[tuple[int, int]]:
+    def get_fees_list(self) -> list[tuple[int, int]]:
         """Return the count of students by monthly_fee.
 
         Args:
@@ -242,5 +254,7 @@ class StudentRepository:
         query = (
             "SELECT monthly_fee, COUNT(*) AS count FROM students GROUP BY monthly_fee;"
         )
-        cursor = conn.execute(query)
-        return [(row[0], row["count"]) for row in cursor.fetchall()]
+
+        with self.db.transaction() as conn:
+            cursor = conn.execute(query)
+            return [(row[0], row["count"]) for row in cursor.fetchall()]

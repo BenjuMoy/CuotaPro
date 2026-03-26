@@ -1,7 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
 
-from app.database.connection import DatabaseManager
 from app.models.models import DashboardMetrics, Student
 from app.models.reportes import SalaryReport
 from app.repositories.movement_repository import MovementRepository
@@ -13,11 +12,9 @@ class ReportingService:
         self,
         student_repo: StudentRepository,
         movement_repo: MovementRepository,
-        db: DatabaseManager,
     ):
         self.students = student_repo
         self.movements = movement_repo
-        self.db = db
 
     # Reports
     def get_salary(self, professor_name: str):
@@ -35,22 +32,17 @@ class ReportingService:
         Raises:
             ValueError: If professor is not found or has no students.
         """
-        with self.db.transaction() as conn:
-            student_list = self.students.get_all_active_students(conn)
-            report = SalaryReport(student_list)
-            return report.generar_salario_teacher(professor_name)
+        student_list = self.students.get_all_active_students()
+        report = SalaryReport(student_list)
+        return report.generar_salario_teacher(professor_name)
 
     def get_kpi_metrics(self) -> DashboardMetrics:
         now = datetime.now()
 
-        with self.db.transaction() as conn:
-            students = self.students.get_all_active_students(conn)
+        collected = self.movements.total_collected_this_month(now.month, now.year)
 
-            collected = self.movements.total_collected_this_month(
-                now.month, now.year, conn
-            )
-
-            balances = self.movements.get_balances_for_students(conn)
+        students = self.students.get_all_active_students()
+        balances = self.movements.get_balances_for_students()
 
         expected = sum(s.monthly_fee for s in students)
 
@@ -65,10 +57,11 @@ class ReportingService:
 
     def get_graphic_metrics(self):
         income_by_month = defaultdict(int)
-        with self.db.transaction() as conn:
-            students = self.students.get_all_active_students(conn)
-            balances = self.movements.get_balances_for_students(conn)
-            income_by_month = self.movements.get_income_by_month(conn)
+
+        balances = self.movements.get_balances_for_students()
+        income_by_month = self.movements.get_income_by_month()
+
+        students = self.students.get_all_active_students()
 
         # Income dist
         months_sorted = self.get_income_trend(income_by_month)
