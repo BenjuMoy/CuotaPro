@@ -1,6 +1,7 @@
 import sqlite3
 from contextlib import contextmanager
 from sqlite3 import Connection
+from typing import Generator
 
 from app.database.config import DatabaseConfig
 
@@ -8,6 +9,7 @@ from app.database.config import DatabaseConfig
 class DatabaseManager:
     def __init__(self, config: DatabaseConfig):
         self.config = config
+        self.config.ensure_directories_exist()
 
     def connect(self) -> Connection:
         conn = sqlite3.connect(
@@ -15,11 +17,17 @@ class DatabaseManager:
             detect_types=sqlite3.PARSE_DECLTYPES,
         )
         conn.row_factory = sqlite3.Row
-        self.config.apply_pragmas(conn)
+        self._apply_pragmas(conn)
         return conn
 
+    def _apply_pragmas(self, conn: Connection):
+        conn.execute("PRAGMA journal_mode = WAL;")
+        conn.execute("PRAGMA synchronous = NORMAL;")
+        conn.execute("PRAGMA foreign_keys = ON;")
+        conn.execute("PRAGMA wal_autocheckpoint = 1000;")
+
     @contextmanager
-    def transaction(self):
+    def transaction(self) -> Generator:
         conn = self.connect()
         try:
             yield conn

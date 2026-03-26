@@ -1,5 +1,5 @@
+from dataclasses import dataclass
 from pathlib import Path
-from sqlite3 import Connection
 
 from app.utils.constantes import (
     DATABASE_BACKUP_DIR,
@@ -9,21 +9,15 @@ from app.utils.constantes import (
 )
 
 
+@dataclass(frozen=True)
 class DatabaseConfig:
-    def __init__(
-        self,
-        db_path: Path = Path(DATABASE_PATH),
-        db_dir: Path = Path(DATABASE_DIR),
-        backup_dir: Path = Path(DATABASE_BACKUP_DIR),
-        export_dir: Path = Path(DATABASE_EXPORT_DIR),
-    ):
-        self.db_path = db_path
-        self.db_dir = db_dir
-        self.db_backup_dir = backup_dir
-        self.db_export_dir = export_dir
+    db_path: Path = Path(DATABASE_PATH)
+    db_dir: Path = Path(DATABASE_DIR)
+    db_backup_dir: Path = Path(DATABASE_BACKUP_DIR)
+    db_export_dir: Path = Path(DATABASE_EXPORT_DIR)
 
-    def apply_pragmas(self, connection: Connection):
-        connection.execute("PRAGMA journal_mode = WAL;")
-        connection.execute("PRAGMA synchronous = NORMAL;")
-        connection.execute("PRAGMA foreign_keys = ON;")
-        connection.execute("PRAGMA wal_autocheckpoint = 1000;")
+    def ensure_directories_exist(self):
+        """Utility to create necessary directories."""
+        self.db_dir.mkdir(parents=True, exist_ok=True)
+        self.db_backup_dir.mkdir(parents=True, exist_ok=True)
+        self.db_export_dir.mkdir(parents=True, exist_ok=True)
