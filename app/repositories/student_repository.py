@@ -8,6 +8,10 @@ STUDENT_COLUMNS = "id, active, last_name, first_name, phone1, phone2, phone3, te
 
 BASE_SELECT = f"SELECT {STUDENT_COLUMNS} FROM students"
 
+ORDER_BY_STUDENT = "ORDER BY last_name, first_name"
+
+ACTIVE_FILTER = "active = 1"
+
 
 class StudentRepository:
     """Data Access Object for student operations."""
@@ -99,10 +103,10 @@ class StudentRepository:
         self, old_fee: int, new_fee: int, conn: Connection
     ) -> int:
         """Increases the fee for all students whose current fee matches `old_fee` in a single query."""
-        query = """
+        query = f"""
             UPDATE students
             SET monthly_fee = ?
-            WHERE monthly_fee = ? AND active = 1
+            WHERE monthly_fee = ? AND {ACTIVE_FILTER}
         """
 
         cursor = conn.execute(query, (new_fee, old_fee))
@@ -133,7 +137,7 @@ class StudentRepository:
         query = f"""
             {BASE_SELECT}
             WHERE teacher LIKE ? COLLATE NOCASE
-            ORDER BY last_name, first_name"""
+            {ORDER_BY_STUDENT}"""
         cursor = conn.execute(query, (search_pattern,))
         return self._fetch_all(cursor)
 
@@ -143,7 +147,7 @@ class StudentRepository:
         """Retrieve all students from the database."""
         query = f"""
             {BASE_SELECT}
-            ORDER BY last_name, first_name
+            {ORDER_BY_STUDENT}
         """
         cursor = conn.execute(query)
         return self._fetch_all(cursor)
@@ -178,15 +182,15 @@ class StudentRepository:
 
     def get_active_student_count(self, conn: Connection) -> int:
         """Gets the amount of active students."""
-        query = "SELECT COUNT(*) AS count FROM students WHERE active = 1"
+        query = f"SELECT COUNT(*) AS count FROM students WHERE {ACTIVE_FILTER}"
         cursor = conn.execute(query)
         return cursor.fetchone()["count"]
 
     def get_all_active_students(self, conn: Connection) -> list[Student]:
         query = f"""
             {BASE_SELECT}
-            WHERE active = 1
-            ORDER BY last_name, first_name
+            WHERE {ACTIVE_FILTER}
+            {ORDER_BY_STUDENT}
         """
         cursor = conn.execute(query)
         return self._fetch_all(cursor)
@@ -194,10 +198,10 @@ class StudentRepository:
     def get_students_without_fee(
         self, month: int, year: int, conn: Connection
     ) -> list[Student]:
-        query = """
+        query = f"""
         SELECT s.*
             FROM students s
-            WHERE s.active = 1
+            WHERE s.{ACTIVE_FILTER}
             AND NOT EXISTS (
         SELECT 1
         FROM movements m
@@ -213,10 +217,10 @@ class StudentRepository:
 
     def count_students_by_monthly_fee(self, monthly_fee: int, conn: Connection) -> int:
         """Returns the sum of students with that monthly_fee"""
-        query = """
+        query = f"""
             SELECT COUNT(*) AS count
             FROM students
-            WHERE monthly_fee = ? AND active = 1
+            WHERE monthly_fee = ? AND {ACTIVE_FILTER}
         """
 
         cursor = conn.execute(
