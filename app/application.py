@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass
 
 import ttkbootstrap as ttk
+from ttkbootstrap.window import Window
 
 from app.bootstrap.app_initializer import AppInitializer
 from app.bootstrap.error_handler import GlobalErrorHandler
@@ -9,7 +10,6 @@ from app.bootstrap.tk_factory import TkAppFactory
 from app.database.config import DatabaseConfig
 from app.services.application_service import ApplicationService
 from app.views.main_window import MainWindow
-from main import AppConfig
 
 logger = logging.getLogger(__name__)
 
@@ -22,27 +22,35 @@ class AppContext:
 
 
 class Application:
-    def __init__(self, config: AppConfig, db_config: DatabaseConfig):
+    def __init__(self, config, db_config: DatabaseConfig):
         self.config = config
         self.db_config = db_config
 
     def bootstrap(self):
         logger.info("Bootstrapping application")
 
-        root = TkAppFactory.create_root(self.config.theme, self.config.window_title)
-        GlobalErrorHandler(root).install()
-        initializer = AppInitializer(self.db_config)
-        container = initializer.initialize()
-        app_service = ApplicationService(container)
-        main_window = MainWindow(root, app_service)
+        root = self._create_ui()
+        services = self._create_services()
+        main_window = MainWindow(root, services)
 
         logger.info("Application bootstrapped successfully")
 
-        return AppContext(root, app_service, main_window)
+        return AppContext(root, services, main_window)
+
+    def _create_ui(self) -> Window:
+        root = TkAppFactory.create_root(self.config.theme, self.config.window_title)
+        GlobalErrorHandler(root).install()
+        return root
+
+    def _create_services(self) -> ApplicationService:
+        initializer = AppInitializer(self.db_config)
+        container = initializer.initialize()
+        return ApplicationService(container)
 
     def run(self) -> int:
-        context = self.bootstrap()
+        context = None
         try:
+            context = self.bootstrap()
             context.root.mainloop()
 
         except Exception:
@@ -50,11 +58,12 @@ class Application:
             raise
 
         finally:
-            self.shutdown(context)
+            if context:
+                self.shutdown(context)
 
         return 0
 
-    def shutdown(self, context: AppContext):
+    def shutdown(self, context: AppContext) -> None:
         logger.info("Shutting down application")
 
         try:
