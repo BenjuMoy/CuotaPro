@@ -24,7 +24,7 @@ class StudentRepository:
     @staticmethod
     def _row_to_student(row: sqlite3.Row) -> Student:
         """Converts a database row tuple into a Student Pydantic model."""
-        return Student.model_construct(**dict(row))
+        return Student.model_construct(**dict(row), strict=False)
 
     @staticmethod
     def _student_to_tuple(student: Student):
