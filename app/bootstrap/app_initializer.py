@@ -80,6 +80,3 @@ class AppInitializer:
             reporting=reporting_service,
             maintenance=maintenance_service,
         )
-
-    def _build_repositories(self):
-        return StudentRepository(self.db), MovementRepository(self.db)
