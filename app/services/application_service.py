@@ -169,9 +169,14 @@ class ApplicationService:
         self, student_id: int, month: int, year: int, amount: int
     ) -> StudentOverview:
         """Adds payment to student by id. Amount comes always positive from ui and current year is assumed for payment."""
-        student, new_balance, movement = self.services.accounting.add_payment(
-            student_id, month, year, amount
-        )
+        try:
+            student, new_balance, movement = self.services.accounting.add_payment(
+                student_id, month, year, amount
+            )
+        except ValidationError as e:
+            raise AppValidationError(f"Error de validacion: {e}")
+        except IntegrityError:
+            raise ConflictError("Error de db")
 
         logger.info(
             "Payment added | student_id=%s month=%s year=%s amount=%s new_balance=%s",
@@ -181,14 +186,15 @@ class ApplicationService:
             movement.amount,
             new_balance,
         )
-        self.event._notify(RefreshType.MOVEMENTS)
 
-        return StudentOverview(
+        result = StudentOverview(
             student=student,
             last_payment=movement,
             balance=new_balance,
             movements=self.get_effective_movements_by_id(student_id),
         )
+        self.event._notify(RefreshType.MOVEMENTS)
+        return result
 
     # Payment getters
 
