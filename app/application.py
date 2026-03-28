@@ -14,7 +14,7 @@ from app.views.main_window import MainWindow
 logger = logging.getLogger(__name__)
 
 
-@dataclass
+@dataclass(frozen=True)
 class AppContext:
     root: ttk.Window
     services: ApplicationService
