@@ -19,7 +19,6 @@ NAME_PATTERN = re.compile(r"^[A-Za-zÁÉÍÓÚÜáéíóúüÑñ\s\-]+$")
 # --------------------------------------------------------------------------- #
 # last_name, first_name, telefons, school, year, teacher, book, course, monthly_fee, balance
 class Student(BaseModel):
-    model_config = {"str_strip_whitespace": True}
     """Represents a student in the system.
 
     Attributes:
@@ -37,6 +36,8 @@ class Student(BaseModel):
         year: Academic year (optional)
         monthly_fee: Monthly fee amount (> 0)
     """
+
+    model_config = {"str_strip_whitespace": True}
 
     id: int | None = None
     active: bool = Field(default=True)

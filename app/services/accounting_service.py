@@ -56,7 +56,7 @@ class AccountingService:
         students = self.students.get_students_without_fee(month, year)
 
         if not students:
-            raise NotFound("No ha estudiantes para aplicar")
+            raise BusinessRuleError("No ha estudiantes para aplicar")
 
         data = [
             (
@@ -98,10 +98,10 @@ class AccountingService:
 
         return affected_students
 
-    def reverse(self, pago_id: int) -> Movement:
+    def reverse(self, payment_id: int) -> Movement:
         """Reverses movement by id"""
 
-        orig = self.movements.get_by_id(pago_id)
+        orig = self.movements.get_by_id(payment_id)
 
         # if not orig or not orig.id:
         #    raise NotFound("Movimiento no encontrado")

@@ -9,7 +9,7 @@ class StudentService:
     def add(self, data: dict[str, str | int | bool]) -> Student:
         """Adds a student to the database."""
         # Validate model first (outside transaction)
-        new_student = Student.model_validate(dict(data))
+        new_student = Student.model_validate(data)
 
         saved_student = self.repo.add(new_student)
 
@@ -25,12 +25,12 @@ class StudentService:
         updated_student_data.update(data)
 
         # Validate and create the new model instance
-        updated_student = Student.model_validate(dict(updated_student_data))
+        updated_student = Student.model_validate(updated_student_data)
         self.repo.update(updated_student)
 
         return updated_student
 
-    def switch_state(self, student_id: int) -> Student:
+    def toggle_active(self, student_id: int) -> Student:
         """Handles the state switch."""
         student = self.repo.get_by_id(student_id)
         updated = student.model_copy(update={"active": not student.active})

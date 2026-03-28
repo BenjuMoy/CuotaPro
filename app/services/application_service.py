@@ -119,15 +119,11 @@ class ApplicationService:
 
     def switch_student_state(self, student_id: int) -> Student | None:
         """Handles the state switch."""
-        try:
-            updated_student = self.services.student.switch_state(student_id)
+        updated_student = self.services.student.toggle_active(student_id)
 
-            logger.info("Student with id=%s switched state.", updated_student.id)
-            self.event.notify(RefreshType.STUDENTS)
-            return updated_student
-
-        except NotFound:
-            raise
+        logger.info("Student with id=%s switched state.", updated_student.id)
+        self.event.notify(RefreshType.STUDENTS)
+        return updated_student
 
     # Student getters
 
@@ -174,7 +170,8 @@ class ApplicationService:
                 student_id, month, year, amount
             )
         except ValidationError as e:
-            raise AppValidationError(f"Error de validacion: {e}")
+            formatted = self._handle_validation_error(e)
+            raise AppValidationError(formatted) from e
         except IntegrityError:
             raise ConflictError("Error de db")
 
