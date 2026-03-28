@@ -27,7 +27,7 @@ from app.views.helpers_gui import (
 from app.views.toast import show_toast
 from app.views.widgets.kpi_card import KpiCard
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 
 @dataclass
