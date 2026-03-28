@@ -128,7 +128,7 @@ class StudentRepository:
                OR first_name || ' ' || last_name LIKE ? COLLATE NOCASE
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(
                 query, (search_pattern, search_pattern, search_pattern, search_pattern)
             )
@@ -143,7 +143,7 @@ class StudentRepository:
             WHERE teacher LIKE ? COLLATE NOCASE
             {ORDER_BY_STUDENT}"""
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query, (search_pattern,))
             return self._fetch_all(cursor)
 
@@ -156,7 +156,7 @@ class StudentRepository:
             {ORDER_BY_STUDENT}
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query)
             return self._fetch_all(cursor)
 
@@ -168,7 +168,7 @@ class StudentRepository:
             LIMIT 1
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query, (student_id,))
             row = cursor.fetchone()
 
@@ -189,7 +189,7 @@ class StudentRepository:
         ) b ON b.student_id = s.id
         WHERE b.balance < 0"""
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query)
             return self._fetch_all(cursor)
 
@@ -197,7 +197,7 @@ class StudentRepository:
         """Gets the amount of active students."""
         query = f"SELECT COUNT(*) AS count FROM students WHERE {ACTIVE_FILTER}"
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query)
             return cursor.fetchone()["count"]
 
@@ -208,7 +208,7 @@ class StudentRepository:
             {ORDER_BY_STUDENT}
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query)
             return self._fetch_all(cursor)
 
@@ -227,7 +227,7 @@ class StudentRepository:
         )
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query, (month, year))
             return self._fetch_all(cursor)
 
@@ -239,7 +239,7 @@ class StudentRepository:
             WHERE monthly_fee = ? AND {ACTIVE_FILTER}
         """
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query, (monthly_fee,))
             return cursor.fetchone()["count"]
 
@@ -256,6 +256,6 @@ class StudentRepository:
             "SELECT monthly_fee, COUNT(*) AS count FROM students GROUP BY monthly_fee;"
         )
 
-        with self.db.transaction() as conn:
+        with self.db.read() as conn:
             cursor = conn.execute(query)
             return [(row[0], row["count"]) for row in cursor.fetchall()]
