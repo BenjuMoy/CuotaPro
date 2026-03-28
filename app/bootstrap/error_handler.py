@@ -4,7 +4,7 @@ import traceback
 
 from ttkbootstrap.dialogs import Messagebox
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 
 class GlobalErrorHandler:

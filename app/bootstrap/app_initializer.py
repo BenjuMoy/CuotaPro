@@ -10,10 +10,17 @@ from app.repositories.student_repository import StudentRepository
 from app.services.accounting_service import AccountingService
 from app.services.maintenance_service import MaintenanceService
 from app.services.reporting_service import ReportingService
-from app.services.service_container import ServiceContainer
 from app.services.student_service import StudentService
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
+
+
+@dataclass(frozen=True)
+class ServiceContainer:
+    student: StudentService
+    accounting: AccountingService
+    reporting: ReportingService
+    maintenance: MaintenanceService
 
 
 @dataclass(frozen=True)

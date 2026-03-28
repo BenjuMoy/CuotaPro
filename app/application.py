@@ -11,7 +11,7 @@ from app.database.config import DatabaseConfig
 from app.services.application_service import ApplicationService
 from app.views.main_window import MainWindow
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 
 @dataclass(frozen=True)

@@ -7,6 +7,7 @@ from typing import Any, Callable
 
 from pydantic import ValidationError
 
+from app.bootstrap.app_initializer import ServiceContainer
 from app.models.exceptions import (
     AppValidationError,
     BusinessRuleError,
@@ -20,9 +21,8 @@ from app.models.models import (
     Student,
     StudentOverview,
 )
-from app.services.service_container import ServiceContainer
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 
 class EventBus:
