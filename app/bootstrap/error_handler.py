@@ -21,7 +21,7 @@ class GlobalErrorHandler:
                 self.root.after(
                     0,
                     lambda: Messagebox.show_error(
-                        f"Error no controlado:\n\n{error_msg}",
+                        f"Se produjo un error inesperado:\n\n{error_msg}",
                         "Error Crítico",
                     ),
                 )
