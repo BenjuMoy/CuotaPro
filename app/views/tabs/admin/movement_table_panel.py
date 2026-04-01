@@ -117,7 +117,6 @@ class MovementTablePanel:
             self.main_service.reverse_movement(pago_id)
 
             show_toast(self.frame, "Movimiento revertido", "success")
-            self.refresh_table()
 
         except (NotFound, BusinessRuleError) as e:
             show_toast(self.frame, str(e), "error")
