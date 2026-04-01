@@ -311,7 +311,7 @@ class UpdateStudentTab(BaseStudentFormTab):
 
         student_id = int(self.form_fields["id"].get())
         try:
-            _ = self.run_action(
+            self.run_action(
                 lambda: self.main_service.switch_student_state(student_id),
                 f"Se cambió el estado del estudiante {self.form_fields['first_name'].get()} {self.form_fields['last_name'].get()}",
             )
