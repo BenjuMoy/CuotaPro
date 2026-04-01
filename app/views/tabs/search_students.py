@@ -5,7 +5,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs.message import Messagebox
 from ttkbootstrap.widgets.tableview import Tableview
 
-from app.models.models import Movement, Student
+from app.models.models import Movement, RefreshType, Student
 from app.services.application_service import ApplicationService
 from app.utils.constantes import ICON_SEARCH, NUM_TO_MONTH, PAD_X, PAD_Y, TEACHERS
 from app.utils.helpers import currency_format
@@ -33,6 +33,12 @@ class SearchStudentTab:
         self.frame = ttk.Frame(parent)
         self.logger = logging.getLogger()
 
+        self._balances_cache: dict[int, int] = (
+            self.main_service.get_balances_for_students()
+        )
+
+        self.main_service.event.subscribe(RefreshType.MOVEMENTS, self._refresh_balances)
+
         self._create_widgets()
         self._create_results_table()
 
@@ -54,7 +60,9 @@ class SearchStudentTab:
             command=self.search_by_name,
         )
         student_name.grid(row=0, column=2, padx=PAD_X, pady=PAD_Y)
-        self.name_filter_entry.bind("<KeyRelease>", lambda e: self.search_by_name())
+        self.name_filter_entry.bind(
+            "<KeyRelease>", lambda e: self._debounced_search(self.search_by_name)
+        )
 
         # --- Row 1: Teacher Filter --- #
         self.teacher_filter_entry = create_label_combobox(
@@ -86,89 +94,96 @@ class SearchStudentTab:
 
     @staticmethod
     def _show_student_details(
-        est: Student, last_payment: Movement | None, balance: int
+        student: Student, last_payment: Movement | None, balance: int
     ):
-        phones = [t for t in (est.phone1, est.phone2, est.phone3) if t]
+        phones = [t for t in (student.phone1, student.phone2, student.phone3) if t]
         detalles = f"""
-Estado: {"✅ Activo" if est.active else "🚫 Inactivo"}
-Nombre: {est.last_name} {est.first_name}
+Estado: {"✅ Activo" if student.active else "🚫 Inactivo"}
+Nombre: {student.last_name} {student.first_name}
 Teléfonos: {", ".join(phones)}
-Escuela: {est.school}
-Año: {est.year}
-Profesor: {est.teacher}
-Libro: {est.book}
-Curso: {est.course}
-Cuota: {est.monthly_fee}
+Escuela: {student.school}
+Año: {student.year}
+Profesor: {student.teacher}
+Libro: {student.book}
+Curso: {student.course}
+Cuota: {student.monthly_fee}
 Balance: {currency_format(balance)}
 Último mes pagado: {NUM_TO_MONTH.get(last_payment.month, "Desconocido") if last_payment else "Ningun pago registrado"}
     """
-        Messagebox.show_info(detalles, f"Ficha de {est.first_name} {est.last_name}")
+        Messagebox.show_info(
+            detalles, f"Ficha de {student.first_name} {student.last_name}"
+        )
 
     @staticmethod
-    def _student_to_row(est: Student, balance: int) -> tuple:
+    def _student_to_row(student: Student, balance: int) -> tuple:
         return (
-            est.id,
-            est.last_name,
-            est.first_name,
-            est.teacher,
+            student.id,
+            student.last_name,
+            student.first_name,
+            student.teacher,
             currency_format(balance),
-            "✅ Activo" if est.active else "🚫 Inactivo",
+            "✅ Activo" if student.active else "🚫 Inactivo",
         )
 
     # --- Search Actions --- #
     def search_by_name(self):
-        self.teacher_filter_entry.set("")
+        self._reset_filters(clear_teacher=True)
         name = get_str(self.name_filter_entry)
-        self._run_search(
-            lambda: self.main_service.search_student_by_name(name),
-            "No se encontraron estudiantes con ese nombre o apellido",
-        )
+        self._run_search(lambda: self.main_service.search_student_by_name(name))
 
     def search_by_teacher(self, _event=None):
-        self.name_filter_entry.delete(0, "end")
+        self._reset_filters(clear_name=True)
         self._run_search(
             lambda: self.main_service.search_student_by_teacher(
                 self.teacher_filter_entry.get()
-            ),
-            "No se encontraron alumnos con ese profesor",
+            )
         )
 
-    def _run_search(self, fetch_fn: Callable[[], list[Student]], empty_msg: str):
+    def _run_search(self, fetch_fn: Callable[[], list[Student]]):
         try:
             results = fetch_fn()
             self._populate_table(results)
 
-            if not results:
-                self.table.insert_row("end", ["", empty_msg, "", "", "", ""])
-
-        except Exception:
+        except Exception as e:
             self.logger.exception("Error searching students")
-            show_toast(self.frame, "Error buscando estudiantes", "error")
+            show_toast(self.frame, str(e), "error")
 
     def show_debtors(self):
-        self.name_filter_entry.delete(0, "end")
-        self.teacher_filter_entry.set("")
+        self._reset_filters(clear_teacher=True, clear_name=True)
 
-        self._run_search(
-            self.main_service.get_students_debtors,
-            "No se encontraron estudiantes deudores",
-        )
+        self._run_search(self.main_service.get_students_debtors)
+
+    def _debounced_search(self, callback, delay=300):
+        if hasattr(self, "_after_id"):
+            self.frame.after_cancel(self._after_id)
+
+        self._after_id = self.frame.after(delay, callback)
+
+    def _reset_filters(self, clear_name=False, clear_teacher=False):
+        if clear_name:
+            self.name_filter_entry.delete(0, "end")
+        if clear_teacher:
+            self.teacher_filter_entry.set("")
 
     # --- Table Helpers ---
     def _populate_table(self, students: list[Student]):
         """Limpia la tabla y la llena con la lista proporcionada."""
         self.table.delete_rows()
 
-        balances = self.main_service.get_balances_for_students()
-
-        for est in students:
-            balance = balances.get(est.id, 0)
+        for student in students:
+            balance = self._balances_cache.get(student.id, 0)
             row = self.table.insert_row(
-                index="end", values=self._student_to_row(est, balance)
+                index="end", values=self._student_to_row(student, balance)
             )
 
             if balance < 0:
                 self.table.view.item(row.iid, tags=("debtor",))
+
+        # self.table.view.tag_configure("debtor", foreground="red")
+        # self.table.view.tag_configure("debtor", background="#ffe6e6")
+
+    def _refresh_balances(self):
+        self._balances_cache = self.main_service.get_balances_for_students()
 
     def on_double_click(self, _event):
         rows = self.table.get_rows(selected=True)
