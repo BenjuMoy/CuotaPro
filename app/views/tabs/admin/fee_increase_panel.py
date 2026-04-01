@@ -16,7 +16,7 @@ from app.views.helpers_gui import (
 )
 from app.views.toast import show_toast
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 
 class FeeIncreasePanel:
@@ -26,7 +26,7 @@ class FeeIncreasePanel:
         self.main_service = service
         self.fee_map = {}
 
-        self.main_service.event.subscribe(RefreshType.MOVEMENTS, self.refresh_fee_combo)
+        self.main_service.event.subscribe(RefreshType.STUDENTS, self.refresh_fee_combo)
 
         self._create_widgets()
 
@@ -91,10 +91,12 @@ class FeeIncreasePanel:
             return
         affected = self.main_service.count_students_by_monthly_fee(old_monthly_fee)
 
-        new_monthly_fee = int(self.new_monthly_fee_entry.get())
-        if new_monthly_fee is None:
+        value = self.new_monthly_fee_entry.get().strip()
+        if not value:
             show_toast(self.frame, "Ingrese una cuota válida", "error")
             return
+
+        new_monthly_fee = int(value)
 
         if old_monthly_fee >= new_monthly_fee:
             show_toast(self.frame, "La nueva cuota debe ser mayor", "error")
@@ -151,7 +153,14 @@ class FeeIncreasePanel:
 
     def refresh_fee_combo(self):
         data = self.main_service.get_fees_list()
-        self.old_monthly_fee_combo.config(
-            values=[f"{value[0]} ({value[1]})" for value in data]
-        )
+
+        self.fee_map.clear()
+        values = []
+
+        for fee, count in data:
+            label = f"{fee} ({count} alumnos)"
+            values.append(label)
+            self.fee_map[label] = fee
+
+        self.old_monthly_fee_combo.config(values=values)
         self.old_monthly_fee_combo.set("")
