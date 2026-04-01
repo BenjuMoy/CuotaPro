@@ -267,7 +267,7 @@ class MovementRepository:
             return cursor.fetchone()["amount"]
 
     def has_reversal(self, movement_id: int) -> bool:
-        """Cecks if movement has been reversed.
+        """Checks if movement has been reversed.
 
         Args:
             id (int): movement id.
