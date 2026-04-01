@@ -162,7 +162,7 @@ class MovementRepository:
 
         with self.db.read() as conn:
             cursor = conn.execute(query, (student_id,))
-            return cursor.fetchone()["amount"] or 0
+            return cursor.fetchone()["amount"]
 
     def get_student_movements(self, student_id: int) -> list[Movement]:
         query = f"""
@@ -257,14 +257,14 @@ class MovementRepository:
     def get_month_balance(self, student_id: int, month: int, year: int) -> int:
         """"""
         query = f"""
-            SELECT SUM(m.amount) as amount
+            SELECT COALESCE(SUM(m.amount), 0) as amount
             {BASE_EFFECTIVE_QUERY}
             AND m.student_id=? AND m.month=? AND m.year=?
         """
 
         with self.db.read() as conn:
             cursor = conn.execute(query, (student_id, month, year))
-            return cursor.fetchone()["amount"] or 0
+            return cursor.fetchone()["amount"]
 
     def has_reversal(self, movement_id: int) -> bool:
         """Cecks if movement has been reversed.
@@ -288,7 +288,7 @@ class MovementRepository:
     def get_general_month_balance(self, student_id: int) -> list[tuple[int, int, int]]:
         """Returns in format (month, year, sum)"""
         query = """
-            SELECT month, year, SUM(amount) AS total
+            SELECT month, year, COALESCE(SUM(amount), 0) AS total
             FROM movements
             WHERE student_id=?
             GROUP BY year, month
@@ -296,11 +296,11 @@ class MovementRepository:
 
         with self.db.read() as conn:
             cursor = conn.execute(query, (student_id,))
-            return [(row["month"], row["year"], row["total"] or 0) for row in cursor]
+            return [(row["month"], row["year"], row["total"]) for row in cursor]
 
     def total_collected_this_month(self, month: int, year: int) -> int:
         query = f"""
-            SELECT SUM(m.amount) AS amount
+            SELECT COALESCE(SUM(m.amount), 0) AS amount
             {BASE_EFFECTIVE_QUERY}
             AND m.type = 'PAYMENT'
             AND m.month=? AND m.year=?
@@ -308,7 +308,7 @@ class MovementRepository:
 
         with self.db.read() as conn:
             cursor = conn.execute(query, (month, year))
-            return cursor.fetchone()["amount"] or 0
+            return cursor.fetchone()["amount"]
 
     def get_balances_for_students(self) -> dict[int, int]:
         """Gets balances for all students in format {student_id, balance}
@@ -317,14 +317,14 @@ class MovementRepository:
             dict[int, int]: The dictionary containing the debts
         """
         query = f"""
-            SELECT m.student_id as id, SUM(m.amount) as balance
+            SELECT m.student_id as id, COALESCE(SUM(m.amount), 0) as balance
             {BASE_EFFECTIVE_QUERY}
             GROUP BY m.student_id;
         """
 
         with self.db.read() as conn:
             cursor = conn.execute(query)
-            return {row["id"]: row["balance"] or 0 for row in cursor.fetchall()}
+            return {row["id"]: row["balance"] for row in cursor.fetchall()}
 
     def get_income_by_month(self) -> dict[tuple[int, int], int]:
         query = """
@@ -337,6 +337,5 @@ class MovementRepository:
         with self.db.read() as conn:
             cursor = conn.execute(query)
             return {
-                (row["month"], row["year"]): row["amount"] or 0
-                for row in cursor.fetchall()
+                (row["month"], row["year"]): row["amount"] for row in cursor.fetchall()
             }
