@@ -194,10 +194,8 @@ class PaymentTab:
         else:
             # Filter values that start with the typed text
             filtered = [
-                item
-                for item in list(self.student_map.values())
-                if typed in item.lower()
-            ]
+                item for item in self.student_map.values() if typed in item.lower()
+            ][:20]
             self.student_combobox["values"] = filtered
 
     def _on_student_selected(self, _event=None):
