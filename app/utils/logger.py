@@ -5,8 +5,11 @@ from app.utils.constantes import LOGS_DIR, LOGS_PATH
 
 
 def setup_logging():
+    """Set up logger for app."""
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
-    logger = logging.getLogger("app")
+
+    # Set up root logger.
+    logger = logging.getLogger()
 
     if logger.handlers:
         logger.debug("Logging already configured")
