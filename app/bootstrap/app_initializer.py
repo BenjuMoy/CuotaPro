@@ -39,6 +39,7 @@ class AppInitializer:
     """
 
     def __init__(self, db_config: DatabaseConfig):
+        db_config.ensure_directories_exist()
         self.db = DatabaseManager(db_config)
 
     # ------------------------

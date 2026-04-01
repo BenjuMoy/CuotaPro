@@ -9,7 +9,6 @@ from app.database.config import DatabaseConfig
 class DatabaseManager:
     def __init__(self, config: DatabaseConfig):
         self.config = config
-        self.config.ensure_directories_exist()
 
     def connect(self) -> Connection:
         conn = sqlite3.connect(
