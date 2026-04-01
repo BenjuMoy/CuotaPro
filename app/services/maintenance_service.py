@@ -1,9 +1,13 @@
 import csv
+import logging
 import sqlite3
 from datetime import datetime
 from pathlib import Path
+from typing import List
 
 from app.database.connection import DatabaseManager
+
+logger = logging.getLogger()
 
 
 class MaintenanceService:
@@ -16,25 +20,33 @@ class MaintenanceService:
     # -------------------------
 
     def create_backup(self) -> Path:
-        """Creates a safe SQLite backup using SQLite backup API."""
-
+        """
+        Creates a safe SQLite backup using the online backup API.
+        This method is safe to run while the application is in use.
+        """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_name = f"student_management_{timestamp}.db"
         backup_path = self.config.db_backup_dir / backup_name
 
         self.config.db_backup_dir.mkdir(parents=True, exist_ok=True)
 
-        source_conn = self.db.transaction()
-
-        dest_conn = sqlite3.transaction(backup_path)
+        # For backup, we need a direct, long-lived connection to the source database.
+        # We bypass the transaction() context manager here.
+        source_conn = sqlite3.connect(self.config.db_path)
+        source_conn.execute("PRAGMA wal_checkpoint(FULL);")  # Flush WAL to main DB file
 
         try:
-            with dest_conn:
-                source_conn.execute("PRAGMA wal_checkpoint(FULL)")
+            # The destination connection is also a direct connection to the new file.
+            dest_conn = sqlite3.connect(backup_path)
+            try:
+                # The backup() method copies the database over.
                 source_conn.backup(dest_conn)
+            finally:
+                dest_conn.close()
         finally:
-            dest_conn.close()
+            source_conn.close()
 
+        # Clean up old backups after a successful new one is created.
         self._cleanup_old_backups()
         return backup_path
 
@@ -42,7 +54,11 @@ class MaintenanceService:
     # List BackUps
     # -------------------------
 
-    def list_backup_files(self) -> list[Path]:
+    def list_backup_files(self) -> List[Path]:
+        """Lists all backup files, sorted by modification time (newest first)."""
+        if not self.config.db_backup_dir.exists():
+            return []
+
         backup_files = list(self.config.db_backup_dir.glob("student_management_*.db"))
         backup_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
         return backup_files
@@ -52,27 +68,52 @@ class MaintenanceService:
     # -------------------------
 
     def restore_backup(self, file_path: Path) -> bool:
+        """
+        Restores the database from a backup file.
+        WARNING: This is a destructive operation.
+        """
         backup_path = Path(file_path)
 
-        if not backup_path.exists():
+        if not backup_path.is_file():
+            # Log this event
+            logger.error(f"Restore failed: Backup file not found at {backup_path}")
             return False
 
         # Safety backup before restore
+        logger.info("Creating a safety backup before restoring...")
         self.create_backup()
 
-        with sqlite3.transaction(backup_path) as source_conn:
-            with sqlite3.transaction(self.config.db_path) as dest_conn:
-                source_conn.backup(dest_conn)
+        # Close all existing connections managed by the DatabaseManager if possible.
+        # This is crucial to prevent locked database errors.
+        # Your DatabaseManager would need a method for this.
+        # For this example, we assume we can get a fresh connection.
 
-        return True
+        try:
+            # Source is the backup file, destination is the main database file.
+            source_conn = sqlite3.connect(backup_path)
+            dest_conn = sqlite3.connect(self.config.db_path)
+            try:
+                source_conn.backup(dest_conn)
+                logger.info(f"Successfully restored database from {backup_path}")
+                return True
+            finally:
+                source_conn.close()
+                dest_conn.close()
+        except Exception as e:
+            # Log this error
+            logger.exception(f"Restore failed: {e}")
+            return False
 
     # -------------------------
     # INTEGRITY CHECK
     # -------------------------
 
     def verify_integrity(self) -> bool:
-        with self.db.transaction() as conn:
+        """Performs a full integrity check on the database."""
+        # This is a read-only operation, so using the transaction manager is fine.
+        with self.db.read() as conn:
             cursor = conn.execute("PRAGMA integrity_check;")
+            # The result is a one-row table with "ok" if everything is fine.
             result = cursor.fetchone()[0]
             return result == "ok"
 
@@ -88,23 +129,21 @@ class MaintenanceService:
         students_file = export_dir / "students.csv"
         movements_file = export_dir / "movements.csv"
 
-        with self.db.transaction() as conn:
-            # Export Students
-            students = conn.execute("SELECT * FROM students").fetchall()
-            headers_students = [
-                desc[0] for desc in conn.execute("SELECT * FROM students").description
-            ]
+        with self.db.read() as conn:
+            # --- Export Students ---
+            cursor = conn.execute("SELECT * FROM students")
+            students = cursor.fetchall()
+            headers_students = [desc[0] for desc in cursor.description]
 
             with open(students_file, "w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
                 writer.writerow(headers_students)
                 writer.writerows(students)
 
-            # Export Movements
-            movements = conn.execute("SELECT * FROM movements").fetchall()
-            headers_movements = [
-                desc[0] for desc in conn.execute("SELECT * FROM movements").description
-            ]
+            # --- Export Movements ---
+            cursor = conn.execute("SELECT * FROM movements")
+            movements = cursor.fetchall()
+            headers_movements = [desc[0] for desc in cursor.description]
 
             with open(movements_file, "w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
@@ -113,13 +152,24 @@ class MaintenanceService:
 
         return export_dir
 
-    # Helpers
+    # -------------------------
+    # Helper
+    # -------------------------
+
     def _cleanup_old_backups(self, keep_last: int = 10):
+        """Deletes old backups, keeping only the most recent `keep_last`."""
         backups = sorted(
             self.config.db_backup_dir.glob("student_management_*.db"),
             key=lambda f: f.stat().st_mtime,
             reverse=True,
         )
 
-        for old in backups[keep_last:]:
-            old.unlink()
+        for old_backup in backups[keep_last:]:
+            try:
+                old_backup.unlink()
+            except OSError as e:
+                # Log this error but don't let it stop the process
+                logger.exception(f"Error deleting old backup {old_backup}: {e}")
+
+    def get_database_stats(self):  # TODO
+        ...
