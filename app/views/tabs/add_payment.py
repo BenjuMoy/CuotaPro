@@ -10,7 +10,6 @@ from app.models.models import Movement, RefreshType, Student
 from app.services.application_service import ApplicationService
 from app.utils.constantes import (
     FONT_BODY,
-    MONTH_TO_NUM,
     NUM_TO_MONTH,
     PAD_X,
     PAD_Y,
@@ -36,7 +35,7 @@ INFO_LABELS = {
     "last_paid_month_label": "Última Fecha Pagada:",
 }
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 
 class PaymentTab:
@@ -83,7 +82,7 @@ class PaymentTab:
             movement.year,
             TYPE_TRANSLATE[movement.type],
             currency_format(movement.amount),
-            movement.created_at.strftime("%d/%m/%Y %H:%M"),
+            movement.created_at,
         )
 
     @staticmethod
@@ -292,23 +291,10 @@ class PaymentTab:
             return
 
         month_year = self.month_combobox.get()
-
-        try:
-            month_name, year_str = month_year.split()
-            year = int(year_str)
-        except Exception:
-            show_toast(self.frame, "Fecha inválida", "error")
-            return
-
-        amount_text = self.amount_entry.get().strip()
-        if not amount_text or amount_text == "0":
-            show_toast(self.frame, "Ingrese un monto válido", "error")
-            return
-
-        amount = int(amount_text)
+        amount_str = self.amount_entry.get()
 
         confirm = Messagebox.yesno(
-            self.format_message(month_name, year, amount),
+            self.format_message(month_year, amount_str),
             "Confirmar pago",
         )
 
@@ -324,9 +310,8 @@ class PaymentTab:
 
             student_overview = self.main_service.add_payment_to_student(
                 student_id=self.current_student.id,
-                month=MONTH_TO_NUM[month_name],
-                year=year,
-                amount=amount,
+                period=month_year,
+                amount_str=amount_str,
             )
 
             # Success
@@ -370,9 +355,9 @@ class PaymentTab:
         self.frame.config(cursor="watch" if processing else "")
         self.frame.update_idletasks()
 
-    def format_message(self, month_name: str, year: int, amount: int):
+    def format_message(self, period: str, amount: str):
         return f"""👤: {self.current_student.first_name} {self.current_student.last_name}
-📅: {month_name} De {year}
+📅: {period}
 💰: {currency_format(amount)}
 ¿Confirmar pago?"""
 

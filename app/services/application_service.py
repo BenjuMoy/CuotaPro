@@ -21,6 +21,7 @@ from app.models.models import (
     Student,
     StudentOverview,
 )
+from app.utils.constantes import MONTH_TO_NUM
 
 logger = logging.getLogger()
 
@@ -117,13 +118,12 @@ class ApplicationService:
         except IntegrityError as e:
             raise ConflictError("Conflicto de datos") from e
 
-    def switch_student_state(self, student_id: int) -> Student | None:
+    def switch_student_state(self, student_id: int) -> None:
         """Handles the state switch."""
-        updated_student = self.services.student.toggle_active(student_id)
+        self.services.student.toggle_active(student_id)
 
-        logger.info("Student with id=%s switched state.", updated_student.id)
+        logger.info("Student with id=%s switched state.", student_id)
         self.event.notify(RefreshType.STUDENTS)
-        return updated_student
 
     # Student getters
 
@@ -162,16 +162,24 @@ class ApplicationService:
     # ======================
 
     def add_payment_to_student(
-        self, student_id: int, month: int, year: int, amount: int
+        self, student_id: int, period: str, amount_str: str
     ) -> StudentOverview:
         """Adds payment to student by id. Amount comes always positive from ui and current year is assumed for payment."""
         try:
+            month_name, year_str = period.split()
+            month = MONTH_TO_NUM[month_name]
+
+            year = int(year_str)
+            amount = int(amount_str)
+
             student, new_balance, movement = self.services.accounting.add_payment(
                 student_id, month, year, amount
             )
+
         except ValidationError as e:
             formatted = self._handle_validation_error(e)
             raise AppValidationError(formatted) from e
+
         except IntegrityError:
             raise ConflictError("Error de db")
 
