@@ -11,7 +11,7 @@ from app.services.application_service import ApplicationService
 from app.utils.constantes import FONT_BODY, FONT_HEADER, NUM_TO_MONTH, PAD_X, PAD_Y
 from app.views.toast import show_toast
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 
 class FeeApplicationPanel:
@@ -49,8 +49,7 @@ class FeeApplicationPanel:
             row=1, column=0, columnspan=2, padx=PAD_X, pady=PAD_Y
         )
 
-        if not self.main_service.fees_not_applied_for_period():
-            self.apply_fees_button.config(text="Aplicar cuotas nuevamente")
+        self._update_button_state()
 
         date = self.main_service.get_last_applied_fees_date()
 
@@ -108,8 +107,7 @@ class FeeApplicationPanel:
 
         finally:
             self._set_processing(False)
-            if not self.main_service.fees_not_applied_for_period():
-                self.apply_fees_button.config(state="disabled")
+            self._update_button_state()
 
     def _refresh_apply_label(self):
         date = self.main_service.get_last_applied_fees_date()
@@ -127,3 +125,7 @@ class FeeApplicationPanel:
         )
         self.frame.config(cursor="watch" if value else "")
         self.frame.update_idletasks()
+
+    def _update_button_state(self):
+        enabled = self.main_service.fees_not_applied_for_period()
+        self.apply_fees_button.config(state="normal" if enabled else "disabled")
