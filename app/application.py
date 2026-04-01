@@ -8,6 +8,7 @@ from app.bootstrap.app_initializer import AppInitializer
 from app.bootstrap.error_handler import GlobalErrorHandler
 from app.bootstrap.tk_factory import TkAppFactory
 from app.database.config import DatabaseConfig
+from app.models.config import AppConfig
 from app.services.application_service import ApplicationService
 from app.views.main_window import MainWindow
 
@@ -18,24 +19,23 @@ logger = logging.getLogger()
 class AppContext:
     root: ttk.Window
     services: ApplicationService
-    main_window: MainWindow
 
 
 class Application:
-    def __init__(self, config, db_config: DatabaseConfig):
+    def __init__(self, config: AppConfig, db_config: DatabaseConfig):
         self.config = config
         self.db_config = db_config
 
-    def bootstrap(self):
+    def bootstrap(self) -> AppContext:
         logger.info("Bootstrapping application")
 
         root = self._create_ui()
         services = self._create_services()
-        main_window = MainWindow(root, services)
+        MainWindow(root, services)
 
         logger.info("Application bootstrapped successfully")
 
-        return AppContext(root, services, main_window)
+        return AppContext(root, services)
 
     def _create_ui(self) -> Window:
         root = TkAppFactory.create_root(self.config.theme, self.config.window_title)
