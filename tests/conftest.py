@@ -4,51 +4,61 @@ import pytest
 
 from app.database.config import DatabaseConfig
 from app.database.connection import DatabaseManager
-from app.database.migrations import migrate
 from app.database.schema import bootstrap_database
-from app.services.service_container import ServiceContainer
+from app.repositories.movement_repository import MovementRepository
+from app.repositories.student_repository import StudentRepository
+from app.services.accounting_service import AccountingService
+from app.services.reporting_service import ReportingService
+from app.services.student_service import StudentService
 
 
 @pytest.fixture
-def db():
-    config = DatabaseConfig(db_path=":memory:")
-    db = DatabaseManager(config)
+def db_config(tmp_path: Path) -> DatabaseConfig:
+    return DatabaseConfig(
+        db_path=tmp_path / "test.db",
+        db_dir=tmp_path,
+        db_backup_dir=tmp_path / "backup",
+        db_export_dir=tmp_path / "export",
+    )
 
-    # Prepare schema
+
+@pytest.fixture
+def db_manager(db_config: DatabaseConfig) -> DatabaseManager:
+    db_config.ensure_directories_exist()
+    db = DatabaseManager(db_config)
+
     with db.transaction() as conn:
         bootstrap_database(conn)
 
-    yield db
-
-    db.close()
+    return db
 
 
 @pytest.fixture
-def repositories(db: DatabaseManager):
-    from app.repositories.movement_repository import MovementRepository
-    from app.repositories.student_repository import StudentRepository
-
-    return {
-        "student": StudentRepository(db),
-        "movement": MovementRepository(db),
-    }
+def student_repo(db_manager: DatabaseManager) -> StudentRepository:
+    return StudentRepository(db_manager)
 
 
 @pytest.fixture
-def services(repositories, db: DatabaseManager) -> ServiceContainer:
-    from app.services.accounting_service import AccountingService
-    from app.services.maintenance_service import MaintenanceService
-    from app.services.service_container import ServiceContainer
-    from app.services.student_service import StudentService
+def movement_repo(db_manager: DatabaseManager) -> MovementRepository:
+    return MovementRepository(db_manager)
 
-    student_service = StudentService(repositories["student"])
-    accounting_service = AccountingService(
-        repositories["movement"], repositories["student"]
-    )
-    maintenance_service = MaintenanceService(db)
 
-    return ServiceContainer(
-        student=student_service,
-        accounting=accounting_service,
-        maintenance=maintenance_service,
-    )
+@pytest.fixture
+def student_service(student_repo: StudentRepository) -> StudentService:
+    return StudentService(student_repo)
+
+
+@pytest.fixture
+def accounting_service(
+    student_repo: StudentRepository,
+    movement_repo: MovementRepository,
+) -> AccountingService:
+    return AccountingService(student_repo, movement_repo)
+
+
+@pytest.fixture
+def reporting_service(
+    student_repo: StudentRepository,
+    movement_repo: MovementRepository,
+) -> ReportingService:
+    return ReportingService(student_repo, movement_repo)
