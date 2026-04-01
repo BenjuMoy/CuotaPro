@@ -6,9 +6,9 @@ from app.utils.constantes import TEACHERS
 from app.views.base_tab import BaseMetricsTab
 
 CARDS = {
-    "student_card": "👨‍🎓 Estudiantes Activos",
-    "teacher_card": "👩‍🏫 Profesores",
-    "taken_card": "📊 Cobranza",
+    "students": "👨‍🎓 Estudiantes Activos",
+    "teachers": "👩‍🏫 Profesores",
+    "collection": "📊 Cobranza",
 }
 
 BUTTONS = {
@@ -19,31 +19,29 @@ BUTTONS = {
 
 
 class DashboardTab(BaseMetricsTab):
-    """Safe operational dashboard."""
+    """Operational dashboard with quick insights."""
 
     def __init__(self, parent: ttk.Notebook, main_service: ApplicationService):
         super().__init__(parent=parent, title="Inicio", cards=CARDS)
-        self.service = main_service
+
+        self.main_service = main_service
 
         self.create_kpi_cards()
         self.build_buttons(BUTTONS)
+
         self.refresh()
 
-        main_service.event.subscribe(RefreshType.STUDENTS, self.refresh)
-        main_service.event.subscribe(RefreshType.MOVEMENTS, self.refresh)
-
-    # -------------------------
-    # DATA
-    # -------------------------
+        self.main_service.event.subscribe(RefreshType.STUDENTS, self.refresh)
+        self.main_service.event.subscribe(RefreshType.MOVEMENTS, self.refresh)
 
     def refresh(self):
-        metrics = self.service.get_kpi_metrics()
+        metrics = self.main_service.get_kpi_metrics()
 
-        self.cards["student_card"].set(str(metrics.active_students))
-        self.cards["teacher_card"].set(str(len(TEACHERS)))
+        self.cards["students"].set(str(metrics.active_students))
+        self.cards["teachers"].set(str(len(TEACHERS)))
 
         rate = 0
         if metrics.expected_income > 0:
             rate = (metrics.collected / metrics.expected_income) * 100
 
-        self.cards["taken_card"].set(f"{rate:.0f}%")
+        self.cards["collection"].set(f"{rate:.0f}%")

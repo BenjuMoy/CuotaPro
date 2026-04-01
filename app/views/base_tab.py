@@ -296,30 +296,34 @@ class BaseMetricsTab:
     ):
         self.parent = parent
         self.frame = ttk.Frame(parent, padding=25)
-        self.kpi_config = cards
-        self.title = title
 
-        self.chart_style = "seaborn-v0_8"
+        self.title = title
+        self.kpi_config = cards
 
         self.cards: dict[str, KpiCard] = {}
+
+        self.chart_style = "seaborn-v0_8"
+        self.chart_frame: ttk.Frame | None = None
 
     # -------------------------
     # CARDS
     # -------------------------
 
     def create_kpi_cards(self):
-        ttk.Label(self.frame, text=self.title, font=FONT_TITLE).pack(padx=20, pady=20)
+        ttk.Label(
+            self.frame,
+            text=self.title,
+            font=FONT_TITLE,
+        ).pack(pady=15)
 
-        # KPIs
         self.kpi_frame = ttk.Frame(self.frame)
-        self.kpi_frame.pack(fill="x", padx=20, pady=20)
+        self.kpi_frame.pack(fill="x", pady=10)
 
         for i, (name, label) in enumerate(self.kpi_config.items()):
             card = KpiCard(self.kpi_frame, label)
-            card.grid(row=0, column=i, padx=20, pady=20, sticky="nsew")
+            card.grid(row=0, column=i, padx=15, pady=10, sticky="nsew")
 
             self.kpi_frame.columnconfigure(i, weight=1)
-            self.kpi_frame.rowconfigure(0, weight=1)
             self.cards[name] = card
 
     # -------------------------
@@ -327,21 +331,20 @@ class BaseMetricsTab:
     # -------------------------
 
     def build_buttons(self, buttons: dict[int, tuple[str, str]]):
-        # Quick actions
         actions = ttk.Labelframe(
             self.frame,
             text="Acciones rápidas",
             padding=15,
         )
-        actions.pack(fill="x", padx=20, pady=20)
+        actions.pack(fill="x", pady=15)
 
         for idx, (label, style) in buttons.items():
             ttk.Button(
                 actions,
                 text=label,
                 bootstyle=style,
-                command=lambda i=idx: self.parent.select(i),
-            ).pack(side="left", padx=20, pady=20, expand=True, fill="both")
+                command=lambda tab_index=idx: self.parent.select(tab_index),
+            ).pack(side="left", padx=10, pady=10, expand=True, fill="x")
 
     # -------------------------
     # CHARTS
@@ -349,18 +352,19 @@ class BaseMetricsTab:
 
     def draw_charts(
         self,
-        income_by_month: dict[str, int],
-        teacher_count: dict[str, int],
-        debt_bucket: dict[str, int],
+        income_by_month: dict,
+        teacher_count: dict,
+        debt_bucket: dict,
     ):
-        if not hasattr(self, "chart_frame"):
+        if self.chart_frame is None:
             self.chart_frame = ttk.Frame(self.frame)
             self.chart_frame.pack(fill="both", expand=True)
 
-        plt.style.use(self.chart_style)
-
+        # Clear previous chart
         for widget in self.chart_frame.winfo_children():
             widget.destroy()
+
+        plt.style.use(self.chart_style)
 
         fig = plt.figure(figsize=(10, 6))
         gs = fig.add_gridspec(2, 2)
@@ -378,50 +382,35 @@ class BaseMetricsTab:
         plt.close(fig)
 
     # -------------------------
-    # Income last 6 months
+    # CHARTS IMPLEMENTATION
     # -------------------------
 
-    def _draw_income_chart(self, income_ax: Axes, income_by_month: dict[str, int]):
-        income_ax.bar(list(income_by_month.keys()), list(income_by_month.values()))
-        income_ax.set_title("Ingresos últimos 6 meses")
-        income_ax.tick_params(axis="x", rotation=45)
+    def _draw_income_chart(self, ax: Axes, data: dict):
+        ax.bar(list(data.keys()), list(data.values()))
+        ax.set_title("Ingresos últimos 6 meses")
+        ax.tick_params(axis="x", rotation=45)
 
-    # -------------------------
-    # Students per teacher
-    # -------------------------
+    def _draw_teacher_chart(self, ax: Axes, data: dict):
+        ax.barh(list(data.keys()), list(data.values()))
+        ax.set_title("Estudiantes por Profesor")
 
-    def _draw_teacher_chart(self, teacher_ax: Axes, teacher_count: dict[str, int]):
-        teacher_ax.barh(list(teacher_count.keys()), list(teacher_count.values()))
-        teacher_ax.set_title("Estudiantes por Profesor")
-
-    # -------------------------
-    # Payment status
-    # -------------------------
-
-    def _draw_debt_chart(self, debt_ax: Axes, debt_buckets: dict[str, int]):
-        values = list(debt_buckets.values())
-        labels = list(debt_buckets.keys())
-
-        colors = ["green", "gold", "orange", "red"]
+    def _draw_debt_chart(self, ax: Axes, data: dict):
+        values = list(data.values())
+        labels = list(data.keys())
 
         total = sum(values)
 
         if total == 0:
-            debt_ax.text(
-                0.5,
-                0.5,
-                "Sin datos",
-                ha="center",
-                va="center",
-                fontsize=12,
-            )
+            ax.text(0.5, 0.5, "Sin datos", ha="center", va="center")
+            return
 
-        else:
-            debt_ax.pie(
-                values,
-                labels=labels,
-                colors=colors,
-                autopct="%1.0f%%",
-            )
+        colors = ["green", "gold", "orange", "red"][: len(values)]
 
-        debt_ax.set_title("Estado de Pagos")
+        ax.pie(
+            values,
+            labels=labels,
+            colors=colors,
+            autopct="%1.0f%%",
+        )
+
+        ax.set_title("Estado de Pagos")
