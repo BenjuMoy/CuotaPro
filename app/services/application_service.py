@@ -10,9 +10,7 @@ from pydantic import ValidationError
 from app.bootstrap.app_initializer import ServiceContainer
 from app.models.exceptions import (
     AppValidationError,
-    BusinessRuleError,
     ConflictError,
-    NotFound,
 )
 from app.models.models import (
     DashboardMetrics,
@@ -270,22 +268,15 @@ class ApplicationService:
 
     def reverse_movement(self, pago_id: int) -> None:
         """Reverses movement by id"""
-        try:
-            movement = self.services.accounting.reverse(pago_id)
+        movement = self.services.accounting.reverse(pago_id)
 
-            logger.info(
-                "Reversing movement entry | id=%s, month=%s year=%s",
-                movement.id,
-                movement.month,
-                movement.year,
-            )
-            self.event.notify(RefreshType.MOVEMENTS)
-
-        except BusinessRuleError:
-            raise
-
-        except NotFound:
-            raise
+        logger.info(
+            "Reversing movement entry | id=%s, month=%s year=%s",
+            movement.id,
+            movement.month,
+            movement.year,
+        )
+        self.event.notify(RefreshType.MOVEMENTS)
 
     # Wrappers
 
