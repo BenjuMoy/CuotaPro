@@ -8,9 +8,12 @@ def fecha_actual() -> str:
     return time.strftime(FECHA_FMT)
 
 
-def currency_format(amount: int) -> str:
+def currency_format(amount: int | str) -> str:
     # Set the locale to the user's default setting (usually the system locale)
     locale.setlocale(locale.LC_ALL, "")
+
+    if isinstance(amount, str):
+        amount = int(amount)
 
     # Format a number as currency
     currency_format = locale.currency(amount, grouping=True)
