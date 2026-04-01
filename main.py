@@ -1,14 +1,7 @@
-from dataclasses import dataclass
-
 from app.application import Application
 from app.database.config import DatabaseConfig
+from app.models.config import AppConfig
 from app.utils.logger import setup_logging
-
-
-@dataclass(frozen=True)
-class AppConfig:
-    window_title: str = "Cuota Pro"
-    theme: str = "yeti"
 
 
 def main() -> int:
