@@ -36,4 +36,4 @@ class ShowDatabaseStatsDialog:
 
         ttk.Button(dialog, text="Cerrar", command=dialog.destroy).pack(pady=10)
 
-        center_window(self.root)
+        center_window(dialog)

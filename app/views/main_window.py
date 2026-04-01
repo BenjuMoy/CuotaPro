@@ -164,16 +164,24 @@ class MainWindow:
         count = self.main_service.get_active_student_count()
         self.update_status(f"{count} estudiantes activos")
 
+    def _run_action(self, action, success_msg=None):
+        try:
+            result = action()
+
+            if success_msg:
+                Messagebox.show_info(success_msg.format(result=result))
+
+            return result
+
+        except Exception as e:
+            Messagebox.show_error(f"Error: {e}", "Error")
+
     def create_backup(self):
         """Create a backup of the database."""
-        try:
-            backup_path = self.main_service.create_backup()
-            Messagebox.show_info(
-                f"Respaldo creado en:\n{backup_path}", "Respaldo Creado"
-            )
-            self.update_status("Respaldo creado")
-        except Exception as e:
-            Messagebox.show_error(f"Error al crear respaldo: {e}", "Error")
+        self._run_action(
+            self.main_service.create_backup, success_msg="Respaldo creado en:\n{result}"
+        )
+        self.update_status("Respaldo creado")
 
     def restore_backup(self):
         """Restore a backup of the database."""

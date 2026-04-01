@@ -3,6 +3,10 @@ import ttkbootstrap as ttk
 from app.utils.constantes import ABOUT_TEXT, APP_VERSION, FONT_HEADER
 from app.views.helpers_gui import center_window
 
+DIALOG_SIZES = {
+    "about": (100, 100),
+}
+
 
 def show_about(root: ttk.Window) -> None:
     """Sets up the about window.
@@ -12,7 +16,7 @@ def show_about(root: ttk.Window) -> None:
     """
     dialog = ttk.Toplevel(root)
     dialog.title("Sobre la Aplicación")
-    dialog.geometry("400x300")
+    dialog.geometry(f"{DIALOG_SIZES['about'][0]}x{DIALOG_SIZES['about'][1]}")
     dialog.transient(root)
     dialog.grab_set()
 
@@ -44,4 +48,4 @@ def show_about(root: ttk.Window) -> None:
 
     ttk.Button(dialog, text="Cerrar", command=dialog.destroy).pack(pady=15)
 
-    center_window(root)
+    center_window(dialog)
