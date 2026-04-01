@@ -31,7 +31,7 @@ class SearchStudentTab:
     def __init__(self, parent: ttk.Notebook, main_service: ApplicationService):
         self.main_service = main_service
         self.frame = ttk.Frame(parent)
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger()
 
         self._create_widgets()
         self._create_results_table()
