@@ -21,22 +21,19 @@ class StudentService:
         existing_student = self.repo.get_by_id(student_id)
 
         # Create copy and update copy
-        updated_student_data = existing_student.model_dump()
-        updated_student_data.update(data)
+        updated_student = existing_student.model_copy(update=data)
 
         # Validate and create the new model instance
-        updated_student = Student.model_validate(updated_student_data)
+        updated_student = Student.model_validate(updated_student.model_dump())
+
         self.repo.update(updated_student)
 
         return updated_student
 
-    def toggle_active(self, student_id: int) -> Student:
+    def toggle_active(self, student_id: int) -> None:
         """Handles the state switch."""
         student = self.repo.get_by_id(student_id)
-        updated = student.model_copy(update={"active": not student.active})
-        new_student = self.repo.update(updated)
-
-        return new_student
+        self.repo.update_active_state(student_id, not student.active)
 
     # Getters
 
