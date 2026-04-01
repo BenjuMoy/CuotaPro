@@ -48,7 +48,7 @@ def test_toggle_active(student_service):
     student_service.toggle_active(student.id)
     updated = student_service.get_by_id(student.id)
 
-    assert updated.active is False
+    assert not updated.active
 
 
 def test_get_nonexistent_student(student_service):
