@@ -24,6 +24,7 @@ class StudentRepository:
     @staticmethod
     def _row_to_student(row: sqlite3.Row) -> Student:
         """Converts a database row tuple into a Student Pydantic model."""
+        # Using model_construct for performance; DB enforces integrity
         return Student.model_construct(**dict(row), strict=False)
 
     @staticmethod
@@ -126,6 +127,7 @@ class StudentRepository:
                OR first_name LIKE ? COLLATE NOCASE
                OR last_name || ' ' || first_name LIKE ? COLLATE NOCASE
                OR first_name || ' ' || last_name LIKE ? COLLATE NOCASE
+            {ORDER_BY_STUDENT}
         """
 
         with self.db.read() as conn:
@@ -141,7 +143,8 @@ class StudentRepository:
         query = f"""
             {BASE_SELECT}
             WHERE teacher LIKE ? COLLATE NOCASE
-            {ORDER_BY_STUDENT}"""
+            {ORDER_BY_STUDENT}
+        """
 
         with self.db.read() as conn:
             cursor = conn.execute(query, (search_pattern,))
