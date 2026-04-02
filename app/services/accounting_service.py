@@ -161,11 +161,11 @@ class AccountingService:
     def get_balances_for_students(self) -> dict[int, int]:
         return self.movements.get_balances_for_students()
 
-    def fees_not_applied_for_period(self) -> bool:
+    def are_fees_applied(self) -> bool:
         now = datetime.now()
         month, year = now.month, now.year
 
-        return self.movements.fees_not_applied_for_period(month, year)
+        return self.movements.get_are_fees_applied(month, year)
 
     def get_total_collected_this_month(self, month: int, year: int):
         return self.movements.total_collected_this_month(month, year)

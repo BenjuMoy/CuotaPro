@@ -228,8 +228,8 @@ class ApplicationService:
         """Returns a tuple containing the month and the year of the last applied fees."""
         return self.services.accounting.get_last_fee_date()
 
-    def fees_not_applied_for_period(self) -> bool:
-        return self.services.accounting.fees_not_applied_for_period()
+    def are_fees_applied(self) -> bool:
+        return self.services.accounting.are_fees_applied()
 
     def get_balances_for_students(self) -> dict[int, int]:
         return self.services.accounting.get_balances_for_students()
