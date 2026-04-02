@@ -39,8 +39,8 @@ class AppInitializer:
     """
 
     def __init__(self, db_config: DatabaseConfig):
-        db_config.ensure_directories_exist()
         self.db = DatabaseManager(db_config)
+        self.db_config = db_config
 
     # ------------------------
     # PUBLIC ENTRY POINT
@@ -48,6 +48,7 @@ class AppInitializer:
 
     def initialize(self) -> ServiceContainer:
         logger.info("Preparing database")
+        self.db_config.ensure_directories_exist()
         self._prepare_database()
 
         logger.info("Building services")
