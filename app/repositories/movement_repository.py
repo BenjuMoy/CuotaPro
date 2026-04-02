@@ -18,6 +18,8 @@ LEFT JOIN movements r ON r.reference_id = m.id
 WHERE {EFFECTIVE_MOVEMENT_FILTER}
 """
 
+ORDER_BY_MOVEMENT_DESC = "ORDER BY year DESC, month DESC, id DESC"
+
 # IMPORTANT:
 # Movements are immutable.
 # Do not implement UPDATE or DELETE.
@@ -95,7 +97,7 @@ class MovementRepository:
         query = f"""
             SELECT {MOVEMENT_COLUMNS}
             FROM movements
-            ORDER BY year DESC, month DESC, id DESC
+            {ORDER_BY_MOVEMENT_DESC}
         """
 
         with self.db.read() as conn:
@@ -169,7 +171,7 @@ class MovementRepository:
             SELECT {MOVEMENT_COLUMNS}
             FROM movements
             WHERE student_id = ?
-            ORDER BY year DESC, month DESC, id DESC
+            {ORDER_BY_MOVEMENT_DESC}
         """
 
         with self.db.read() as conn:
@@ -193,11 +195,11 @@ class MovementRepository:
 
     def get_last_date_applied_fee(self) -> tuple[int, int] | None:
         """Returns a tuple with the month and the year of the last applied fee, if no date returns None."""
-        query = """
+        query = f"""
             SELECT month, year 
             FROM movements 
             WHERE type = 'FEE' 
-            ORDER BY year DESC, month DESC, id DESC
+            {ORDER_BY_MOVEMENT_DESC}
             LIMIT 1
         """
 
@@ -207,7 +209,7 @@ class MovementRepository:
 
         return (row["month"], row["year"]) if row else None
 
-    def fees_not_applied_for_period(self, month: int, year: int) -> bool:
+    def get_are_fees_applied(self, month: int, year: int) -> bool:
         """Checks for global monthly fee application.
 
         Args:
