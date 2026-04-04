@@ -5,6 +5,7 @@ from datetime import datetime
 from app.database.connection import DatabaseManager
 from app.models.exceptions import NotFound
 from app.models.models import Movement, MovementType, StudentOverview
+from app.repositories.student_repository import row_to_student
 
 MOVEMENT_COLUMNS = "id, student_id, reference_id, type, amount, month, year, created_at"
 
