@@ -179,3 +179,8 @@ class AccountingService:
             last_payment=self.movements.get_student_last_payment(student_id),
             movements=self.movements.get_effective_movements_by_id(student_id),
         )
+
+    def get_bulk_overview_data(
+        self, student_ids: list[int]
+    ) -> dict[int, StudentOverview]:
+        return self.movements.get_bulk_overview_data(student_ids)

@@ -1,9 +1,11 @@
 import sqlite3
+from collections import defaultdict
 from datetime import datetime
 
 from app.database.connection import DatabaseManager
 from app.models.exceptions import NotFound
-from app.models.models import Movement
+from app.models.models import Movement, MovementType, StudentOverview
+from app.repositories.student_repository import row_to_student
 
 MOVEMENT_COLUMNS = "id, student_id, reference_id, type, amount, month, year, created_at"
 
@@ -341,3 +343,56 @@ class MovementRepository:
             return {
                 (row["month"], row["year"]): row["amount"] for row in cursor.fetchall()
             }
+
+    def get_bulk_overview_data(
+        self, student_ids: list[int]
+    ) -> dict[int, StudentOverview]:
+        if not student_ids:
+            return {}
+
+        placeholders = ",".join(["?" for _ in student_ids])
+
+        # Single query for all movements
+        movements_query = f"""
+        SELECT * FROM movements 
+        WHERE student_id IN ({placeholders})
+        ORDER BY student_id, created_at DESC
+        """
+
+        # Single query for all students
+        students_query = f"""
+        SELECT * FROM students 
+        WHERE id IN ({placeholders})
+        """
+
+        with self.db.read() as conn:  # Transaction context
+            movements_cursor = conn.execute(movements_query, student_ids)
+            students_cursor = conn.execute(students_query, student_ids)
+
+            movements_rows = movements_cursor.fetchall()
+            students_rows = students_cursor.fetchall()
+
+        # Process results
+        students_by_id = {row["id"]: row_to_student(row) for row in students_rows}
+
+        movements_by_student = defaultdict(list)
+        for row in movements_rows:
+            movements_by_student[row["student_id"]].append(self._row_to_movement(row))
+
+        # Calculate balances and last payments
+        result = {}
+        for student_id, student in students_by_id.items():
+            movements = movements_by_student.get(student_id, [])
+            balance = sum(m.amount for m in movements)
+            last_payment = next(
+                (m for m in movements if m.type == MovementType.PAYMENT), None
+            )
+
+            result[student_id] = StudentOverview(
+                student=student,
+                balance=balance,
+                last_payment=last_payment,
+                movements=movements,
+            )
+
+        return result

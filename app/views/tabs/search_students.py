@@ -5,7 +5,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs.message import Messagebox
 from ttkbootstrap.widgets.tableview import Tableview
 
-from app.models.models import Movement, RefreshType, Student
+from app.models.models import Movement, RefreshType, Student, StudentOverview
 from app.services.application_service import ApplicationService
 from app.utils.constantes import ICON_SEARCH, NUM_TO_MONTH, PAD_X, PAD_Y, TEACHERS
 from app.utils.helpers import currency_format
@@ -23,6 +23,7 @@ COLUMNS = [
     {"text": "Nombre"},
     {"text": "Profesor"},
     {"text": "Balance"},
+    {"text": "Ultimo Mes Pagado"},
     {"text": "Estado"},
 ]
 
@@ -33,8 +34,8 @@ class SearchStudentTab:
         self.frame = ttk.Frame(parent)
         self.logger = logging.getLogger()
 
-        self._balances_cache: dict[int, int] = (
-            self.main_service.get_balances_for_students()
+        self._students_cache: dict[int, StudentOverview] = (
+            self.main_service.get_students_overview()
         )
 
         self.main_service.event.subscribe(RefreshType.MOVEMENTS, self._refresh_balances)
@@ -108,28 +109,33 @@ Libro: {student.book}
 Curso: {student.course}
 Cuota: {student.monthly_fee}
 Balance: {currency_format(balance)}
-Último mes pagado: {NUM_TO_MONTH.get(last_payment.month, "Desconocido") if last_payment else "Ningun pago registrado"}
-    """
+Último mes pagado: {NUM_TO_MONTH.get(last_payment.month, "Desconocido") if last_payment else "Ningun pago registrado"}"""
         Messagebox.show_info(
             detalles, f"Ficha de {student.first_name} {student.last_name}"
         )
 
     @staticmethod
-    def _student_to_row(student: Student, balance: int) -> tuple:
+    def _student_to_row(
+        student: Student, balance: int, last_payment: Movement | None
+    ) -> tuple:
         return (
             student.id,
             student.last_name,
             student.first_name,
             student.teacher,
             currency_format(balance),
+            NUM_TO_MONTH[last_payment.month] if last_payment else "N/A",
             "✅ Activo" if student.active else "🚫 Inactivo",
         )
 
     # --- Search Actions --- #
     def search_by_name(self):
         self._reset_filters(clear_teacher=True)
-        name = get_str(self.name_filter_entry)
-        self._run_search(lambda: self.main_service.search_student_by_name(name))
+        self._run_search(
+            lambda: self.main_service.search_student_by_name(
+                get_str(self.name_filter_entry)
+            )
+        )
 
     def search_by_teacher(self, _event=None):
         self._reset_filters(clear_name=True)
@@ -139,7 +145,7 @@ Balance: {currency_format(balance)}
             )
         )
 
-    def _run_search(self, fetch_fn: Callable[[], list[Student]]):
+    def _run_search(self, fetch_fn: Callable[[], dict[int, StudentOverview]]):
         try:
             results = fetch_fn()
             self._populate_table(results)
@@ -166,17 +172,19 @@ Balance: {currency_format(balance)}
             self.teacher_filter_entry.set("")
 
     # --- Table Helpers ---
-    def _populate_table(self, students: list[Student]):
+    def _populate_table(self, overviews: dict[int, StudentOverview]):
         """Limpia la tabla y la llena con la lista proporcionada."""
         self.table.delete_rows()
 
-        for student in students:
-            balance = self._balances_cache.get(student.id, 0)
+        for overview in overviews.values():
             row = self.table.insert_row(
-                index="end", values=self._student_to_row(student, balance)
+                index="end",
+                values=self._student_to_row(
+                    overview.student, overview.balance, overview.last_payment
+                ),
             )
 
-            if balance < 0:
+            if overview.balance < 0:
                 self.table.view.item(row.iid, tags=("debtor",))
 
         # self.table.view.tag_configure("debtor", foreground="red")
@@ -192,9 +200,8 @@ Balance: {currency_format(balance)}
 
         student_id = rows[0].values[0]
 
-        student_overview = self.main_service.get_student_payment_overview(student_id)
         self._show_student_details(
-            student_overview.student,
-            student_overview.last_payment,
-            student_overview.balance,
+            self._students_cache[student_id].student,
+            self._students_cache[student_id].last_payment,
+            self._students_cache[student_id].balance,
         )

@@ -19,7 +19,6 @@ from app.models.models import (
     Student,
     StudentOverview,
 )
-from app.utils.constantes import MONTH_TO_NUM
 
 logger = logging.getLogger()
 
@@ -136,17 +135,28 @@ class ApplicationService:
         """Retrieves a single student by their ID."""
         return self.services.student.get_by_id(student_id)
 
-    def get_students_debtors(self) -> list[Student]:
+    def get_students_debtors(self) -> dict[int, StudentOverview]:
         """Search students by debt."""
-        return self.services.student.get_debtors()
+        students = self.services.student.get_debtors()
+        return self._map_students_to_overview(students)
 
-    def search_student_by_name(self, name: str) -> list[Student]:
+    def search_student_by_name(self, name: str) -> dict[int, StudentOverview]:
         """Search students by name."""
-        return self.services.student.search_by_name(name)
+        students = self.services.student.search_by_name(name)
+        return self._map_students_to_overview(students)
 
-    def search_student_by_teacher(self, teacher_name: str) -> list[Student]:
+    def search_student_by_teacher(
+        self, teacher_name: str
+    ) -> dict[int, StudentOverview]:
         """Search students by teacher name."""
-        return self.services.student.search_by_teacher(teacher_name)
+        students = self.services.student.search_by_teacher(teacher_name)
+        return self._map_students_to_overview(students)
+
+    def _map_students_to_overview(
+        self, students: list[Student]
+    ) -> dict[int, StudentOverview]:
+        data = [student.id for student in students if student.id]
+        return self.services.accounting.get_bulk_overview_data(data)
 
     def count_students_by_monthly_fee(self, monthly_fee: int) -> int:
         """Search students by monthly_fee."""
@@ -160,16 +170,10 @@ class ApplicationService:
     # ======================
 
     def add_payment_to_student(
-        self, student_id: int, period: str, amount_str: str
+        self, student_id: int, month: int, year: int, amount: int
     ) -> StudentOverview:
         """Adds payment to student by id. Amount comes always positive from ui and current year is assumed for payment."""
         try:
-            month_name, year_str = period.split()
-            month = MONTH_TO_NUM[month_name]
-
-            year = int(year_str)
-            amount = int(amount_str)
-
             student, new_balance, movement = self.services.accounting.add_payment(
                 student_id, month, year, amount
             )
@@ -237,7 +241,15 @@ class ApplicationService:
     def get_students_without_fee(self, month: int, year: int) -> list[Student]:
         return self.services.accounting.get_students_without_fee(month, year)
 
-    # --- Administrative actions --- #
+    def preview_fee_application(self, month, year) -> int:
+        return len(self.get_students_without_fee(month, year))
+
+    def get_students_overview(self) -> dict[int, StudentOverview]:
+        students = self.services.student.get_all()
+        data = [student.id for student in students if student.id]
+        return self.services.accounting.get_bulk_overview_data(data)
+
+    # Administrative
 
     def apply_monthly_fees(self) -> int:
         """Generates charges for all active students"""

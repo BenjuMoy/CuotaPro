@@ -10,6 +10,7 @@ from app.models.models import Movement, RefreshType, Student
 from app.services.application_service import ApplicationService
 from app.utils.constantes import (
     FONT_BODY,
+    MONTH_TO_NUM,
     NUM_TO_MONTH,
     PAD_X,
     PAD_Y,
@@ -97,7 +98,10 @@ class PaymentTab:
     def _initialize_student_data(self):
         """Initialize student mapping data."""
         self.all_students = self.main_service.get_students_debtors()
-        self.student_map = {s.id: self._get_display_name(s) for s in self.all_students}
+        self.student_map = {
+            s.student.id: self._get_display_name(s.student)
+            for s in self.all_students.values()
+        }
 
     def _create_widgets(self):
         """Create student selection and info widgets."""
@@ -306,10 +310,17 @@ class PaymentTab:
             self._processing = True
             self._set_processing_state(True)
 
+            month_name, year_str = month_year.split()
+
+            month = MONTH_TO_NUM[month_name]
+            year = int(year_str)
+            amount = int(amount_str)
+
             student_overview = self.main_service.add_payment_to_student(
                 student_id=self.current_student.id,
-                period=month_year,
-                amount_str=amount_str,
+                month=month,
+                year=year,
+                amount=amount,
             )
 
             # Success

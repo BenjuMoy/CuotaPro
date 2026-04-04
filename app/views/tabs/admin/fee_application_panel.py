@@ -70,11 +70,18 @@ class FeeApplicationPanel:
             return
 
         now = datetime.now()
-        student_list = self.main_service.get_students_without_fee(now.month, now.year)
+        count = self.main_service.preview_fee_application(now.month, now.year)
 
         confirm = Messagebox.yesno(
             (
-                f"""Periodo: {NUM_TO_MONTH[now.month]} {now.year}. \nCuotas a generar: {len(student_list)} \n¿Desea continuar?"""
+                f"""⚠ Acción irreversible
+
+Periodo: {now.month} {now.year}
+Alumnos afectados: {count}
+
+Se generarán cargos automáticamente.
+
+¿Confirmar?"""
             ),
             "Confirmar Aplicación",
         )
@@ -94,7 +101,6 @@ class FeeApplicationPanel:
             )
 
             self._refresh_apply_label()
-            self.apply_fees_button.config(state="disabled")
 
         except (ValidationError, NotFound) as e:
             show_toast(self.frame, f"Error: {e}", "error")
@@ -127,5 +133,5 @@ class FeeApplicationPanel:
         self.frame.update_idletasks()
 
     def _update_button_state(self):
-        enabled = self.main_service.fees_not_applied_for_period()
+        enabled = self.main_service.are_fees_applied()
         self.apply_fees_button.config(state="normal" if enabled else "disabled")
