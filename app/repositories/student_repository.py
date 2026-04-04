@@ -13,6 +13,12 @@ ORDER_BY_STUDENT = "ORDER BY last_name, first_name"
 ACTIVE_FILTER = "active = 1"
 
 
+def row_to_student(row: sqlite3.Row) -> Student:
+    """Converts a database row tuple into a Student Pydantic model."""
+    # Using model_construct for performance; DB enforces integrity
+    return Student.model_construct(**dict(row), strict=False)
+
+
 class StudentRepository:
     """Data Access Object for student operations."""
 
@@ -20,12 +26,6 @@ class StudentRepository:
         self.db = db
 
     # --- Helper Methods --- #
-
-    @staticmethod
-    def _row_to_student(row: sqlite3.Row) -> Student:
-        """Converts a database row tuple into a Student Pydantic model."""
-        # Using model_construct for performance; DB enforces integrity
-        return Student.model_construct(**dict(row), strict=False)
 
     @staticmethod
     def _student_to_tuple(student: Student):
@@ -45,7 +45,7 @@ class StudentRepository:
         )
 
     def _fetch_all(self, cursor: sqlite3.Cursor) -> list[Student]:
-        return [self._row_to_student(row) for row in cursor.fetchall()]
+        return [row_to_student(row) for row in cursor.fetchall()]
 
     # --- CRUD Operations --- #
 
@@ -178,7 +178,7 @@ class StudentRepository:
         if not row:
             raise NotFound(f"Student with id {student_id} not found")
 
-        return self._row_to_student(row)
+        return row_to_student(row)
 
     def get_debtors(self) -> list[Student]:
         """Gets all students with balance < 0"""
