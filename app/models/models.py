@@ -47,7 +47,7 @@ class Student(BaseModel):
     phone2: str = Field(default="", max_length=20)
     phone3: str = Field(default="", max_length=20)
     teacher: str = Field(min_length=1, max_length=20)
-    book: str = Field(default="", max_length=50)
+    book: str = Field(default="", max_length=20)
     course: str = Field(default="", max_length=20)
     school: str = Field(default="", max_length=20)
     year: str = Field(default="", max_length=20)
