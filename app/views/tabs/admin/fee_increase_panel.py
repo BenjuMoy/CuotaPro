@@ -84,12 +84,12 @@ class FeeIncreasePanel:
         # old_monthly_fee = self._parse_positive_int(old_monthly_fee_str)
 
         selected_label = self.old_monthly_fee_combo.get()
+        data = selected_label.split()
         old_monthly_fee = self.fee_map.get(selected_label)
 
         if old_monthly_fee is None:
             show_toast(self.frame, "Ingrese una cuota válida", "error")
             return
-        affected = self.main_service.count_students_by_monthly_fee(old_monthly_fee)
 
         value = self.new_monthly_fee_entry.get().strip()
         if not value:
@@ -103,11 +103,11 @@ class FeeIncreasePanel:
             return
 
         confirm = Messagebox.yesno(
-            f"""Cambiar cuota:\n
-            {currency_format(old_monthly_fee)} -> {currency_format(new_monthly_fee)}
+            f"""Cambiar cuota:
+{currency_format(old_monthly_fee)} -> {currency_format(new_monthly_fee)}
 
-            Afectará a {affected} alumnos.
-            ¿Desea continuar?""",
+Afectará a {data[1][1:]} alumnos.
+¿Desea continuar?""",
             "Confirmar Cambios",
         )
 
