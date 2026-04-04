@@ -102,12 +102,18 @@ class MovementTablePanel:
             return
 
         row_values = selected_rows[0].values
-        res = Messagebox.yesno(
-            f"ID del alumno: {row_values[1]} \nTipo: {row_values[2]} \nFecha: {row_values[6]} \nMonto: {row_values[3]}",
-            "Revertir movimiento",
-        )
+        confirm = Messagebox.yesno(f"""
+⚠ Reversión de movimiento
 
-        if res != "Yes":
+Alumno ID: {row_values[1]}
+Monto: {row_values[3]}
+Fecha: {row_values[6]}
+
+Esta acción no se puede deshacer.
+
+¿Confirmar?""")
+
+        if confirm != "Yes":
             show_toast(self.frame, "No se revirtio el movimiento", "warn")
             return
 
