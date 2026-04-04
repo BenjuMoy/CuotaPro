@@ -13,19 +13,24 @@ ABOUT_TEXT = "Desarrollado por Benjamin Moyano.\nmoyano [dot] ben [at] gmail [do
 
 
 # Database-related constants
-DATABASE_DIR = "data/"
-DATABASE_PATH = "data/student_management.db"
-DATABASE_BACKUP_DIR = "data/backup/"
-DATABASE_EXPORT_DIR = "data/exports/"
+
+MAIN_DIR = Path.home() / "CuotaPro"
+DATABASE_DIR = MAIN_DIR / "data"
+DATABASE_PATH = DATABASE_DIR / "student_management.db"
+DATABASE_BACKUP_DIR = DATABASE_DIR / "backup"
+DATABASE_EXPORT_DIR = DATABASE_DIR / "exports"
 
 SCHEMA_VERSION = 3
 
 # Icons
-ICON_ADD = "app/views/assets/add.png"
-ICON_EDIT = "app/views/assets/edit.png"
-ICON_SEARCH = "app/views/assets/search.png"
-ICON_DELETE = "app/views/assets/delete.png"
-ICON_PATH = "app/views/assets/logo.png"
+APP_DIR = Path("app")
+VIEWS_DIR = APP_DIR / "views"
+ASSETS_DIR = VIEWS_DIR / "assets"
+ICON_ADD = ASSETS_DIR / "add.png"
+ICON_EDIT = ASSETS_DIR / "edit.png"
+ICON_SEARCH = ASSETS_DIR / "search.png"
+ICON_DELETE = ASSETS_DIR / "delete.png"
+ICON_PATH = ASSETS_DIR / "logo.png"
 
 
 FECHA_FMT = "%d-%m-%Y"
