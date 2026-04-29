@@ -2,14 +2,14 @@ from pathlib import Path
 
 import pytest
 
-from app.database.config import DatabaseConfig
-from app.database.connection import DatabaseManager
-from app.database.schema import bootstrap_database
-from app.repositories.movement_repository import MovementRepository
-from app.repositories.student_repository import StudentRepository
-from app.services.accounting_service import AccountingService
-from app.services.reporting_service import ReportingService
-from app.services.student_service import StudentService
+from application.database.config import DatabaseConfig
+from application.database.connection import DatabaseManager
+from application.database.schema import bootstrap_database
+from application.repositories.movement_repository import MovementRepository
+from application.repositories.student_repository import StudentRepository
+from application.services.accounting_service import AccountingService
+from application.services.reporting_service import ReportingService
+from application.services.student_service import StudentService
 
 
 @pytest.fixture
@@ -50,15 +50,13 @@ def student_service(student_repo: StudentRepository) -> StudentService:
 
 @pytest.fixture
 def accounting_service(
-    student_repo: StudentRepository,
-    movement_repo: MovementRepository,
+    student_repo: StudentRepository, movement_repo: MovementRepository
 ) -> AccountingService:
     return AccountingService(student_repo, movement_repo)
 
 
 @pytest.fixture
 def reporting_service(
-    student_repo: StudentRepository,
-    movement_repo: MovementRepository,
+    student_repo: StudentRepository, movement_repo: MovementRepository
 ) -> ReportingService:
     return ReportingService(student_repo, movement_repo)

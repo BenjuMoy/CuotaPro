@@ -1,16 +1,21 @@
-from app.application import Application
-from app.database.config import DatabaseConfig
-from app.models.config import AppConfig
-from app.utils.logger import setup_logging
+import logging
+
+from bootstrap.bootstrap import ApplicationBuilder
+from infrastructure.logging.logger import setup_logging
 
 
 def main() -> int:
-    """Entry point for the application."""
     setup_logging()
+    logger = logging.getLogger(__name__)
 
-    app = Application(config=AppConfig(), db_config=DatabaseConfig())
+    try:
+        logger.info("Starting application")
+        app = ApplicationBuilder().build()
+        return app.run()
 
-    return app.run()
+    except Exception:
+        logger.exception("Fatal error during startup")
+        return 1
 
 
 if __name__ == "__main__":

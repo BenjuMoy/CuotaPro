@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pytest
 
-from app.models.exceptions import BusinessRuleError
+from application.models.exceptions import BusinessRuleError
 
 
 def create_student(student_service):

@@ -1,6 +1,6 @@
 import pytest
 
-from app.models.exceptions import NotFound
+from application.models.exceptions import NotFound
 
 
 def test_add_student(student_service):
