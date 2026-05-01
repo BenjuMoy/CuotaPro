@@ -1,9 +1,8 @@
-from sqlite3 import Cursor
+from sqlite3 import Connection, Cursor
 
 from domain.shared.exceptions import NotFound
 from domain.student.model import Student
 from infrastructure.database.mappers import row_to_student, student_to_params
-from infrastructure.database.unit_of_work import UnitOfWork
 
 STUDENT_COLUMNS = "id, active, last_name, first_name, phone1, phone2, phone3, teacher, book, course, school, year, monthly_fee"
 BASE_SELECT = f"SELECT {STUDENT_COLUMNS} FROM students"
@@ -12,8 +11,8 @@ ACTIVE_FILTER = "active = 1"
 
 
 class StudentRepository:
-    def __init__(self, uow: UnitOfWork) -> None:
-        self.uow = uow
+    def __init__(self, conn: Connection) -> None:
+        self.conn = conn
 
     def _fetch_all(self, cursor: Cursor) -> list[Student]:
         return [row_to_student(row) for row in cursor.fetchall()]
@@ -40,7 +39,7 @@ class StudentRepository:
                 :course, :school, :year, :monthly_fee
             )
         """
-        cursor = self.uow.conn.execute(query, student_to_params(student))
+        cursor = self.conn.execute(query, student_to_params(student))
 
         student.id = cursor.lastrowid
         return student
@@ -70,7 +69,7 @@ class StudentRepository:
         params = student_to_params(student)
         params["id"] = student.id
 
-        cursor = self.uow.conn.execute(query, params)
+        cursor = self.conn.execute(query, params)
 
         if cursor.rowcount == 0:
             raise NotFound(f"Student with id {student.id} not found")
@@ -79,7 +78,7 @@ class StudentRepository:
 
     def increase_monthly_fee_batch(self, old_fee: int, new_fee: int) -> int:
         query = "UPDATE students SET monthly_fee = ? WHERE monthly_fee = ?"
-        cursor = self.uow.conn.execute(query, (new_fee, old_fee))
+        cursor = self.conn.execute(query, (new_fee, old_fee))
         return cursor.rowcount
 
     def search_students(
@@ -121,7 +120,7 @@ class StudentRepository:
             {ORDER_BY_STUDENT}
         """
 
-        cursor = self.uow.conn.execute(query, params)
+        cursor = self.conn.execute(query, params)
         return self._fetch_all(cursor)
 
     def get_all(self) -> list[Student]:
@@ -129,7 +128,7 @@ class StudentRepository:
             {BASE_SELECT}
             {ORDER_BY_STUDENT}
         """
-        cursor = self.uow.conn.execute(query)
+        cursor = self.conn.execute(query)
         return self._fetch_all(cursor)
 
     def get_by_id(self, student_id: int) -> Student:
@@ -138,7 +137,7 @@ class StudentRepository:
             WHERE id=?
             LIMIT 1
         """
-        cursor = self.uow.conn.execute(query, (student_id,))
+        cursor = self.conn.execute(query, (student_id,))
         row = cursor.fetchone()
 
         if not row:
@@ -153,12 +152,12 @@ class StudentRepository:
         placeholders = ",".join("?" for _ in ids)
         query = f"{BASE_SELECT} WHERE id IN ({placeholders}) {ORDER_BY_STUDENT}"
 
-        cursor = self.uow.conn.execute(query, ids)
+        cursor = self.conn.execute(query, ids)
         return self._fetch_all(cursor)
 
     def count_active(self) -> int:
         query = f"SELECT COUNT(*) AS count FROM students WHERE {ACTIVE_FILTER}"
-        cursor = self.uow.conn.execute(query)
+        cursor = self.conn.execute(query)
         return cursor.fetchone()["count"]
 
     def list_active(self) -> list[Student]:
@@ -167,7 +166,7 @@ class StudentRepository:
             WHERE {ACTIVE_FILTER}
             {ORDER_BY_STUDENT}
         """
-        cursor = self.uow.conn.execute(query)
+        cursor = self.conn.execute(query)
         return self._fetch_all(cursor)
 
     def count_by_monthly_fee(self, monthly_fee: int) -> int:
@@ -176,7 +175,7 @@ class StudentRepository:
             FROM students
             WHERE monthly_fee = ? AND {ACTIVE_FILTER}
         """
-        cursor = self.uow.conn.execute(query, (monthly_fee,))
+        cursor = self.conn.execute(query, (monthly_fee,))
         return cursor.fetchone()["count"]
 
     def get_fees_list(self) -> list[tuple[int, int]]:
@@ -185,5 +184,5 @@ class StudentRepository:
             FROM students
             GROUP BY monthly_fee
         """
-        cursor = self.uow.conn.execute(query)
+        cursor = self.conn.execute(query)
         return [(row[0], row["count"]) for row in cursor.fetchall()]

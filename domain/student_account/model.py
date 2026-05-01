@@ -1,8 +1,9 @@
 from collections import defaultdict
+from datetime import datetime
 
 from domain.accounting.model import Movement, MovementType
 from domain.accounting.values import Money, Period
-from domain.shared.exceptions import AppValidationError, BusinessRuleError
+from domain.shared.exceptions import BusinessRuleError
 from domain.shared.shared import PeriodBalance
 from domain.student.model import Student
 
@@ -20,39 +21,39 @@ class StudentAccount:
 
     # --- Commands --- #
 
-    def add_payment(self, amount: Money, period: Period) -> Movement:
+    def add_payment(self, amount: Money, period: Period, now: datetime) -> Movement:
         if not self.balance.is_negative():
-            raise AppValidationError("No hay deuda para el estudiante")
+            raise BusinessRuleError("No hay deuda para el estudiante")
 
-        movement = Movement.payment(self.student.id, amount, period)
+        movement = Movement.payment(self.student.id, amount, period, now)
         self.movements.append(movement)
         self._invalidate_cache()
 
         return movement
 
-    def add_fee(self, amount: Money, period: Period) -> Movement:
+    def add_fee(self, amount: Money, period: Period, now: datetime) -> Movement:
         if self.has_fee(period):
             raise BusinessRuleError("Fee already exists for this period")
 
-        movement = Movement.fee(self.student.id, amount, period)
+        movement = Movement.fee(self.student.id, amount, period, now)
         self.movements.append(movement)
         self._invalidate_cache()
 
         return movement
 
-    def reverse(self, movement_id: int) -> Movement:
+    def reverse(self, movement_id: int, now: datetime) -> Movement:
         original = next((m for m in self.movements if m.id == movement_id), None)
 
         if not original:
-            raise AppValidationError("Movimiento no encontrado")
+            raise BusinessRuleError("Movimiento no encontrado")
 
         original.ensure_reversible()
 
         if any(m.reference_id == original.id for m in self.movements):
-            raise AppValidationError("Movimiento ya revertido")
+            raise BusinessRuleError("Movimiento ya revertido")
 
         reversal = Movement.reversal(
-            self.student.id, original.id, original.amount, original.period
+            self.student.id, original.id, original.amount, original.period, now
         )
 
         self.movements.append(reversal)

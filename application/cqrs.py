@@ -5,38 +5,30 @@ from application.mappers import to_movement_dto, to_student_dto, to_student_over
 from application.reporting_dto import DashboardMetrics, SalaryReport, StudentFeeDetail
 from core.clock import Clock
 from domain.accounting.model import MovementType
-from domain.accounting.repository import MovementRepository
 from domain.accounting.values import Period
 from domain.shared.shared import PeriodBalance
 from domain.student.model import Student
-from domain.student.repository import StudentRepository
 from domain.student_account.model import StudentAccount
 from infrastructure.database.unit_of_work import UnitOfWork
 
 
 class CQRSService:
-    def __init__(
-        self,
-        uow: UnitOfWork,
-        student_repo: StudentRepository,
-        movement_repo: MovementRepository,
-        clock: Clock | None = None,
-    ):
+    def __init__(self, uow: UnitOfWork, clock: Clock | None = None):
         self.uow = uow
         self.clock = clock or Clock()
-        self.student = student_repo
-        self.movements = movement_repo
 
     # --- Helpers --- #
 
-    def _build_account(self, student_id: int) -> StudentAccount:
-        student = self.student.get_by_id(student_id)
-        movements = self.movements.list_by_student_id(student_id)
+    def _build_account(self, student_id: int, uow: UnitOfWork) -> StudentAccount:
+        student = uow.students.get_by_id(student_id)
+        movements = uow.movements.list_by_student_id(student_id)
         return StudentAccount(student, movements)
 
-    def _build_accounts_bulk(self, students: list[Student]) -> list[StudentAccount]:
-        ids = [s.id for s in students if s.id]
-        movements = self.movements.list_by_students_ids(ids)
+    def _build_accounts_bulk(
+        self, students: list[Student], uow: UnitOfWork
+    ) -> list[StudentAccount]:
+        ids = [s.id for s in students]
+        movements = uow.movements.list_by_students_ids(ids)
 
         by_student: dict[int, list] = {}
         for m in movements:
@@ -47,16 +39,16 @@ class CQRSService:
     # --- Student CQRS --- #
 
     def get_all_students(self) -> list[StudentDTO]:
-        with self.uow:
-            return [to_student_dto(s) for s in self.student.get_all()]
+        with self.uow as uow:
+            return [to_student_dto(s) for s in uow.students.get_all()]
 
     def get_by_id(self, student_id: int) -> StudentDTO:
-        with self.uow:
-            return to_student_dto(self.student.get_by_id(student_id))
+        with self.uow as uow:
+            return to_student_dto(uow.students.get_by_id(student_id))
 
     def get_overview_by_id(self, student_id: int) -> StudentOverview:
-        with self.uow:
-            return to_student_overview(self._build_account(student_id))
+        with self.uow as uow:
+            return to_student_overview(self._build_account(student_id, uow))
 
     def search_students(
         self,
@@ -66,11 +58,11 @@ class CQRSService:
         only_debtors: bool | None = None,
     ) -> dict[int, StudentOverview]:
 
-        with self.uow:
-            students = self.student.search_students(
+        with self.uow as uow:
+            students = uow.students.search_students(
                 name=name, teacher=teacher, active=active
             )
-            accounts = self._build_accounts_bulk(students)
+            accounts = self._build_accounts_bulk(students, uow)
 
         if not students:
             return {}
@@ -85,36 +77,36 @@ class CQRSService:
         }
 
     def count_by_monthly_fee(self, monthly_fee: int) -> int:
-        with self.uow:
-            return self.student.count_by_monthly_fee(monthly_fee)
+        with self.uow as uow:
+            return uow.students.count_by_monthly_fee(monthly_fee)
 
     def get_active_count(self) -> int:
-        with self.uow:
-            return self.student.count_active()
+        with self.uow as uow:
+            return uow.students.count_active()
 
     def get_fees_list(self) -> list[tuple[int, int]]:
-        with self.uow:
-            return self.student.get_fees_list()
+        with self.uow as uow:
+            return uow.students.get_fees_list()
 
     # --- Accounting CQRS --- #
 
     def get_unpaid_months_with_debt(self, student_id: int) -> list[PeriodBalance]:
-        with self.uow:
-            return self._build_account(student_id).unpaid_periods()
+        with self.uow as uow:
+            return self._build_account(student_id, uow).unpaid_periods()
 
     def get_all_movements(self) -> list[MovementDTO]:
-        with self.uow:
-            return [to_movement_dto(m) for m in self.movements.get_all()]
+        with self.uow as uow:
+            return [to_movement_dto(m) for m in uow.movements.get_all()]
 
     def get_last_fee_date(self) -> Period | None:
-        with self.uow:
-            return self.movements.get_last_date_applied_fee()
+        with self.uow as uow:
+            return uow.movements.get_last_date_applied_fee()
 
     def get_students_without_fee(self, month: int, year: int) -> list[StudentDTO]:
         period = Period(month, year)
-        with self.uow:
-            students = self.student.list_active()
-            accounts = self._build_accounts_bulk(students)
+        with self.uow as uow:
+            students = uow.students.list_active()
+            accounts = self._build_accounts_bulk(students, uow)
 
         return [
             to_student_dto(acc.student) for acc in accounts if not acc.has_fee(period)
@@ -127,9 +119,9 @@ class CQRSService:
         now = self.clock.now()
         period = Period(now.month, now.year)
 
-        with self.uow:
-            students = self.student.list_active()
-            accounts = self._build_accounts_bulk(students)
+        with self.uow as uow:
+            students = uow.students.list_active()
+            accounts = self._build_accounts_bulk(students, uow)
 
         return all(acc.has_fee(period) for acc in accounts)
 
@@ -140,9 +132,9 @@ class CQRSService:
         if not ids:
             return {}
 
-        with self.uow:
-            students = self.student.list_by_ids(ids)
-            movements = self.movements.list_by_students_ids(ids)
+        with self.uow as uow:
+            students = uow.students.list_by_ids(ids)
+            movements = uow.movements.list_by_students_ids(ids)
 
         movements_by_student: dict[int, list] = {}
         for m in movements:
@@ -160,9 +152,9 @@ class CQRSService:
     # --- Reporting --- #
 
     def get_salary(self, teacher_name: str) -> SalaryReport:
-        with self.uow:
+        with self.uow as uow:
             students = [
-                s for s in self.student.list_active() if s.teacher == teacher_name
+                s for s in uow.students.list_active() if s.teacher == teacher_name
             ]
 
         if not students:
@@ -190,9 +182,9 @@ class CQRSService:
 
     def get_kpi_metrics(self) -> DashboardMetrics:
         now = self.clock.now()
-        with self.uow:
-            students = self.student.list_active()
-            accounts = self._build_accounts_bulk(students)
+        with self.uow as uow:
+            students = uow.students.list_active()
+            accounts = self._build_accounts_bulk(students, uow)
 
         expected = sum(s.monthly_fee.amount for s in students)
 
@@ -210,9 +202,9 @@ class CQRSService:
         )
 
     def get_graphic_metrics(self):
-        with self.uow:
-            students = self.student.list_active()
-            accounts = self._build_accounts_bulk(students)
+        with self.uow as uow:
+            students = uow.students.list_active()
+            accounts = self._build_accounts_bulk(students, uow)
 
         return (
             self.get_income_trend(accounts),

@@ -1,18 +1,17 @@
-from sqlite3 import Cursor
+from sqlite3 import Connection, Cursor
 
 from domain.accounting.model import Movement
 from domain.accounting.values import Period
 from domain.shared.exceptions import NotFound
 from infrastructure.database.mappers import row_to_movement
-from infrastructure.database.unit_of_work import UnitOfWork
 
 MOVEMENT_COLUMNS = "id, student_id, reference_id, type, amount, month, year, created_at"
 ORDER_BY_MOVEMENT_DESC = "ORDER BY year DESC, month DESC, id DESC"
 
 
 class MovementRepository:
-    def __init__(self, uow: UnitOfWork):
-        self.uow = uow
+    def __init__(self, conn: Connection):
+        self.conn = conn
 
     def _fetch_all(self, cursor: Cursor) -> list[Movement]:
         return [row_to_movement(row) for row in cursor.fetchall()]
@@ -31,7 +30,7 @@ class MovementRepository:
             RETURNING created_at
         """
 
-        cursor = self.uow.conn.execute(
+        cursor = self.conn.execute(
             query,
             (
                 movement.student_id,
@@ -74,7 +73,7 @@ class MovementRepository:
             for m in movements
         ]
 
-        cursor = self.uow.conn.execute(query, data)
+        cursor = self.conn.execute(query, data)
         return cursor.rowcount
 
     def get_all(self) -> list[Movement]:
@@ -83,7 +82,7 @@ class MovementRepository:
             FROM movements
             {ORDER_BY_MOVEMENT_DESC}
         """
-        cursor = self.uow.conn.execute(query)
+        cursor = self.conn.execute(query)
         return self._fetch_all(cursor)
 
     def get_by_id(self, movement_id: int) -> Movement:
@@ -92,7 +91,7 @@ class MovementRepository:
             FROM movements
             WHERE id = ?
         """
-        cursor = self.uow.conn.execute(query, (movement_id,))
+        cursor = self.conn.execute(query, (movement_id,))
         row = cursor.fetchone()
 
         if not row:
@@ -107,7 +106,7 @@ class MovementRepository:
             WHERE student_id = ?
             {ORDER_BY_MOVEMENT_DESC}
         """
-        cursor = self.uow.conn.execute(query, (student_id,))
+        cursor = self.conn.execute(query, (student_id,))
         return self._fetch_all(cursor)
 
     def list_by_students_ids(self, ids: list[int]) -> list[Movement]:
@@ -121,7 +120,7 @@ class MovementRepository:
             WHERE student_id IN ({placeholders})
             {ORDER_BY_MOVEMENT_DESC}
         """
-        cursor = self.uow.conn.execute(query, ids)
+        cursor = self.conn.execute(query, ids)
         return self._fetch_all(cursor)
 
     def get_last_date_applied_fee(self) -> Period | None:
@@ -132,7 +131,7 @@ class MovementRepository:
             {ORDER_BY_MOVEMENT_DESC}
             LIMIT 1
         """
-        cursor = self.uow.conn.execute(query)
+        cursor = self.conn.execute(query)
         row = cursor.fetchone()
 
         return Period(row["month"], row["year"]) if row else None

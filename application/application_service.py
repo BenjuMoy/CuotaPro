@@ -7,16 +7,11 @@ from application.dto import CreatePaymentDTO, CreateStudentDTO, StudentDTO
 from application.events import EventBus, RefreshType
 from application.mappers import to_payment_domain, to_student_domain
 from core.clock import Clock
-from domain.accounting.model import Movement
-from domain.accounting.repository import MovementRepository
 from domain.accounting.values import Money, Period
 from domain.shared.exceptions import BusinessRuleError
-from domain.student.repository import StudentRepository
 from domain.student.values import MonthlyFee
 from domain.student_account.model import StudentAccount
 from infrastructure.database.unit_of_work import UnitOfWork
-
-# TODO Commands return metadata or results instead of objects?
 
 logger = logging.getLogger(__name__)
 
@@ -31,18 +26,15 @@ def handle_validation_error(e: ValidationError):
 
 
 class StudentService:
-    def __init__(
-        self, uow: UnitOfWork, events: EventBus, student_repo: StudentRepository
-    ):
+    def __init__(self, uow: UnitOfWork, events: EventBus):
         self.uow = uow
-        self.repo = student_repo
         self.event = events
 
     def add(self, dto: CreateStudentDTO) -> int:
         new_student = to_student_domain(dto)
 
-        with self.uow:
-            saved_student = self.repo.add(new_student)
+        with self.uow as uow:
+            saved_student = uow.students.add(new_student)
 
         logger.info(
             "Student created | id=%s last_name=%s first_name=%s fee=%s",
@@ -58,8 +50,8 @@ class StudentService:
     def update(self, dto: StudentDTO) -> int:
         updated_student = to_student_domain(dto)
 
-        with self.uow:
-            self.repo.update(updated_student)
+        with self.uow as uow:
+            uow.students.update(updated_student)
 
         logger.info(
             "Student updated | id=%s last_name=%s first_name=%s monthly_fee=%s",
@@ -74,31 +66,22 @@ class StudentService:
 
 
 class AccountingService:
-    def __init__(
-        self,
-        uow: UnitOfWork,
-        events: EventBus,
-        student_repo: StudentRepository,
-        movement_repo: MovementRepository,
-        clock: Clock | None = None,
-    ):
+    def __init__(self, uow: UnitOfWork, events: EventBus, clock: Clock | None = None):
         self.uow = uow
         self.clock = clock or Clock()
         self.event = events
-        self.movements = movement_repo
-        self.students = student_repo
 
-    def _build_account(self, student_id: int) -> StudentAccount:
-        student = self.students.get_by_id(student_id)
-        movements = self.movements.list_by_student_id(student_id)
+    def _build_account(self, student_id: int, uow: UnitOfWork) -> StudentAccount:
+        student = uow.students.get_by_id(student_id)
+        movements = uow.movements.list_by_student_id(student_id)
         return StudentAccount(student, movements)
 
     def toggle_active(self, student_id: int) -> None:
-        with self.uow:
-            account = self._build_account(student_id)
+        with self.uow as uow:
+            account = self._build_account(student_id, uow)
             account.toggle_active()
 
-            self.students.update(account.student)
+            uow.students.update(account.student)
 
         self.event.notify(RefreshType.STUDENTS)
         logger.info("Student with id=%s switched state.", student_id)
@@ -106,13 +89,15 @@ class AccountingService:
     def add_payment(self, dto: CreatePaymentDTO) -> int:
         movement = to_payment_domain(dto)
 
-        with self.uow:
-            account = self._build_account(dto.student_id)
+        with self.uow as uow:
+            account = self._build_account(dto.student_id, uow)
             account.student.ensure_active()
 
-            movement = account.add_payment(movement.amount, movement.period)
+            movement = account.add_payment(
+                movement.amount, movement.period, self.clock.now()
+            )
 
-            self.movements.add(movement)
+            uow.movements.add(movement)
 
         logger.info(
             "Payment added | student_id=%s month=%s year=%s amount=%s",
@@ -128,11 +113,11 @@ class AccountingService:
     def add_fee(self, month: int, year: int) -> int:
         period = Period(month, year)
 
-        with self.uow:
-            students = self.students.list_active()
-            student_ids = [s.id for s in students if s.id]
+        with self.uow as uow:
+            students = uow.students.list_active()
+            student_ids = [s.id for s in students]
 
-            movements = self.movements.list_by_students_ids(student_ids)
+            movements = uow.movements.list_by_students_ids(student_ids)
 
             movements_by_student = defaultdict(list)
             for m in movements:
@@ -147,6 +132,7 @@ class AccountingService:
                     movement = account.add_fee(
                         amount=Money(s.monthly_fee.amount),
                         period=period,
+                        now=self.clock.now(),
                     )
 
                     to_insert.append(movement)
@@ -157,7 +143,7 @@ class AccountingService:
             if not to_insert:
                 raise BusinessRuleError("No hay estudiantes para aplicar")
 
-            self.movements.add_many(to_insert)
+            uow.movements.add_many(to_insert)
 
         logger.info(
             "Fees applied | period= %s/%s count= %s",
@@ -170,15 +156,15 @@ class AccountingService:
         return len(to_insert)
 
     def increase_monthly_fee(self, old_fee: int, new_fee: int) -> int:
-        with self.uow:
-            students = self.students.list_active()
+        with self.uow as uow:
+            students = uow.students.list_active()
 
             affected = []
 
             for s in students:
                 if s.monthly_fee.amount == old_fee:
                     s.change_monthly_fee(MonthlyFee(new_fee))
-                    self.students.update(s)
+                    uow.students.update(s)
                     affected.append(s)
 
         count = len(affected)
@@ -189,13 +175,13 @@ class AccountingService:
         return count
 
     def reverse(self, payment_id: int) -> int:
-        with self.uow:
-            orig = self.movements.get_by_id(payment_id)
+        with self.uow as uow:
+            orig = uow.movements.get_by_id(payment_id)
 
-            account = self._build_account(orig.student_id)
-            reversed_movement = account.reverse(orig.id)
+            account = self._build_account(orig.student_id, uow)
+            reversed_movement = account.reverse(orig.id, self.clock.now())
 
-            movement = self.movements.add(reversed_movement)
+            movement = uow.movements.add(reversed_movement)
 
         logger.info(
             "Reversing movement entry | id=%s, period=%s/%s",

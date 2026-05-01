@@ -3,7 +3,7 @@ from domain.student.values import MonthlyFee, PhoneNumber, StudentName
 
 # last_name, first_name, telefons, school, year, teacher, book, course, monthly_fee, balance
 
-# TODO Remove this entity and move to StudentAccount?
+# TODO Make this more passive, this is not the aggregate
 
 
 class Student:
@@ -21,7 +21,7 @@ class Student:
         book: Textbook information (optional)
         course: Course information (optional)
         school: School information (optional)
-        year: Academic year (optional)
+        school_year: Academic year (optional)
         monthly_fee: Monthly fee amount (> 0)
     """
 

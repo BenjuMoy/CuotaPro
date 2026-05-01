@@ -1,7 +1,6 @@
 from datetime import datetime
 from enum import Enum
 
-from core.clock import Clock
 from domain.accounting.values import Money, Period
 from domain.shared.exceptions import BusinessRuleError
 
@@ -39,7 +38,6 @@ class Movement:
         reference_id: int | None = None,
         created_at: datetime | None = None,
         id: int | None = None,
-        clock: Clock | None = None,
     ):
         self.id = id
         self.student_id = student_id
@@ -47,12 +45,12 @@ class Movement:
         self.amount = amount  # Stored in pesos (no cents). 15000 = $15.000
         self.period = period
         self.reference_id = reference_id
-        self.created_at = created_at or Clock().now()
-        self.clock = clock or Clock()
+        self.created_at = created_at
+        now = datetime.now()
 
-        self._validate()
+        self._validate(now)
 
-    def _validate(self):
+    def _validate(self, now: datetime):
         if self.type == MovementType.FEE and self.amount.is_positive():
             raise BusinessRuleError("Fee must be negative")
 
@@ -62,10 +60,10 @@ class Movement:
         if self.type == MovementType.REVERSED and not self.reference_id:
             raise BusinessRuleError("Reversal must have reference id")
 
-        self.period.ensure_not_future(self.clock)
+        self.period.ensure_not_future(now)
 
     @classmethod
-    def fee(cls, student_id: int, amount: Money, period: Period):
+    def fee(cls, student_id: int, amount: Money, period: Period, now: datetime):
         return cls(
             student_id=student_id,
             movement_type=MovementType.FEE,
@@ -74,7 +72,7 @@ class Movement:
         )
 
     @classmethod
-    def payment(cls, student_id: int, amount: Money, period: Period):
+    def payment(cls, student_id: int, amount: Money, period: Period, now: datetime):
         return cls(
             student_id=student_id,
             movement_type=MovementType.PAYMENT,
@@ -83,7 +81,14 @@ class Movement:
         )
 
     @classmethod
-    def reversal(cls, student_id: int, original_id: int, amount: Money, period: Period):
+    def reversal(
+        cls,
+        student_id: int,
+        original_id: int,
+        amount: Money,
+        period: Period,
+        now: datetime,
+    ):
         return cls(
             student_id=student_id,
             reference_id=original_id,

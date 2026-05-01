@@ -1,6 +1,6 @@
 from dataclasses import dataclass
+from datetime import datetime
 
-from core.clock import Clock
 from domain.shared.exceptions import AppValidationError, BusinessRuleError
 
 MAX_AMOUNT = 5_000_000
@@ -32,7 +32,6 @@ class Period:
         if self.year < 2000:
             raise AppValidationError("Invalid year")
 
-    def ensure_not_future(self, clock: Clock):
-        now = clock.now()
+    def ensure_not_future(self, now: datetime):
         if (self.year, self.month) > (now.year, now.month):
             raise BusinessRuleError("No se puede pagar un mes mas adelante que este")
