@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from application.dto import CreatePaymentDTO, CreateStudentDTO, StudentDTO
 from application.events import EventBus, RefreshType
-from application.mappers import to_payment_domain, to_student_domain, to_student_dto
+from application.mappers import to_payment_domain, to_student_domain
 from core.clock import Clock
 from domain.accounting.model import Movement
 from domain.accounting.repository import MovementRepository
@@ -38,7 +38,7 @@ class StudentService:
         self.repo = student_repo
         self.event = events
 
-    def add(self, dto: CreateStudentDTO) -> StudentDTO:
+    def add(self, dto: CreateStudentDTO) -> int:
         new_student = to_student_domain(dto)
 
         with self.uow:
@@ -53,9 +53,9 @@ class StudentService:
         )
 
         self.event.notify(RefreshType.STUDENTS)
-        return to_student_dto(saved_student)
+        return saved_student.id
 
-    def update(self, dto: StudentDTO) -> StudentDTO:
+    def update(self, dto: StudentDTO) -> int:
         updated_student = to_student_domain(dto)
 
         with self.uow:
@@ -70,7 +70,7 @@ class StudentService:
         )
 
         self.event.notify(RefreshType.STUDENTS)
-        return to_student_dto(updated_student)
+        return updated_student.id
 
 
 class AccountingService:
@@ -103,7 +103,7 @@ class AccountingService:
         self.event.notify(RefreshType.STUDENTS)
         logger.info("Student with id=%s switched state.", student_id)
 
-    def add_payment(self, dto: CreatePaymentDTO) -> None:
+    def add_payment(self, dto: CreatePaymentDTO) -> int:
         movement = to_payment_domain(dto)
 
         with self.uow:
@@ -123,6 +123,7 @@ class AccountingService:
         )
 
         self.event.notify(RefreshType.MOVEMENTS)
+        return movement.id
 
     def add_fee(self, month: int, year: int) -> int:
         period = Period(month, year)
@@ -187,7 +188,7 @@ class AccountingService:
 
         return count
 
-    def reverse(self, payment_id: int) -> Movement:
+    def reverse(self, payment_id: int) -> int:
         with self.uow:
             orig = self.movements.get_by_id(payment_id)
 
@@ -204,4 +205,4 @@ class AccountingService:
         )
 
         self.event.notify(RefreshType.MOVEMENTS)
-        return movement
+        return movement.id
