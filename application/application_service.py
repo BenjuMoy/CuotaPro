@@ -148,16 +148,7 @@ class AccountingService:
                         period=period,
                     )
 
-                    to_insert.append(
-                        (
-                            movement.student_id,
-                            None,
-                            movement.type.value,
-                            movement.amount.amount,
-                            movement.period.month,
-                            movement.period.year,
-                        )
-                    )
+                    to_insert.append(movement)
                 except BusinessRuleError as e:
                     logger.debug("Skipping fee for student %s: %s", s.id, e)
                     continue
@@ -165,7 +156,7 @@ class AccountingService:
             if not to_insert:
                 raise BusinessRuleError("No hay estudiantes para aplicar")
 
-            self.movements.apply_fees(to_insert)
+            self.movements.add_many(to_insert)
 
         logger.info(
             "Fees applied | period= %s/%s count= %s",

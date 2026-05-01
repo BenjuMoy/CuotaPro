@@ -49,9 +49,8 @@ class MovementRepository:
         movement.created_at = row["created_at"]
         return movement
 
-    def apply_fees(self, data: list[tuple]) -> int:
-        cursor = self.uow.conn.executemany(
-            """
+    def add_many(self, movements: list[Movement]) -> int:
+        query = """
             INSERT INTO movements(
                 student_id,
                 reference_id,
@@ -61,9 +60,21 @@ class MovementRepository:
                 year
             )
             VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            data,
-        )
+        """
+
+        data = [
+            (
+                m.student_id,
+                m.reference_id,
+                m.type.value,
+                m.amount.amount,
+                m.period.month,
+                m.period.year,
+            )
+            for m in movements
+        ]
+
+        cursor = self.uow.conn.execute(query, data)
         return cursor.rowcount
 
     def get_all(self) -> list[Movement]:
