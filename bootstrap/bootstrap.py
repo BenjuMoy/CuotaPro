@@ -19,6 +19,7 @@ class Application:
         try:
             self.root.mainloop()
             return 0
+
         finally:
             self.shutdown()
 
@@ -32,7 +33,8 @@ class Application:
 
 
 class ApplicationBuilder:
-    def build(self) -> Application:
+    @staticmethod
+    def build() -> Application:
         db_bundle = DatabaseInitializer().init()
         services = ServiceFactory().create(db_bundle)
         root = UIFactory().create(services)

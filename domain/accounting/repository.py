@@ -1,8 +1,9 @@
-from sqlite3 import Cursor, Row
+from sqlite3 import Cursor
 
-from domain.accounting.model import Movement, MovementType
-from domain.accounting.values import Money, Period
+from domain.accounting.model import Movement
+from domain.accounting.values import Period
 from domain.shared.exceptions import NotFound
+from infrastructure.database.mappers import row_to_movement
 from infrastructure.database.unit_of_work import UnitOfWork
 
 MOVEMENT_COLUMNS = "id, student_id, reference_id, type, amount, month, year, created_at"
@@ -13,20 +14,8 @@ class MovementRepository:
     def __init__(self, uow: UnitOfWork):
         self.uow = uow
 
-    @staticmethod
-    def _row_to_movement(row: Row) -> Movement:
-        return Movement(
-            id=row["id"],
-            student_id=row["student_id"],
-            movement_type=MovementType(row["type"]),
-            amount=Money(row["amount"]),
-            period=Period(row["month"], row["year"]),
-            reference_id=row["reference_id"],
-            created_at=row["created_at"],
-        )
-
     def _fetch_all(self, cursor: Cursor) -> list[Movement]:
-        return [self._row_to_movement(row) for row in cursor.fetchall()]
+        return [row_to_movement(row) for row in cursor.fetchall()]
 
     def add(self, movement: Movement) -> Movement:
         query = """
@@ -39,6 +28,7 @@ class MovementRepository:
                 year
             )
             VALUES (?, ?, ?, ?, ?, ?)
+            RETURNING created_at
         """
 
         cursor = self.uow.conn.execute(
@@ -53,12 +43,8 @@ class MovementRepository:
             ),
         )
 
+        row = cursor.fetchone()
         movement.id = cursor.lastrowid
-
-        row = self.uow.conn.execute(
-            "SELECT created_at FROM movements WHERE id = ?",
-            (movement.id,),
-        ).fetchone()
 
         movement.created_at = row["created_at"]
         return movement
@@ -101,7 +87,7 @@ class MovementRepository:
         if not row:
             raise NotFound("Record not found")
 
-        return self._row_to_movement(row)
+        return row_to_movement(row)
 
     def list_by_student_id(self, student_id: int) -> list[Movement]:
         query = f"""
