@@ -13,6 +13,10 @@ def main() -> int:
         app = ApplicationBuilder().build()
         return app.run()
 
+    except KeyboardInterrupt:
+        logger.info("Application terminated by user")
+        return 130
+
     except Exception:
         logger.exception("Fatal error during startup")
         return 1
