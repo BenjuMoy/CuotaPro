@@ -1,10 +1,11 @@
 import logging
 
-from bootstrap.bootstrap import ApplicationBuilder
+from bootstrap.app_bootstrap import ApplicationBuilder
 from infrastructure.logging.logger import setup_logging
 
 
 def main() -> int:
+    """Entry point for the application."""
     setup_logging()
     logger = logging.getLogger(__name__)
 

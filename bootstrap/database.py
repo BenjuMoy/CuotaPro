@@ -29,10 +29,12 @@ class DatabaseInitializer:
             if version == 0:
                 logger.info("Running bootstrap_database")
                 bootstrap_database(conn)
+                version = get_schema_version(conn)
 
             if version < SCHEMA_VERSION:
                 logger.info("Running migrations")
                 migrate(conn, version)
+                version = get_schema_version(conn)
 
             if version > SCHEMA_VERSION:
                 raise RuntimeError("Database version is newer than app")

@@ -4,11 +4,10 @@ from application.dto import MovementDTO, StudentDTO, StudentOverview
 from application.mappers import to_movement_dto, to_student_dto, to_student_overview
 from application.reporting_dto import DashboardMetrics, SalaryReport, StudentFeeDetail
 from core.clock import Clock
-from domain.accounting.model import MovementType
+from domain.account.model import Account
 from domain.accounting.values import Period
-from domain.shared.shared import PeriodBalance
+from domain.shared.shared import MovementType, PeriodBalance
 from domain.student.model import Student
-from domain.student_account.model import StudentAccount
 from infrastructure.database.unit_of_work import UnitOfWork
 
 
@@ -16,25 +15,6 @@ class CQRSService:
     def __init__(self, uow: UnitOfWork, clock: Clock | None = None):
         self.uow = uow
         self.clock = clock or Clock()
-
-    # --- Helpers --- #
-
-    def _build_account(self, student_id: int, uow: UnitOfWork) -> StudentAccount:
-        student = uow.students.get_by_id(student_id)
-        movements = uow.movements.list_by_student_id(student_id)
-        return StudentAccount(student, movements)
-
-    def _build_accounts_bulk(
-        self, students: list[Student], uow: UnitOfWork
-    ) -> list[StudentAccount]:
-        ids = [s.id for s in students]
-        movements = uow.movements.list_by_students_ids(ids)
-
-        by_student: dict[int, list] = {}
-        for m in movements:
-            by_student.setdefault(m.student_id, []).append(m)
-
-        return [StudentAccount(s, by_student.get(s.id, [])) for s in students]
 
     # --- Student CQRS --- #
 
@@ -48,7 +28,7 @@ class CQRSService:
 
     def get_overview_by_id(self, student_id: int) -> StudentOverview:
         with self.uow as uow:
-            return to_student_overview(self._build_account(student_id, uow))
+            return to_student_overview(uow.accounts.get(student_id))
 
     def search_students(
         self,
@@ -62,7 +42,8 @@ class CQRSService:
             students = uow.students.search_students(
                 name=name, teacher=teacher, active=active
             )
-            accounts = self._build_accounts_bulk(students, uow)
+            ids = [s.id for s in students]
+            accounts = uow.accounts.get_many(ids)
 
         if not students:
             return {}
@@ -92,7 +73,7 @@ class CQRSService:
 
     def get_unpaid_months_with_debt(self, student_id: int) -> list[PeriodBalance]:
         with self.uow as uow:
-            return self._build_account(student_id, uow).unpaid_periods()
+            return uow.accounts.get(student_id).unpaid_periods()
 
     def get_all_movements(self) -> list[MovementDTO]:
         with self.uow as uow:
@@ -105,8 +86,7 @@ class CQRSService:
     def get_students_without_fee(self, month: int, year: int) -> list[StudentDTO]:
         period = Period(month, year)
         with self.uow as uow:
-            students = uow.students.list_active()
-            accounts = self._build_accounts_bulk(students, uow)
+            accounts = uow.accounts.list_active_accounts()
 
         return [
             to_student_dto(acc.student) for acc in accounts if not acc.has_fee(period)
@@ -117,18 +97,15 @@ class CQRSService:
 
     def are_fees_applied(self) -> bool:
         now = self.clock.now()
-        period = Period(now.month, now.year)
 
         with self.uow as uow:
-            students = uow.students.list_active()
-            accounts = self._build_accounts_bulk(students, uow)
+            accounts = uow.accounts.list_active_accounts()
 
-        return all(acc.has_fee(period) for acc in accounts)
+        return all(acc.has_fee(Period(now.month, now.year)) for acc in accounts)
 
     # Wrappers
 
     def get_bulk_overview_data(self, ids: list[int]) -> dict[int, StudentOverview]:
-
         if not ids:
             return {}
 
@@ -144,7 +121,7 @@ class CQRSService:
 
         for s in students:
             student_movements = movements_by_student.get(s.id, [])
-            account = StudentAccount(s, student_movements)
+            account = Account(s, student_movements)
             result[s.id] = to_student_overview(account)
 
         return result
@@ -183,10 +160,9 @@ class CQRSService:
     def get_kpi_metrics(self) -> DashboardMetrics:
         now = self.clock.now()
         with self.uow as uow:
-            students = uow.students.list_active()
-            accounts = self._build_accounts_bulk(students, uow)
+            accounts = uow.accounts.list_active_accounts()
 
-        expected = sum(s.monthly_fee.amount for s in students)
+        expected = sum(a.student.monthly_fee.amount for a in accounts)
 
         total_debt = sum(abs(acc.balance.amount) for acc in accounts if acc.has_debt())
 
@@ -195,7 +171,7 @@ class CQRSService:
         )
 
         return DashboardMetrics(
-            active_students=len(students),
+            active_students=len(accounts),
             expected_income=expected,
             collected=collected,
             total_debt=total_debt,
@@ -204,7 +180,7 @@ class CQRSService:
     def get_graphic_metrics(self):
         with self.uow as uow:
             students = uow.students.list_active()
-            accounts = self._build_accounts_bulk(students, uow)
+            accounts = uow.accounts.list_active_accounts()
 
         return (
             self.get_income_trend(accounts),
@@ -212,7 +188,7 @@ class CQRSService:
             self.get_debt_distribution(accounts),
         )
 
-    def get_income_trend(self, accounts: list[StudentAccount]):
+    def get_income_trend(self, accounts: list[Account]):
         from collections import defaultdict
 
         buckets = defaultdict(int)
@@ -227,10 +203,10 @@ class CQRSService:
         return dict(sorted_items[-6:])
 
     def get_teacher_distribution(self, students: list[Student]):
-        counts = Counter(s.teacher for s in students)
+        counts = Counter(s.teacher.name for s in students)
         return {k: int(v) for k, v in sorted(counts.items(), key=lambda x: x[1])}
 
-    def get_debt_distribution(self, accounts: list[StudentAccount]):
+    def get_debt_distribution(self, accounts: list[Account]):
         import math
 
         buckets = {"Al día": 0, "1 mes": 0, "2 meses": 0, "3+ meses": 0}

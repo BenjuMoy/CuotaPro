@@ -2,5 +2,6 @@ from datetime import datetime
 
 
 class Clock:
-    def now(self) -> datetime:
+    @staticmethod
+    def now() -> datetime:
         return datetime.now()

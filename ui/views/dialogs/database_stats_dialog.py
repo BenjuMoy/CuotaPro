@@ -9,7 +9,7 @@ class ShowDatabaseStatsDialog:
         self.root = root
         self.s = main_service
 
-        self.get_database_stats
+        self.get_database_stats()
 
     def get_database_stats(self):
         stats = self.s.maintenance.get_database_stats()

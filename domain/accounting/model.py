@@ -1,15 +1,8 @@
 from datetime import datetime
-from enum import Enum
 
 from domain.accounting.values import Money, Period
 from domain.shared.exceptions import BusinessRuleError
-
-
-#  NOTE Should i move to shared/?
-class MovementType(str, Enum):
-    FEE = "FEE"
-    PAYMENT = "PAYMENT"
-    REVERSED = "REVERSED"
+from domain.shared.shared import MovementType
 
 
 class Movement:
@@ -17,7 +10,7 @@ class Movement:
 
     Attributes:
         id: Database primary key (auto-generated)
-        stdent_id: Database foreign key pointing to the student
+        student_id: Database foreign key pointing to the student
         type: type of transaction:
             FEE -> Negative amount
             PAYMENT -> Positive amount
@@ -31,26 +24,109 @@ class Movement:
 
     def __init__(
         self,
+        *,
+        id: int | None,
         student_id: int,
-        movement_type: MovementType,
+        type: MovementType,
         amount: Money,
         period: Period,
-        reference_id: int | None = None,
-        created_at: datetime | None = None,
-        id: int | None = None,
+        reference_id: int | None,
+        created_at: datetime | None,
     ):
         self.id = id
         self.student_id = student_id
-        self.type = movement_type  # fee is <= 0, payment is >= 0 and reversed is stored or historical purposes
+        self.type = type  # fee is <= 0, payment is >= 0 and reversed is stored or historical purposes
         self.amount = amount  # Stored in pesos (no cents). 15000 = $15.000
         self.period = period
         self.reference_id = reference_id
         self.created_at = created_at
-        now = datetime.now()
 
-        self._validate(now)
+    # -------------------------
+    # FACTORIES (validated)
+    # -------------------------
 
-    def _validate(self, now: datetime):
+    @classmethod
+    def fee(cls, student_id: int, amount: Money, period: Period, now: datetime):
+        obj = cls(
+            id=None,
+            student_id=student_id,
+            type=MovementType.FEE,
+            amount=Money(-abs(amount.amount)),
+            period=period,
+            reference_id=None,
+            created_at=None,
+        )
+        obj._validate(now)
+        return obj
+
+    @classmethod
+    def payment(cls, student_id: int, amount: Money, period: Period, now: datetime):
+        obj = cls(
+            id=None,
+            student_id=student_id,
+            type=MovementType.PAYMENT,
+            amount=amount,
+            period=period,
+            reference_id=None,
+            created_at=None,
+        )
+        obj._validate(now)
+        return obj
+
+    @classmethod
+    def reversal(
+        cls,
+        student_id: int,
+        original_id: int,
+        amount: Money,
+        period: Period,
+        now: datetime,
+    ):
+        obj = cls(
+            id=None,
+            student_id=student_id,
+            type=MovementType.REVERSED,
+            amount=Money(-abs(amount.amount)),
+            period=period,
+            reference_id=original_id,
+            created_at=None,
+        )
+        obj._validate(now)
+        return obj
+
+    # -------------------------
+    # REHYDRATION (NO validation)
+    # -------------------------
+
+    @classmethod
+    def from_persistence(
+        cls,
+        *,
+        id: int,
+        student_id: int,
+        type: MovementType,
+        amount: Money,
+        period: Period,
+        reference_id: int | None,
+        created_at: datetime,
+    ):
+        obj = cls.__new__(cls)
+
+        obj.id = id
+        obj.student_id = student_id
+        obj.type = type
+        obj.amount = amount
+        obj.period = period
+        obj.reference_id = reference_id
+        obj.created_at = created_at
+
+        return obj
+
+    # -------------------------
+    # VALIDATION
+    # -------------------------
+
+    def _validate(self, now: datetime) -> None:
         if self.type == MovementType.FEE and self.amount.is_positive():
             raise BusinessRuleError("Fee must be negative")
 
@@ -62,42 +138,7 @@ class Movement:
 
         self.period.ensure_not_future(now)
 
-    @classmethod
-    def fee(cls, student_id: int, amount: Money, period: Period, now: datetime):
-        return cls(
-            student_id=student_id,
-            movement_type=MovementType.FEE,
-            amount=Money(-abs(amount.amount)),
-            period=period,
-        )
-
-    @classmethod
-    def payment(cls, student_id: int, amount: Money, period: Period, now: datetime):
-        return cls(
-            student_id=student_id,
-            movement_type=MovementType.PAYMENT,
-            amount=amount,
-            period=period,
-        )
-
-    @classmethod
-    def reversal(
-        cls,
-        student_id: int,
-        original_id: int,
-        amount: Money,
-        period: Period,
-        now: datetime,
-    ):
-        return cls(
-            student_id=student_id,
-            reference_id=original_id,
-            movement_type=MovementType.REVERSED,
-            amount=Money(-abs(amount.amount)),
-            period=period,
-        )
-
-    def ensure_reversible(self):
+    def ensure_reversible(self) -> None:
         if self.type == MovementType.REVERSED:
             raise BusinessRuleError("No se puede revertir una reversión")
 

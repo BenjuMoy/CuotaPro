@@ -176,7 +176,7 @@ class PaymentTab:
         )
         self.amount_entry = ttk.Entry(add_frame, width=15, state="disabled")
         self.amount_entry.grid(row=0, column=3, sticky="w", padx=(0, 10))
-        vcmd = (self.frame.register(lambda P: P.isdigit() or P == ""), "%P")
+        vcmd = (self.frame.register(lambda p: p.isdigit() or p == ""), "%P")
         self.amount_entry.config(validate="key", validatecommand=vcmd)
 
         # Register button
@@ -192,7 +192,7 @@ class PaymentTab:
 
     # Action funcs
 
-    def on_type(self, event):
+    def on_type(self, _event):
         """Filter combobox values based on current input."""
         typed = self.student_combobox.get().lower()
         if typed == "":

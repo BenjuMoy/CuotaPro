@@ -64,9 +64,8 @@ class BaseStudentFormTab:
 
         Args:
             parent: The parent ttk.Notebook widget.
-            tab_title: The title to display on the tab.
-            form_title: The title for the Labelframe containing the form fields.
-            model_class: The Pydantic model class this form is for (e.g., Estudiante).
+            form_title: The title to display on the tab.
+            model_class: The Pydantic model class this form is for (e.g., Student).
         """
         self.frame = ttk.Frame(parent)
 
@@ -116,7 +115,8 @@ class BaseStudentFormTab:
                 if field.readonly:
                     self.readonly_fields.add(field.name)
 
-    def _create_field(self, parent, field: FieldConfig, row: int):
+    @staticmethod
+    def _create_field(parent, field: FieldConfig, row: int):
         if field.type == ttk.Entry:
             return create_label_entry(
                 parent,
@@ -150,7 +150,7 @@ class BaseStudentFormTab:
 
             if meta.numeric:
                 vcmd = (
-                    self.frame.register(lambda P: P.isdigit() or P == ""),
+                    self.frame.register(lambda p: p.isdigit() or p == ""),
                     "%P",
                 )
                 widget.config(validate="key", validatecommand=vcmd)
@@ -207,8 +207,8 @@ class _BaseStudentFormTab:
         self.form_fields, self.field_meta, self.readonly_fields = builder.build()
 
         self.validator = FormValidator(self.field_meta)
-        self.mapper = FormMapper(self.field_meta, model_class)
-        self.state = FormStateManager(self.form_fields)
+        self.mapper = FormMapper(self.form_fields, self.field_meta, model_class)
+        self.state = FormStateManager(self.form_fields, self.readonly_fields)
         self.actions = ActionHandler(self.frame)
 
 
@@ -236,11 +236,6 @@ class FormBuilder:
                     readonly_fields.add(field.name)
 
         return form_fields, field_meta, readonly_fields
-
-    def _create_field(self, parent, field, row):
-        if field.type == ttk.Entry:
-            return create_label_entry(...)
-        return create_label_combobox(...)
 
 
 class FormValidator:

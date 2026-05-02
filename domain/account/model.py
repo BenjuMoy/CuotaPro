@@ -1,14 +1,14 @@
 from collections import defaultdict
 from datetime import datetime
 
-from domain.accounting.model import Movement, MovementType
+from domain.accounting.model import Movement
 from domain.accounting.values import Money, Period
 from domain.shared.exceptions import BusinessRuleError
-from domain.shared.shared import PeriodBalance
+from domain.shared.shared import MovementType, PeriodBalance
 from domain.student.model import Student
 
 
-class StudentAccount:
+class Account:
     def __init__(self, student: Student, movements: list[Movement]):
         self.student = student
         self.movements = movements
@@ -22,6 +22,8 @@ class StudentAccount:
     # --- Commands --- #
 
     def add_payment(self, amount: Money, period: Period, now: datetime) -> Movement:
+        self.ensure_active()
+
         if not self.balance.is_negative():
             raise BusinessRuleError("No hay deuda para el estudiante")
 
@@ -65,13 +67,19 @@ class StudentAccount:
         if self.student.active and self.balance.is_negative():
             raise BusinessRuleError("No se puede desactivar estudiante con deuda")
 
-        self.student.active = not self.student.active
+        if self.student.active:
+            self.student.deactivate()
+        else:
+            self.student.activate()
 
     # --- Properties --- #
 
     @property
     def balance(self) -> Money:
-        return Money(sum(m.amount.amount for m in self.effective()))
+        total = Money(0)
+        for m in self.effective():
+            total += m.amount
+        return total
 
     def has_fee(self, period: Period) -> bool:
         return any(
@@ -79,7 +87,7 @@ class StudentAccount:
         )
 
     def has_debt(self) -> bool:
-        return self.balance.amount < 0
+        return self.balance.is_negative()
 
     def effective(self) -> list[Movement]:
         if self._effective_cache is None:
@@ -110,3 +118,7 @@ class StudentAccount:
             for m in self.effective()
             if m.type == MovementType.PAYMENT and m.period == period
         )
+
+    def ensure_active(self):
+        if not self.student.active:
+            raise BusinessRuleError("Estudiante inactivo")

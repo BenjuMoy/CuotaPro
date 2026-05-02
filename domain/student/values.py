@@ -2,6 +2,12 @@ import re
 from dataclasses import dataclass
 
 from domain.shared.exceptions import AppValidationError
+from domain.shared.shared import (
+    VALID_BOOKS,
+    VALID_COURSES,
+    VALID_SCHOOL_YEARS,
+    VALID_TEACHERS,
+)
 
 NAME_PATTERN = re.compile(r"^[A-Za-zÁÉÍÓÚÜáéíóúüÑñ\s\-]+$")
 
@@ -38,3 +44,39 @@ class MonthlyFee:
     def __post_init__(self):
         if not (1 <= self.amount <= 500000):
             raise AppValidationError("Invalid monthly fee")
+
+
+@dataclass(frozen=True)
+class Teacher:
+    name: str
+
+    def __post_init__(self):
+        if self.name not in VALID_TEACHERS:
+            raise AppValidationError("Profesor invalido")
+
+
+@dataclass(frozen=True)
+class SchoolYear:
+    value: str
+
+    def __post_init__(self):
+        if self.value not in VALID_SCHOOL_YEARS:
+            raise AppValidationError("Año escolar invalido")
+
+
+@dataclass(frozen=True)
+class Book:
+    title: str
+
+    def __post_init__(self):
+        if self.title not in VALID_BOOKS:
+            raise AppValidationError("Libro invalido")
+
+
+@dataclass(frozen=True)
+class Course:
+    name: str
+
+    def __post_init__(self):
+        if self.name not in VALID_COURSES:
+            raise AppValidationError("curso invalido")

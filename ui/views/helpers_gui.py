@@ -39,7 +39,7 @@ def create_label(
         label.config(text=f"{text} *")
 
     if bold:
-        label.configure(font=(FONT_HEADER))
+        label.configure(font=FONT_HEADER)
 
     return label
 

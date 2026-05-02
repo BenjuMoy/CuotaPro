@@ -71,7 +71,7 @@ class FeeIncreasePanel:
         self.increase_fee_button.grid(row=5, column=0, columnspan=2, pady=PAD_Y)
 
         # Set new monthly fee entry to numbers only
-        vcmd = (self.frame.register(lambda P: P.isdigit() or P == ""), "%P")
+        vcmd = (self.frame.register(lambda p: p.isdigit() or p == ""), "%P")
         self.new_monthly_fee_entry.config(validate="key", validatecommand=vcmd)
 
     # Static Methods

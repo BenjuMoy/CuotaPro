@@ -5,6 +5,8 @@ from typing import Callable
 
 logger = logging.getLogger(__name__)
 
+# TODO Add more events
+
 
 class RefreshType(str, Enum):
     STUDENTS = "student_changed"

@@ -77,7 +77,8 @@ class MainWindow:
 
         self.refresh_students()
 
-    def _run_action(self, action, success_msg=None):
+    @staticmethod
+    def _run_action(action, success_msg=None):
         try:
             result = action()
 

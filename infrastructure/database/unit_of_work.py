@@ -1,6 +1,7 @@
-from domain.accounting.repository import MovementRepository
-from domain.student.repository import StudentRepository
 from infrastructure.database.connection import DatabaseManager
+from infrastructure.database.movement_repository import MovementRepository
+from infrastructure.database.repos.account_repository import AccountRepository
+from infrastructure.database.student_repository import StudentRepository
 
 
 class UnitOfWork:
@@ -16,6 +17,7 @@ class UnitOfWork:
 
         self.students = StudentRepository(self.conn)
         self.movements = MovementRepository(self.conn)
+        self.accounts = AccountRepository(self.conn)
 
         return self
 

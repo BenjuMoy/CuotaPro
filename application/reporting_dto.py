@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class DashboardMetrics:
     active_students: int
     expected_income: int
@@ -9,14 +9,14 @@ class DashboardMetrics:
     total_debt: int
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class StudentFeeDetail:
     first_name: str
     last_name: str
     monthly_fee: int
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class SalaryReport:
     teacher: str
     total: int

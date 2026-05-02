@@ -25,3 +25,4 @@ class UIFactory:
     def _on_close(root: ttk.Window) -> None:
         logger.info("UI requested shutdown")
         root.quit()
+        # root.destroy()

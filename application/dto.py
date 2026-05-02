@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from domain.accounting.model import MovementType
+from domain.shared.shared import MovementType
 
 # --------------------------------------------------------------------------- #
 # STUDENT

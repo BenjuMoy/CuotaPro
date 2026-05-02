@@ -14,11 +14,25 @@ class Money:
         if not (-MAX_AMOUNT <= self.amount <= MAX_AMOUNT):
             raise AppValidationError("Invalid amount")
 
+    def __add__(self, other: "Money") -> "Money":
+        return Money(self.amount + other.amount)
+
+    def __neg__(self) -> "Money":
+        return Money(-self.amount)
+
     def is_positive(self) -> bool:
         return self.amount > 0
 
     def is_negative(self) -> bool:
         return self.amount < 0
+
+    def debit(self, amount: int) -> "Money":
+        """Subtract the specified amount from this Money instance."""
+        return Money(self.amount - amount)
+
+    def credit(self, amount: int) -> "Money":
+        """Add the specified amount to this Money instance."""
+        return Money(self.amount + amount)
 
 
 @dataclass(frozen=True)

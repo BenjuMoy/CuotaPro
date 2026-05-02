@@ -35,7 +35,7 @@ class MovementRepository:
             (
                 movement.student_id,
                 movement.reference_id,
-                movement.type,
+                movement.type.value,
                 movement.amount.amount,
                 movement.period.month,
                 movement.period.year,
@@ -73,7 +73,7 @@ class MovementRepository:
             for m in movements
         ]
 
-        cursor = self.conn.execute(query, data)
+        cursor = self.conn.executemany(query, data)
         return cursor.rowcount
 
     def get_all(self) -> list[Movement]:
@@ -113,6 +113,7 @@ class MovementRepository:
         if not ids:
             return []
 
+        # NOTE Limit is 999
         placeholders = ",".join("?" for _ in ids)
         query = f"""
             SELECT {MOVEMENT_COLUMNS}

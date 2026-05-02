@@ -36,7 +36,7 @@ class FeeApplicationPanel:
             text="⚠ Acción global masiva.\n Se generará un cargo para cada alumno activo y sin cuota aplicada.",
             bootstyle="danger",
             # font=("TkDefaultFont", 11, "bold"),
-            font=(FONT_HEADER),
+            font=FONT_HEADER,
         ).grid(row=0, column=0, padx=PAD_X, pady=PAD_Y)
 
         self.apply_fees_button = ttk.Button(

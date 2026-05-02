@@ -20,6 +20,10 @@ class Application:
             self.root.mainloop()
             return 0
 
+        except Exception:
+            logger.exception("Unhandled UI exception")
+            return 1
+
         finally:
             self.shutdown()
 

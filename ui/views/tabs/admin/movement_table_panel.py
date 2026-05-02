@@ -5,8 +5,8 @@ from ttkbootstrap.widgets.tableview import Tableview
 from application.dto import MovementDTO
 from application.events import RefreshType
 from bootstrap.containers import ServiceContainer
-from domain.accounting.model import MovementType
 from domain.shared.exceptions import BusinessRuleError, NotFound
+from domain.shared.shared import MovementType
 from ui.formatters import currency_format
 from ui.views.constants import FONT_BODY, NUM_TO_MONTH, PAD_X, PAD_Y, TYPE_TRANSLATE
 from ui.views.toast import show_toast

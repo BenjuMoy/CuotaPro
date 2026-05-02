@@ -1,5 +1,4 @@
 import logging
-from collections import defaultdict
 
 from pydantic import ValidationError
 
@@ -10,7 +9,6 @@ from core.clock import Clock
 from domain.accounting.values import Money, Period
 from domain.shared.exceptions import BusinessRuleError
 from domain.student.values import MonthlyFee
-from domain.student_account.model import StudentAccount
 from infrastructure.database.unit_of_work import UnitOfWork
 
 logger = logging.getLogger(__name__)
@@ -31,38 +29,38 @@ class StudentService:
         self.event = events
 
     def add(self, dto: CreateStudentDTO) -> int:
-        new_student = to_student_domain(dto)
+        student = to_student_domain(dto)
 
         with self.uow as uow:
-            saved_student = uow.students.add(new_student)
+            saved_student = uow.students.add(student)
 
         logger.info(
             "Student created | id=%s last_name=%s first_name=%s fee=%s",
             saved_student.id,
             saved_student.name.last_name,
             saved_student.name.first_name,
-            saved_student.monthly_fee,
+            saved_student.monthly_fee.amount,
         )
 
         self.event.notify(RefreshType.STUDENTS)
         return saved_student.id
 
     def update(self, dto: StudentDTO) -> int:
-        updated_student = to_student_domain(dto)
+        student = to_student_domain(dto)
 
         with self.uow as uow:
-            uow.students.update(updated_student)
+            uow.students.update(student)
 
         logger.info(
             "Student updated | id=%s last_name=%s first_name=%s monthly_fee=%s",
-            updated_student.id,
-            updated_student.name.last_name,
-            updated_student.name.first_name,
-            updated_student.monthly_fee,
+            student.id,
+            student.name.last_name,
+            student.name.first_name,
+            student.monthly_fee.amount,
         )
 
         self.event.notify(RefreshType.STUDENTS)
-        return updated_student.id
+        return student.id
 
 
 class AccountingService:
@@ -71,14 +69,9 @@ class AccountingService:
         self.clock = clock or Clock()
         self.event = events
 
-    def _build_account(self, student_id: int, uow: UnitOfWork) -> StudentAccount:
-        student = uow.students.get_by_id(student_id)
-        movements = uow.movements.list_by_student_id(student_id)
-        return StudentAccount(student, movements)
-
     def toggle_active(self, student_id: int) -> None:
         with self.uow as uow:
-            account = self._build_account(student_id, uow)
+            account = uow.accounts.get(student_id)
             account.toggle_active()
 
             uow.students.update(account.student)
@@ -88,7 +81,7 @@ class AccountingService:
 
     def add_payment(self, dto: CreatePaymentDTO) -> int:
         with self.uow as uow:
-            account = self._build_account(dto.student_id, uow)
+            account = uow.accounts.get(dto.student_id)
 
             movement = account.add_payment(
                 Money(dto.amount), Period(dto.month, dto.year), self.clock.now()
@@ -111,31 +104,23 @@ class AccountingService:
         period = Period(month, year)
 
         with self.uow as uow:
-            students = uow.students.list_active()
-            student_ids = [s.id for s in students]
-
-            movements = uow.movements.list_by_students_ids(student_ids)
-
-            movements_by_student = defaultdict(list)
-            for m in movements:
-                movements_by_student[m.student_id].append(m)
+            accounts = uow.accounts.list_active_accounts()
 
             to_insert = []
 
-            for s in students:
-                account = StudentAccount(s, movements_by_student.get(s.id, []))
+            now = self.clock.now()
 
+            for a in accounts:
                 try:
-                    movement = account.add_fee(
-                        amount=Money(s.monthly_fee.amount),
+                    movement = a.add_fee(
+                        amount=Money(a.student.monthly_fee.amount),
                         period=period,
-                        now=self.clock.now(),
+                        now=now,
                     )
-
                     to_insert.append(movement)
+
                 except BusinessRuleError as e:
-                    logger.debug("Skipping fee for student %s: %s", s.id, e)
-                    continue
+                    logger.debug("Skipping fee for student %s: %s", a.student.id, e)
 
             if not to_insert:
                 raise BusinessRuleError("No hay estudiantes para aplicar")
@@ -157,7 +142,6 @@ class AccountingService:
             students = uow.students.list_active()
 
             affected = []
-
             for s in students:
                 if s.monthly_fee.amount == old_fee:
                     s.change_monthly_fee(MonthlyFee(new_fee))
@@ -175,7 +159,7 @@ class AccountingService:
         with self.uow as uow:
             orig = uow.movements.get_by_id(payment_id)
 
-            account = self._build_account(orig.student_id, uow)
+            account = uow.accounts.get(orig.student_id)
             reversed_movement = account.reverse(orig.id, self.clock.now())
 
             movement = uow.movements.add(reversed_movement)

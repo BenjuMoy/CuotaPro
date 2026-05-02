@@ -1,64 +1,17 @@
-from domain.shared.exceptions import AppValidationError, BusinessRuleError
-from domain.student.values import MonthlyFee, PhoneNumber, StudentName
+from domain.shared.exceptions import BusinessRuleError
+from domain.student.values import (
+    Book,
+    Course,
+    MonthlyFee,
+    PhoneNumber,
+    SchoolYear,
+    StudentName,
+    Teacher,
+)
 
 # last_name, first_name, telefons, school, year, teacher, book, course, monthly_fee, balance
 
-# TODO Make this more passive, this is not the aggregate
-
-VALID_TEACHERS = {"Asuncion", "Daniela", "Florencia", "Kiana", "Romina", "Silvia"}
-VALID_SCHOOL_YEARS = {
-    "",
-    "Kindergarden",
-    "1 EP",
-    "2 EP",
-    "3 EP",
-    "4 EP",
-    "5 EP",
-    "6 EP",
-    "1 ES",
-    "2 ES",
-    "3 ES",
-    "4 ES",
-    "5 ES",
-    "6 ES",
-}
-VALID_BOOKS = {
-    "",
-    "Power Up Start P. 1",
-    "Power Up Start P. 2",
-    "Learn With Us 1",
-    "Power Up 1",
-    "Power Up 2",
-    "Own It 1",
-    "Gateway A1",
-    "Gateway A2",
-    "Gateway B1",
-    "Gateway B2",
-    "Gold. Exp. FCE",
-    "Gold. Exp. CAE",
-    "Insight Elem.",
-    "Insight Pre. Int.",
-    "Insight Int.",
-}
-VALID_COURSES = {
-    "",
-    "Kids 1",
-    "Kids 2",
-    "Kids 3",
-    "Junior 1",
-    "Junior 2",
-    "Junior 3",
-    "Senior 1",
-    "Senior 2",
-    "Senior 3",
-    "Senior 4",
-    "Senior 5",
-    "Senior 6",
-    "Adults 1",
-    "Adults 2",
-    "Adults 3",
-    "Adults 4",
-}
+# TODO Make this more passive, this is not the aggregate, this is an entity
 
 
 class Student:
@@ -84,14 +37,14 @@ class Student:
         self,
         name: StudentName,
         phone1: PhoneNumber,
-        teacher: str,
+        teacher: Teacher,
         monthly_fee: MonthlyFee,
         phone2: PhoneNumber | None = None,
         phone3: PhoneNumber | None = None,
-        school: str = "",
-        school_year: str = "",
-        book: str = "",
-        course: str = "",
+        school: str | None = None,
+        school_year: SchoolYear | None = None,
+        book: Book | None = None,
+        course: Course | None = None,
         active: bool = True,
         id: int | None = None,
     ):
@@ -108,7 +61,51 @@ class Student:
         self.monthly_fee = monthly_fee
         self.active = active
 
-        self._validate()
+    # -------------------------
+    # REHYDRATION (NO validation)
+    # -------------------------
+
+    @classmethod
+    def from_persistence(
+        cls,
+        *,
+        id: int,
+        active: bool,
+        name: StudentName,
+        phone1: PhoneNumber,
+        phone2: PhoneNumber | None,
+        phone3: PhoneNumber | None,
+        school: str,
+        school_year: SchoolYear | None,
+        book: Book | None,
+        course: Course | None,
+        teacher: Teacher,
+        monthly_fee: MonthlyFee,
+    ):
+        obj = cls.__new__(cls)
+
+        obj.id = id
+        obj.name = name
+        obj.phone1 = phone1
+        obj.phone2 = phone2
+        obj.phone3 = phone3
+        obj.teacher = teacher
+        obj.school = school
+        obj.school_year = school_year
+        obj.book = book
+        obj.course = course
+        obj.monthly_fee = monthly_fee
+        obj.active = active
+
+        return obj
+
+    # --- Methods --- #
+
+    def activate(self):
+        self.active = True
+
+    def deactivate(self):
+        self.active = False
 
     def change_monthly_fee(self, new_fee: MonthlyFee):
         if self.monthly_fee.amount == new_fee.amount:
@@ -118,16 +115,3 @@ class Student:
             raise BusinessRuleError("La cuota nueva no puede ser menor que la vieja")
 
         self.monthly_fee = new_fee
-
-    def _validate(self):
-        if self.teacher not in VALID_TEACHERS:
-            raise AppValidationError("Profesor invalido")
-
-        if self.school_year not in VALID_SCHOOL_YEARS:
-            raise AppValidationError("Año escolar invalido")
-
-        if self.book not in VALID_BOOKS:
-            raise AppValidationError("Libro invalido")
-
-        if self.course not in VALID_SCHOOL_YEARS:
-            raise AppValidationError("curso invalido")

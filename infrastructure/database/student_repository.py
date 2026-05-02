@@ -18,6 +18,7 @@ class StudentRepository:
         return [row_to_student(row) for row in cursor.fetchall()]
 
     def add(self, student: Student) -> Student:
+        """Persists student and MUTATES its id (identity assignment)."""
         query = """
             INSERT INTO students (
                 active,
@@ -154,6 +155,17 @@ class StudentRepository:
 
         cursor = self.conn.execute(query, ids)
         return self._fetch_all(cursor)
+
+    def list_active_ids(self) -> list[int]:
+        query = f"""
+            SELECT id
+            FROM students
+            WHERE {ACTIVE_FILTER}
+            {ORDER_BY_STUDENT}
+        """
+
+        cursor = self.conn.execute(query)
+        return [row["id"] for row in cursor.fetchall()]
 
     def count_active(self) -> int:
         query = f"SELECT COUNT(*) AS count FROM students WHERE {ACTIVE_FILTER}"

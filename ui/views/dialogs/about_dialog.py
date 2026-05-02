@@ -24,7 +24,7 @@ def show_about(root: ttk.Window) -> None:
     ttk.Label(
         dialog,
         text="Gestor de Estudiantes",
-        font=(FONT_HEADER),
+        font=FONT_HEADER,
     ).pack(pady=10)
 
     ttk.Label(

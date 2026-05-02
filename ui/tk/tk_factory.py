@@ -32,7 +32,7 @@ class TKRootFactory:
 
     def setup_styles(self, root: ttk.Window) -> None:
         style = ttk.Style()
-        style.configure("Bold.TLabelframe.Label", font=(FONT_TITLE))
+        style.configure("Bold.TLabelframe.Label", font=FONT_TITLE)
         style.configure("TCheckbutton", font=FONT_BODY)
 
         root.option_add("*TCombobox*Listbox.font", FONT_BODY)
