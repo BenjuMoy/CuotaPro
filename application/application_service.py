@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from application.dto import CreatePaymentDTO, CreateStudentDTO, StudentDTO
 from application.events import EventBus, RefreshType
-from application.mappers import to_payment_domain, to_student_domain
+from application.mappers import to_student_domain
 from core.clock import Clock
 from domain.accounting.values import Money, Period
 from domain.shared.exceptions import BusinessRuleError
@@ -87,14 +87,11 @@ class AccountingService:
         logger.info("Student with id=%s switched state.", student_id)
 
     def add_payment(self, dto: CreatePaymentDTO) -> int:
-        movement = to_payment_domain(dto)
-
         with self.uow as uow:
             account = self._build_account(dto.student_id, uow)
-            account.student.ensure_active()
 
             movement = account.add_payment(
-                movement.amount, movement.period, self.clock.now()
+                Money(dto.amount), Period(dto.month, dto.year), self.clock.now()
             )
 
             uow.movements.add(movement)
