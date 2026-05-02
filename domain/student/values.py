@@ -63,6 +63,12 @@ class SchoolYear:
         if self.value not in VALID_SCHOOL_YEARS:
             raise AppValidationError("Año escolar invalido")
 
+    @classmethod
+    def from_persistence(cls, value: str):
+        obj = cls.__new__(cls)
+        object.__setattr__(obj, "value", value)
+        return obj
+
 
 @dataclass(frozen=True)
 class Book:
@@ -72,6 +78,12 @@ class Book:
         if self.title not in VALID_BOOKS:
             raise AppValidationError("Libro invalido")
 
+    @classmethod
+    def from_persistence(cls, title: str):
+        obj = cls.__new__(cls)
+        object.__setattr__(obj, "title", title)
+        return obj
+
 
 @dataclass(frozen=True)
 class Course:
@@ -80,3 +92,9 @@ class Course:
     def __post_init__(self):
         if self.name not in VALID_COURSES:
             raise AppValidationError("curso invalido")
+
+    @classmethod
+    def from_persistence(cls, name: str):
+        obj = cls.__new__(cls)
+        object.__setattr__(obj, "name", name)
+        return obj
