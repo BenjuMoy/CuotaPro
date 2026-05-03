@@ -28,10 +28,10 @@ def row_to_student(row: Row) -> Student:
         phone2=PhoneNumber(row["phone2"]) if row["phone2"] else None,
         phone3=PhoneNumber(row["phone3"]) if row["phone3"] else None,
         teacher=Teacher(row["teacher"]),
-        book=Book.from_persistence(row["book"]),
-        course=Course.from_persistence(row["course"]),
+        book=Book.from_persistence(row["book"]) if row["book"] else None,
+        course=Course.from_persistence(row["course"]) if row["course"] else None,
+        school_year=SchoolYear.from_persistence(row["year"]) if row["year"] else None,
         school=row["school"],
-        school_year=SchoolYear.from_persistence(row["year"]),
         monthly_fee=MonthlyFee(row["monthly_fee"]),
     )
 
