@@ -156,16 +156,15 @@ class CQRSService:
 
     def get_graphic_metrics(self):
         with self.uow as uow:
-            students = uow.students.list_active()
             accounts = uow.accounts.list_active_accounts()
 
         return (
             self.get_income_trend(accounts),
-            self.get_teacher_distribution(students),
+            self.get_teacher_distribution(accounts),
             self.get_debt_distribution(accounts),
         )
 
-    def get_income_trend(self, accounts: list[Account]):
+    def get_income_trend(self, accounts: list[Account]) -> dict[tuple[int, int], int]:
         from collections import defaultdict
 
         buckets = defaultdict(int)
@@ -179,23 +178,23 @@ class CQRSService:
         sorted_items = sorted(buckets.items(), key=lambda x: (x[0][1], x[0][0]))
         return dict(sorted_items[-6:])
 
-    def get_teacher_distribution(self, students: list[Student]):
-        counts = Counter(s.teacher.name for s in students)
+    def get_teacher_distribution(self, accounts: list[Account]) -> dict[str, int]:
+        counts = Counter(a.student.teacher.name for a in accounts)
         return {k: int(v) for k, v in sorted(counts.items(), key=lambda x: x[1])}
 
-    def get_debt_distribution(self, accounts: list[Account]):
+    def get_debt_distribution(self, accounts: list[Account]) -> dict[str, int]:
         import math
 
         buckets = {"Al día": 0, "1 mes": 0, "2 meses": 0, "3+ meses": 0}
 
-        for acc in accounts:
-            balance = acc.balance.amount
+        for a in accounts:
+            balance = a.balance.amount
 
             if balance >= 0:
                 buckets["Al día"] += 1
 
             else:
-                fee = acc.student.monthly_fee.amount
+                fee = a.student.monthly_fee.amount
 
                 if fee > 0:
                     months = math.ceil(abs(balance) / fee)
