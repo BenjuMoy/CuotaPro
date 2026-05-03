@@ -139,14 +139,14 @@ class AccountingService:
 
     def increase_monthly_fee(self, old_fee: int, new_fee: int) -> int:
         with self.uow as uow:
-            students = uow.students.list_active()
+            accounts = uow.accounts.list_active_accounts()
 
             affected = []
-            for s in students:
-                if s.monthly_fee.amount == old_fee:
-                    s.change_monthly_fee(MonthlyFee(new_fee))
-                    uow.students.update(s)
-                    affected.append(s)
+            for a in accounts:
+                if a.student.monthly_fee.amount == old_fee:
+                    a.change_monthly_fee(MonthlyFee(new_fee))
+                    uow.students.update(a.student)
+                    affected.append(a)
 
         count = len(affected)
 
