@@ -108,7 +108,7 @@ class CQRSService:
     def get_salary(self, teacher_name: str) -> SalaryReport:
         with self.uow as uow:
             students = [
-                s for s in uow.students.list_active() if s.teacher == teacher_name
+                s for s in uow.students.list_active() if s.teacher.name == teacher_name
             ]
 
         if not students:
