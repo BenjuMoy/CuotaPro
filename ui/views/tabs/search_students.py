@@ -90,51 +90,50 @@ class SearchStudentTab:
     # Static Methods
 
     @staticmethod
-    def _show_student_details(overview: StudentOverview):
+    def _show_student_details(o: StudentOverview):
         phones = [
             t
             for t in (
-                overview.student.phone1,
-                overview.student.phone2,
-                overview.student.phone3,
+                o.student.phone1,
+                o.student.phone2,
+                o.student.phone3,
             )
             if t
         ]
-        last_payment = overview.movements[0]
 
         detalles = f"""--- Datos personales ---
-Estado: {"✅ Activo" if overview.student.active else "🚫 Inactivo"}
-Nombre: {overview.student.last_name} {overview.student.first_name}
+Estado: {"✅ Activo" if o.student.active else "🚫 Inactivo"}
+Nombre: {o.student.last_name} {o.student.first_name}
 Teléfonos: {", ".join(phones)}
 
 --- Académico ---
-Escuela: {overview.student.school}
-Año: {overview.student.school_year}
-Profesor: {overview.student.teacher}
-Libro: {overview.student.book}
-Curso: {overview.student.course}
-Cuota: {overview.student.monthly_fee}
+Escuela: {o.student.school}
+Año: {o.student.school_year}
+Profesor: {o.student.teacher}
+Libro: {o.student.book}
+Curso: {o.student.course}
+Cuota: {o.student.monthly_fee}
 
 --- Financiero ---
-Balance: {currency_format(overview.balance)}
-Último mes pagado: {NUM_TO_MONTH.get(last_payment.month, "Sin Pagos") if last_payment else "Sin Pagos"}"""
+Balance: {currency_format(o.balance)}
+Último mes pagado: {NUM_TO_MONTH.get(o.last_payment.month, "Sin Pagos") if o.last_payment else "Sin Pagos"}"""
         Messagebox.show_info(
             detalles,
-            f"Ficha de {overview.student.first_name} {overview.student.last_name}",
+            f"Ficha de {o.student.first_name} {o.student.last_name}",
         )
 
     @staticmethod
-    def _student_to_row(overview: StudentOverview) -> tuple:
-        last_payment = overview.movements[0] if overview.movements else None
+    def _student_to_row(o: StudentOverview) -> tuple:
+        last_payment = o.movements[0] if o.movements else None
 
         return (
-            overview.student.id,
-            overview.student.last_name,
-            overview.student.first_name,
-            overview.student.teacher,
-            currency_format(overview.balance),
+            o.student.id,
+            o.student.last_name,
+            o.student.first_name,
+            o.student.teacher,
+            currency_format(o.balance),
             NUM_TO_MONTH[last_payment.month] if last_payment else "Sin Pagos",
-            "✅ Activo" if overview.student.active else "🚫 Inactivo",
+            "✅ Activo" if o.student.active else "🚫 Inactivo",
         )
 
     # --- Search Actions --- #
