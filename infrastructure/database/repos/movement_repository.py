@@ -8,6 +8,11 @@ from infrastructure.database.mappers import row_to_movement
 MOVEMENT_COLUMNS = "id, student_id, reference_id, type, amount, month, year, created_at"
 ORDER_BY_MOVEMENT_DESC = "ORDER BY year DESC, month DESC, id DESC"
 
+# Only new movements are supported
+# Movements are immutable after creation
+
+# movements must be ordered DESC by date
+
 
 class MovementRepository:
     def __init__(self, conn: Connection):

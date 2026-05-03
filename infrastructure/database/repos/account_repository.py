@@ -4,8 +4,8 @@ from sqlite3 import Connection
 from domain.account.model import Account
 from domain.accounting.model import Movement
 from domain.student.model import Student
-from infrastructure.database.movement_repository import MovementRepository
-from infrastructure.database.student_repository import StudentRepository
+from infrastructure.database.repos.movement_repository import MovementRepository
+from infrastructure.database.repos.student_repository import StudentRepository
 
 
 class AccountRepository:
