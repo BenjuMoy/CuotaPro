@@ -1,4 +1,3 @@
-from domain.shared.exceptions import BusinessRuleError
 from domain.student.values import (
     Book,
     Course,
@@ -106,12 +105,3 @@ class Student:
 
     def deactivate(self):
         self.active = False
-
-    def change_monthly_fee(self, new_fee: MonthlyFee):
-        if self.monthly_fee.amount == new_fee.amount:
-            raise BusinessRuleError("Las cuotas no pueden ser iguales")
-
-        if new_fee.amount < self.monthly_fee.amount:
-            raise BusinessRuleError("La cuota nueva no puede ser menor que la vieja")
-
-        self.monthly_fee = new_fee

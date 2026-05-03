@@ -6,6 +6,7 @@ from domain.accounting.values import Money, Period
 from domain.shared.exceptions import BusinessRuleError
 from domain.shared.shared import MovementType, PeriodBalance
 from domain.student.model import Student
+from domain.student.values import MonthlyFee
 
 
 class Account:
@@ -122,3 +123,17 @@ class Account:
     def ensure_active(self):
         if not self.student.active:
             raise BusinessRuleError("Estudiante inactivo")
+
+    def get_last_payment(self):
+        for movement in reversed(self.effective()):
+            if movement.type == MovementType.PAYMENT:
+                return movement
+
+    def change_monthly_fee(self, new_fee: MonthlyFee):
+        if self.monthly_fee.amount == new_fee.amount:
+            raise BusinessRuleError("Las cuotas no pueden ser iguales")
+
+        if new_fee.amount < self.monthly_fee.amount:
+            raise BusinessRuleError("La cuota nueva no puede ser menor que la vieja")
+
+        self.monthly_fee = new_fee
