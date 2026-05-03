@@ -171,11 +171,11 @@ Balance: {currency_format(o.balance)}
         self._after_id = self.frame.after(delay, callback)
 
     # --- Table Helpers ---
-    def _populate_table(self, overviews: dict[int, StudentOverview]):
+    def _populate_table(self, overviews: list[StudentOverview]):
         """Limpia la tabla y la llena con la lista proporcionada."""
         self.table.delete_rows()
 
-        for overview in overviews.values():
+        for overview in overviews:
             row = self.table.insert_row(
                 index="end",
                 values=self._student_to_row(overview),

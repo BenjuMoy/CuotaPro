@@ -36,8 +36,7 @@ class CQRSService:
         teacher: str | None = None,
         active: bool | None = None,
         only_debtors: bool | None = None,
-    ) -> dict[int, StudentOverview]:
-
+    ) -> list[StudentOverview]:
         with self.uow as uow:
             students = uow.students.search_students(
                 name=name, teacher=teacher, active=active
@@ -46,16 +45,12 @@ class CQRSService:
             accounts = uow.accounts.get_many(ids)
 
         if not students:
-            return {}
+            return []
 
         if only_debtors:
             accounts = [acc for acc in accounts if acc.has_debt()]
 
-        return {
-            acc.student.id: to_student_overview(acc)
-            for acc in accounts
-            if acc.student.id
-        }
+        return [to_student_overview(acc) for acc in accounts]
 
     def count_by_monthly_fee(self, monthly_fee: int) -> int:
         with self.uow as uow:

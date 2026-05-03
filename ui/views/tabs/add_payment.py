@@ -102,8 +102,7 @@ class PaymentTab:
         """Initialize student mapping data."""
         self.all_students = self.s.cqrs.search_students(only_debtors=True)
         self.student_map = {
-            s.student.id: self._get_display_name(s.student)
-            for s in self.all_students.values()
+            s.student.id: self._get_display_name(s.student) for s in self.all_students
         }
 
     def _create_widgets(self):
