@@ -31,7 +31,7 @@ class Movement:
         amount: Money,
         period: Period,
         reference_id: int | None,
-        created_at: datetime | None,
+        created_at: datetime,
     ):
         self.id = id
         self.student_id = student_id
@@ -54,7 +54,7 @@ class Movement:
             amount=Money(-abs(amount.amount)),
             period=period,
             reference_id=None,
-            created_at=None,
+            created_at=now,
         )
         obj._validate(now)
         return obj
@@ -68,7 +68,7 @@ class Movement:
             amount=amount,
             period=period,
             reference_id=None,
-            created_at=None,
+            created_at=now,
         )
         obj._validate(now)
         return obj
@@ -89,7 +89,7 @@ class Movement:
             amount=Money(-abs(amount.amount)),
             period=period,
             reference_id=original_id,
-            created_at=None,
+            created_at=now,
         )
         obj._validate(now)
         return obj
