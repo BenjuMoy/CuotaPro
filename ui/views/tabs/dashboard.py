@@ -34,10 +34,6 @@ class DashboardTab(BaseMetricsTab):
         self.s.event.subscribe(RefreshType.STUDENTS, self.refresh)
         self.s.event.subscribe(RefreshType.MOVEMENTS, self.refresh)
 
-        logo = ttk.PhotoImage(file=ICON_PATH)
-        label = ttk.Label(self.parent, image=logo)
-        label.grid(sticky="nswe", row=9, column=9)
-
     def refresh(self):
         metrics = self.s.cqrs.get_kpi_metrics()
 
