@@ -51,4 +51,7 @@ class AccountRepository:
         return self._build_accounts(students, movements)
 
     def list_active_accounts(self) -> list[Account]:
-        return self.get_many(self.students.list_active_ids())
+        students = self.students.list_active()
+        movements = self.movements.list_by_students_ids([s.id for s in students])
+
+        return self._build_accounts(students, movements)
