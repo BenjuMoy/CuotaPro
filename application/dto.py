@@ -9,6 +9,9 @@ from domain.shared.shared import MovementType
 # --------------------------------------------------------------------------- #
 
 
+class BaseStudentDTO(BaseModel): ...  # TODO
+
+
 class CreateStudentDTO(BaseModel):
     first_name: str = Field(min_length=1, max_length=50)
     last_name: str = Field(min_length=1, max_length=50)
@@ -87,3 +90,4 @@ class StudentOverview(BaseModel):
     student: StudentDTO
     balance: int
     movements: list[MovementDTO]
+    last_payment: MovementDTO | None
