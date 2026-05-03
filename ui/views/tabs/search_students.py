@@ -124,15 +124,13 @@ Balance: {currency_format(o.balance)}
 
     @staticmethod
     def _student_to_row(o: StudentOverview) -> tuple:
-        last_payment = o.movements[0] if o.movements else None
-
         return (
             o.student.id,
             o.student.last_name,
             o.student.first_name,
             o.student.teacher,
             currency_format(o.balance),
-            NUM_TO_MONTH[last_payment.month] if last_payment else "Sin Pagos",
+            NUM_TO_MONTH[o.last_payment.month] if o.last_payment else "Sin Pagos",
             "✅ Activo" if o.student.active else "🚫 Inactivo",
         )
 
