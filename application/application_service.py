@@ -7,7 +7,7 @@ from application.events import EventBus, RefreshType
 from application.mappers import to_student_domain
 from core.clock import Clock
 from domain.accounting.values import Money, Period
-from domain.shared.exceptions import BusinessRuleError
+from domain.shared.exceptions import ApplicationError, BusinessRuleError
 from domain.student.values import MonthlyFee
 from infrastructure.database.unit_of_work import UnitOfWork
 
@@ -23,11 +23,25 @@ def handle_validation_error(e: ValidationError):
     return "\n".join(error_messages)
 
 
+def handle_application_errors(func):
+    # @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except ValidationError as e:
+            raise ApplicationError(handle_validation_error(e))
+        except BusinessRuleError as e:
+            raise ApplicationError(str(e))
+
+    return wrapper
+
+
 class StudentService:
     def __init__(self, uow: UnitOfWork, events: EventBus):
         self.uow = uow
         self.event = events
 
+    @handle_application_errors
     def add(self, dto: CreateStudentDTO) -> int:
         student = to_student_domain(dto)
 
@@ -45,6 +59,7 @@ class StudentService:
         self.event.notify(RefreshType.STUDENTS)
         return saved_student.id
 
+    @handle_application_errors
     def update(self, dto: StudentDTO) -> int:
         student = to_student_domain(dto)
 
@@ -69,6 +84,7 @@ class AccountingService:
         self.clock = clock or Clock()
         self.event = events
 
+    @handle_application_errors
     def toggle_active(self, student_id: int) -> None:
         with self.uow as uow:
             account = uow.accounts.get(student_id)
@@ -79,6 +95,7 @@ class AccountingService:
         self.event.notify(RefreshType.STUDENTS)
         logger.info("Student with id=%s switched state.", student_id)
 
+    @handle_application_errors
     def add_payment(self, dto: CreatePaymentDTO) -> int:
         with self.uow as uow:
             account = uow.accounts.get(dto.student_id)
@@ -100,6 +117,7 @@ class AccountingService:
         self.event.notify(RefreshType.MOVEMENTS)
         return movement.id
 
+    @handle_application_errors
     def add_fee(self, month: int, year: int) -> int:
         period = Period(month, year)
 
@@ -137,6 +155,7 @@ class AccountingService:
         self.event.notify(RefreshType.MOVEMENTS)
         return len(to_insert)
 
+    @handle_application_errors
     def increase_monthly_fee(self, old_fee: int, new_fee: int) -> int:
         with self.uow as uow:
             accounts = uow.accounts.list_active_accounts()
@@ -155,6 +174,7 @@ class AccountingService:
 
         return count
 
+    @handle_application_errors
     def reverse(self, payment_id: int) -> int:
         with self.uow as uow:
             orig = uow.movements.get_by_id(payment_id)
