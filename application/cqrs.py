@@ -103,29 +103,6 @@ class CQRSService:
 
         return all(acc.has_fee(Period(now.month, now.year)) for acc in accounts)
 
-    # Wrappers
-
-    def get_bulk_overview_data(self, ids: list[int]) -> dict[int, StudentOverview]:
-        if not ids:
-            return {}
-
-        with self.uow as uow:
-            students = uow.students.list_by_ids(ids)
-            movements = uow.movements.list_by_students_ids(ids)
-
-        movements_by_student: dict[int, list] = {}
-        for m in movements:
-            movements_by_student.setdefault(m.student_id, []).append(m)
-
-        result = {}
-
-        for s in students:
-            student_movements = movements_by_student.get(s.id, [])
-            account = Account(s, student_movements)
-            result[s.id] = to_student_overview(account)
-
-        return result
-
     # --- Reporting --- #
 
     def get_salary(self, teacher_name: str) -> SalaryReport:
