@@ -19,3 +19,7 @@ class ConflictError(AppError):
 
 class BusinessRuleError(AppError):
     pass
+
+
+class ApplicationError(AppError):
+    pass
