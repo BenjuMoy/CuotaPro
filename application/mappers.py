@@ -23,9 +23,9 @@ def to_student_domain(dto: CreateStudentDTO | StudentDTO) -> Student:
         phone3=PhoneNumber(dto.phone3) if dto.phone3 else None,
         teacher=Teacher(dto.teacher),
         school=dto.school,
-        school_year=SchoolYear(dto.school_year),
-        book=Book(dto.book),
-        course=Course(dto.course),
+        school_year=SchoolYear(dto.school_year) if dto.school_year else None,
+        book=Book(dto.book) if dto.book else None,
+        course=Course(dto.course) if dto.course else None,
         monthly_fee=MonthlyFee(dto.monthly_fee),
     )
 
@@ -61,9 +61,12 @@ def to_movement_dto(m: Movement) -> MovementDTO:
     )
 
 
-def to_student_overview(account: Account) -> StudentOverview:
+def to_student_overview(a: Account) -> StudentOverview:
+    last = a.get_last_payment()
+
     return StudentOverview(
-        student=to_student_dto(account.student),
-        balance=account.balance.amount,
-        movements=[to_movement_dto(m) for m in account.effective()],
+        student=to_student_dto(a.student),
+        balance=a.balance.amount,
+        movements=[to_movement_dto(m) for m in a.effective()],
+        last_payment=to_movement_dto(last) if last else None,
     )
