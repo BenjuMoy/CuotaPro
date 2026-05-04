@@ -1,3 +1,17 @@
+"""
+CQRS Read Services
+
+Purpose:
+- Provide read-only access to application data
+- Optimize for queries and reporting
+- Avoid domain logic and aggregates where possible
+
+Guidelines:
+- Prefer database-level aggregation
+- Avoid loading full aggregates unless necessary
+- Return DTOs, never domain objects
+"""
+
 from collections import Counter
 
 from application.dto import MovementDTO, StudentDTO, StudentOverview
