@@ -1,4 +1,6 @@
 import logging
+from functools import wraps
+from typing import Callable
 
 from pydantic import ValidationError
 
@@ -23,8 +25,8 @@ def handle_validation_error(e: ValidationError):
     return "\n".join(error_messages)
 
 
-def handle_application_errors(func):
-    # @wraps(func)
+def handle_application_errors(func) -> Callable:
+    @wraps(func)
     def wrapper(self, *args, **kwargs):
         try:
             return func(self, *args, **kwargs)
