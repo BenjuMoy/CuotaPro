@@ -33,8 +33,10 @@ class AccountRepository:
         # Persist new movements only
         movements = [m for m in account.movements if m.id is None]
 
-        if movements:
-            self.movements.add_many(movements)
+        for m in movements:
+            m.id = self.movements.add(m)
+
+    # -- Queries
 
     def get(self, student_id: int) -> Account:
         student = self.students.get_by_id(student_id)
