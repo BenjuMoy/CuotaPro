@@ -26,14 +26,6 @@ class Money:
     def is_negative(self) -> bool:
         return self.amount < 0
 
-    def debit(self, amount: int) -> "Money":
-        """Subtract the specified amount from this Money instance."""
-        return Money(self.amount - amount)
-
-    def credit(self, amount: int) -> "Money":
-        """Add the specified amount to this Money instance."""
-        return Money(self.amount + amount)
-
 
 @dataclass(frozen=True)
 class Period:
