@@ -4,6 +4,8 @@ from domain.accounting.values import Money, Period
 from domain.shared.exceptions import BusinessRuleError
 from domain.shared.shared import MovementType
 
+# TODO change name to AccountMovement
+
 
 class Movement:
     """Represents a movement in the system.
@@ -42,53 +44,26 @@ class Movement:
         self.created_at = created_at
 
     # -------------------------
-    # FACTORIES (validated)
+    # GENERIC FACTORY (validated)
     # -------------------------
 
     @classmethod
-    def fee(cls, student_id: int, amount: Money, period: Period, now: datetime):
-        obj = cls(
-            id=None,
-            student_id=student_id,
-            type=MovementType.FEE,
-            amount=Money(-abs(amount.amount)),
-            period=period,
-            reference_id=None,
-            created_at=now,
-        )
-        obj._validate(now)
-        return obj
-
-    @classmethod
-    def payment(cls, student_id: int, amount: Money, period: Period, now: datetime):
-        obj = cls(
-            id=None,
-            student_id=student_id,
-            type=MovementType.PAYMENT,
-            amount=amount,
-            period=period,
-            reference_id=None,
-            created_at=now,
-        )
-        obj._validate(now)
-        return obj
-
-    @classmethod
-    def reversal(
+    def create(
         cls,
         student_id: int,
-        original_id: int,
+        type: MovementType,
         amount: Money,
         period: Period,
+        reference_id: int | None,
         now: datetime,
     ):
         obj = cls(
             id=None,
             student_id=student_id,
-            type=MovementType.REVERSED,
-            amount=Money(-abs(amount.amount)),
+            type=type,
+            amount=amount,
             period=period,
-            reference_id=original_id,
+            reference_id=reference_id,
             created_at=now,
         )
         obj._validate(now)
