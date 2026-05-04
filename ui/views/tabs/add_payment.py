@@ -223,7 +223,7 @@ class PaymentTab:
 
         # Update last paid month
 
-        last_month_text = self.format_last_payment(overview.movements[0])
+        last_month_text = self.format_last_payment(overview.last_payment)
         self.last_paid_month_label.config(text=last_month_text)
 
         # Update balance with color coding
