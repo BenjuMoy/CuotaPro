@@ -36,6 +36,12 @@ class PhoneNumber:
         if not (1 <= len(self.value) <= 20):
             raise AppValidationError("Invalid phone number")
 
+    @classmethod
+    def optional(cls, value: str | None):
+        if not value:
+            return None
+        return cls(value)
+
 
 @dataclass(frozen=True)
 class MonthlyFee:
