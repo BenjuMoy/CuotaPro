@@ -27,6 +27,23 @@ class AccountRepository:
         return [Account(s, movements_by_student.get(s.id, [])) for s in students]
 
     def save(self, account: Account) -> None:
+        """
+        Persists the Account aggregate.
+
+        Rules:
+        - Must be called inside a UnitOfWork transaction
+        - Persists:
+            - Student updates
+            - New movements only (id is None)
+        - Does NOT update existing movements (immutable)
+
+        Side effects:
+        - Assigns IDs to new movements
+        """
+        if not self.conn.in_transaction:
+            raise RuntimeError(
+                "AccountRepository.save must be used inside a transaction"
+            )
         # Persist student changes
         self.students.update(account.student)
 

@@ -10,6 +10,20 @@ from domain.student.values import MonthlyFee
 
 
 class Account:
+    """
+    Aggregate root managing a student's financial state.
+
+    Responsibilities:
+    - Track all movements
+    - Enforce accounting rules
+    - Prevent invalid state transitions
+
+    Invariants:
+    - A movement can only be reversed once
+    - A student with debt cannot be deactivated
+    - Payments cannot be made if there is no debt
+    """
+
     def __init__(self, student: Student, movements: list[Movement]):
         self.student = student  # entity inside aggregate
         self.movements = movements
@@ -159,10 +173,10 @@ class Account:
         if self.student.monthly_fee.amount == new_fee.amount:
             raise BusinessRuleError("Las cuotas no pueden ser iguales")
 
-        if new_fee.amount < self.monthly_fee.amount:
+        if new_fee.amount < self.student.monthly_fee.amount:
             raise BusinessRuleError("La cuota nueva no puede ser menor que la vieja")
 
-        self.monthly_fee = new_fee
+        self.student.monthly_fee = new_fee
 
     def can_apply_fee(self, period: Period) -> bool:
         return not self.has_fee(period)
