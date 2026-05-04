@@ -17,7 +17,7 @@ class StudentRepository:
     def _fetch_all(self, cursor: Cursor) -> list[Student]:
         return [row_to_student(row) for row in cursor.fetchall()]
 
-    def add(self, student: Student) -> Student:
+    def add(self, s: Student) -> int:
         """Persists student and MUTATES its id (identity assignment)."""
         query = """
             INSERT INTO students (
@@ -40,13 +40,16 @@ class StudentRepository:
                 :course, :school, :year, :monthly_fee
             )
         """
-        cursor = self.conn.execute(query, student_to_params(student))
+        cursor = self.conn.execute(query, student_to_params(s))
 
-        student.id = cursor.lastrowid
-        return student
+        if not cursor.lastrowid:
+            raise RuntimeError("Failed to insert student")
 
-    def update(self, student: Student) -> Student:
-        if student.id is None:
+        s.id = cursor.lastrowid
+        return s.id
+
+    def update(self, s: Student) -> int:
+        if s.id is None:
             raise ValueError("Cannot update without ID")
 
         query = """
@@ -67,20 +70,15 @@ class StudentRepository:
         WHERE id=:id
         """
 
-        params = student_to_params(student)
-        params["id"] = student.id
+        params = student_to_params(s)
+        params["id"] = s.id
 
         cursor = self.conn.execute(query, params)
 
         if cursor.rowcount == 0:
-            raise NotFound(f"Student with id {student.id} not found")
+            raise NotFound(f"Student with id {s.id} not found")
 
-        return student
-
-    def increase_monthly_fee_batch(self, old_fee: int, new_fee: int) -> int:
-        query = "UPDATE students SET monthly_fee = ? WHERE monthly_fee = ?"
-        cursor = self.conn.execute(query, (new_fee, old_fee))
-        return cursor.rowcount
+        return s.id
 
     def search_students(
         self,

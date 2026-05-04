@@ -9,10 +9,15 @@ from infrastructure.database.repos.student_repository import StudentRepository
 
 
 class AccountRepository:
-    def __init__(self, conn: Connection):
+    def __init__(
+        self,
+        conn: Connection,
+        student_repo: StudentRepository,
+        movement_repo: MovementRepository,
+    ):
         self.conn = conn
-        self.students = StudentRepository(conn)
-        self.movements = MovementRepository(conn)
+        self.students = student_repo
+        self.movements = movement_repo
 
     # --- Helpers --- #
 
@@ -25,6 +30,8 @@ class AccountRepository:
             movements_by_student[m.student_id].append(m)
 
         return [Account(s, movements_by_student.get(s.id, [])) for s in students]
+
+    # -- Commands
 
     def save(self, account: Account) -> None:
         """

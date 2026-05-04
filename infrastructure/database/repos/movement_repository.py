@@ -25,7 +25,8 @@ class MovementRepository:
     def _fetch_all(self, cursor: Cursor) -> list[Movement]:
         return [row_to_movement(row) for row in cursor.fetchall()]
 
-    def add(self, movement: Movement) -> Movement:
+    def add(self, m: Movement) -> int:
+        # SIDE EFFECT: mutates entity identity
         query = """
             INSERT INTO movements(
                 student_id,
@@ -42,48 +43,23 @@ class MovementRepository:
         cursor = self.conn.execute(
             query,
             (
-                movement.student_id,
-                movement.reference_id,
-                movement.type.value,
-                movement.amount.amount,
-                movement.period.month,
-                movement.period.year,
-            ),
-        )
-
-        row = cursor.fetchone()
-        movement.id = cursor.lastrowid
-
-        movement.created_at = row["created_at"]
-        return movement
-
-    def add_many(self, movements: list[Movement]) -> int:
-        query = """
-            INSERT INTO movements(
-                student_id,
-                reference_id,
-                type,
-                amount,
-                month,
-                year
-            )
-            VALUES (?, ?, ?, ?, ?, ?)
-        """
-
-        data = [
-            (
                 m.student_id,
                 m.reference_id,
                 m.type.value,
                 m.amount.amount,
                 m.period.month,
                 m.period.year,
-            )
-            for m in movements
-        ]
+            ),
+        )
 
-        cursor = self.conn.executemany(query, data)
-        return cursor.rowcount
+        if cursor.lastrowid is None:
+            raise RuntimeError("Failed to insert student")
+
+        row = cursor.fetchone()
+        m.created_at = row["created_at"]
+
+        m.id = cursor.lastrowid
+        return m.id
 
     def get_all(self) -> list[Movement]:
         query = f"""

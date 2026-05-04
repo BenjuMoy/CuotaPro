@@ -17,7 +17,7 @@ class UnitOfWork:
 
         self.students = StudentRepository(self.conn)
         self.movements = MovementRepository(self.conn)
-        self.accounts = AccountRepository(self.conn)
+        self.accounts = AccountRepository(self.conn, self.students, self.movements)
 
         return self
 
