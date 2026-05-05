@@ -4,24 +4,18 @@ from domain.accounting.values import Money, Period
 from domain.shared.exceptions import BusinessRuleError
 from domain.shared.shared import MovementType
 
-# TODO change name to AccountMovement
+# TODO change name to AccountMovement?
 
 
 class Movement:
-    """Represents a movement in the system.
+    """
+    Represents a financial movement affecting a student's account.
 
-    Attributes:
-        id: Database primary key (auto-generated)
-        student_id: Database foreign key pointing to the student
-        type: type of transaction:
-            FEE -> Negative amount
-            PAYMENT -> Positive amount
-            REVERSED -> Negative of original
-        amount: sum of money, eg. 15000 = $15.000 (no cents)
-        month: month of the applied transaction (1 - 12)
-        year: year of the transaction (>= 2000)
-        reference_id: Original movement id
-        created_at: datetime
+    Invariants:
+    - FEE movements must have negative amounts
+    - PAYMENT movements must have positive amounts
+    - REVERSED movements must reference an existing movement
+    - Period cannot be in the future
     """
 
     def __init__(
