@@ -119,3 +119,98 @@ class ReportRepository:
             "2 meses": row["two"] or 0,
             "3+ meses": row["three_plus"] or 0,
         }
+
+    def get_income_trend(self, limit: int = 6) -> list[tuple[int, int, int]]:
+        query = """
+        SELECT month, year, SUM(amount) as total
+        FROM movements
+        WHERE type = 'PAYMENT'
+        GROUP BY year, month
+        ORDER BY year DESC, month DESC
+        LIMIT ?
+        """
+        rows = self.conn.execute(query, (limit,)).fetchall()
+
+        return [(r["month"], r["year"], r["total"]) for r in reversed(rows)]
+
+    def get_teacher_distribution(self) -> dict[str, int]:
+        query = """
+        SELECT teacher, COUNT(*) as count
+        FROM students
+        WHERE active = 1
+        GROUP BY teacher
+        ORDER BY count ASC
+        """
+
+        rows = self.conn.execute(query).fetchall()
+        return {row["teacher"]: row["count"] for row in rows}
+
+    def get_salary(self, teacher: str) -> tuple[int, int]:
+        query = """
+        SELECT
+            COUNT(*) as count,
+            SUM(monthly_fee) as total
+        FROM students
+        WHERE teacher = ? AND active = 1
+        """
+
+        row = self.conn.execute(query, (teacher,)).fetchone()
+        return row["count"], row["total"] or 0
+
+    def search_student_overviews(
+        self,
+        name: str | None = None,
+        teacher: str | None = None,
+        active: bool | None = None,
+        only_debtors: bool | None = None,
+    ) -> list[dict]:
+        conditions = []
+        params = []
+
+        if name:
+            pattern = f"%{name}%"
+            conditions.append("""
+            (
+                s.last_name LIKE ? COLLATE NOCASE OR
+                s.first_name LIKE ? COLLATE NOCASE OR
+                s.last_name || ' ' || s.first_name LIKE ? COLLATE NOCASE OR
+                s.first_name || ' ' || s.last_name LIKE ? COLLATE NOCASE
+            )
+            """)
+            params.extend([pattern] * 4)
+
+        if teacher:
+            conditions.append("s.teacher LIKE ? COLLATE NOCASE")
+            params.append(f"%{teacher}%")
+
+        if active is not None:
+            conditions.append("s.active = ?")
+            params.append(1 if active else 0)
+
+        where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
+        # 👇 balance computed in SQL
+        query = f"""
+        WITH balances AS (
+            SELECT student_id, SUM(amount) as balance
+            FROM movements
+            GROUP BY student_id
+        )
+        SELECT
+            s.*,
+            COALESCE(b.balance, 0) as balance
+        FROM students s
+        LEFT JOIN balances b ON b.student_id = s.id
+        {where_clause}
+        """
+
+        rows = self.conn.execute(query, params).fetchall()
+
+        results = []
+        for row in rows:
+            if only_debtors and row["balance"] >= 0:
+                continue
+
+            results.append(dict(row))
+
+        return results

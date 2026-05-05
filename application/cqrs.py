@@ -12,19 +12,30 @@ Guidelines:
 - Return DTOs, never domain objects
 """
 
-from collections import Counter, defaultdict
-
 from application.dto import MovementDTO, StudentDTO, StudentOverview
 from application.mappers import to_movement_dto, to_student_dto, to_student_overview
-from application.reporting_dto import DashboardMetrics, SalaryReport, StudentFeeDetail
+from application.reporting_dto import DashboardMetrics, SalaryReport
 from core.clock import Clock
 from domain.account.model import Account
 from domain.accounting.values import Period
-from domain.shared.shared import MovementType, PeriodBalance
+from domain.shared.exceptions import ApplicationError
+from domain.shared.shared import PeriodBalance
 from infrastructure.database.unit_of_work import UnitOfWork
 
 
 class CQRSService:
+    """
+    ### CQRS Read Model
+
+    The read model is optimized for queries and reporting.
+
+    Rules:
+    - Must NOT use domain aggregates
+    - Must NOT enforce business rules
+    - Should prefer SQL aggregation
+    - Returns DTOs or primitives only
+    """
+
     def __init__(self, uow: UnitOfWork, clock: Clock | None = None):
         self.uow = uow
         self.clock = clock or Clock()
@@ -111,31 +122,16 @@ class CQRSService:
 
     def get_salary(self, teacher_name: str) -> SalaryReport:
         with self.uow as uow:
-            students = [
-                s for s in uow.students.list_active() if s.teacher.name == teacher_name
-            ]
+            count, total = uow.reports.get_salary(teacher_name)
 
-        if not students:
-            raise ValueError(
-                f"No se encontraron estudiantes activos para el profesor: {teacher_name}"
-            )
-
-        details: list[StudentFeeDetail] = [
-            StudentFeeDetail(
-                last_name=s.name.last_name,
-                first_name=s.name.first_name,
-                monthly_fee=s.monthly_fee.amount,
-            )
-            for s in students
-        ]
-
-        total = sum(s.monthly_fee.amount for s in students)
+        if count == 0:
+            raise ApplicationError("No hay estudiantes activos para este profesor")
 
         return SalaryReport(
             teacher=teacher_name,
             total=total,
-            student_count=len(students),
-            details=details,
+            student_count=count,
+            details=[],  # optionally fetch separately
         )
 
     def get_kpi_metrics(self) -> DashboardMetrics:
@@ -170,25 +166,19 @@ class CQRSService:
 
         return (
             self.get_income_trend(accounts),
-            self.get_teacher_distribution(accounts),
-            self.get_debt_distribution(accounts),
+            self.get_teacher_distribution(),
+            self.get_debt_distribution(),
         )
 
     def get_income_trend(self, accounts: list[Account]) -> dict[tuple[int, int], int]:
-        buckets = defaultdict(int)
+        with self.uow as uow:
+            rows = uow.reports.get_income_trend()
 
-        for acc in accounts:
-            for m in acc.effective():
-                if m.type == MovementType.PAYMENT:
-                    key = m.period.month, m.period.year
-                    buckets[key] += m.amount.amount
+        return {(m, y): total for m, y, total in rows}
 
-        sorted_items = sorted(buckets.items(), key=lambda x: (x[0][1], x[0][0]))
-        return dict(sorted_items[-6:])
-
-    def get_teacher_distribution(self, accounts: list[Account]) -> dict[str, int]:
-        counts = Counter(a.student.teacher.name for a in accounts)
-        return {k: int(v) for k, v in sorted(counts.items(), key=lambda x: x[1])}
+    def get_teacher_distribution(self) -> dict[str, int]:
+        with self.uow as uow:
+            return uow.reports.get_teacher_distribution()
 
     def get_debt_distribution(self) -> dict[str, int]:
         with self.uow as uow:
