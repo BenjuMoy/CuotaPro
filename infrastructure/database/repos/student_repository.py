@@ -2,7 +2,7 @@ from sqlite3 import Connection, Cursor
 
 from domain.shared.exceptions import NotFound
 from domain.student.model import Student
-from infrastructure.database.mappers import row_to_student, student_to_params
+from infrastructure.database.mappers import row_to_student
 
 STUDENT_COLUMNS = "id, active, last_name, first_name, phone1, phone2, phone3, teacher, book, course, school, year, monthly_fee"
 BASE_SELECT = f"SELECT {STUDENT_COLUMNS} FROM students"
@@ -14,71 +14,12 @@ class StudentRepository:
     def __init__(self, conn: Connection) -> None:
         self.conn = conn
 
+    # --- helpers --- #
+
     def _fetch_all(self, cursor: Cursor) -> list[Student]:
         return [row_to_student(row) for row in cursor.fetchall()]
 
-    def add(self, s: Student) -> int:
-        """Persists student and MUTATES its id (identity assignment)."""
-        query = """
-            INSERT INTO students (
-                active,
-                last_name,
-                first_name,
-                phone1,
-                phone2,
-                phone3,
-                teacher,
-                book,
-                course,
-                school,
-                year,
-                monthly_fee
-            )
-            VALUES (
-                :active, :last_name, :first_name, :phone1,
-                :phone2, :phone3, :teacher, :book,
-                :course, :school, :year, :monthly_fee
-            )
-        """
-        cursor = self.conn.execute(query, student_to_params(s))
-
-        if not cursor.lastrowid:
-            raise RuntimeError("Failed to insert student")
-
-        s.id = cursor.lastrowid
-        return s.id
-
-    def update(self, s: Student) -> int:
-        if s.id is None:
-            raise ValueError("Cannot update without ID")
-
-        query = """
-        UPDATE students
-        SET
-            active=:active,
-            last_name=:last_name,
-            first_name=:first_name,
-            phone1=:phone1,
-            phone2=:phone2,
-            phone3=:phone3,
-            teacher=:teacher,
-            book=:book,
-            course=:course,
-            school=:school,
-            year=:year,
-            monthly_fee=:monthly_fee
-        WHERE id=:id
-        """
-
-        params = student_to_params(s)
-        params["id"] = s.id
-
-        cursor = self.conn.execute(query, params)
-
-        if cursor.rowcount == 0:
-            raise NotFound(f"Student with id {s.id} not found")
-
-        return s.id
+    # --- Queries --- #
 
     def search_students(
         self,

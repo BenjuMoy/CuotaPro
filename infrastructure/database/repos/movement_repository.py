@@ -22,44 +22,12 @@ class MovementRepository:
     def __init__(self, conn: Connection):
         self.conn = conn
 
+    # --- Helpers --- #
+
     def _fetch_all(self, cursor: Cursor) -> list[Movement]:
         return [row_to_movement(row) for row in cursor.fetchall()]
 
-    def add(self, m: Movement) -> int:
-        # SIDE EFFECT: mutates entity identity
-        query = """
-            INSERT INTO movements(
-                student_id,
-                reference_id,
-                type,
-                amount,
-                month,
-                year
-            )
-            VALUES (?, ?, ?, ?, ?, ?)
-            RETURNING created_at
-        """
-
-        cursor = self.conn.execute(
-            query,
-            (
-                m.student_id,
-                m.reference_id,
-                m.type.value,
-                m.amount.amount,
-                m.period.month,
-                m.period.year,
-            ),
-        )
-
-        if cursor.lastrowid is None:
-            raise RuntimeError("Failed to insert student")
-
-        row = cursor.fetchone()
-        m.created_at = row["created_at"]
-
-        m.id = cursor.lastrowid
-        return m.id
+    # --- Queries --- #
 
     def get_all(self) -> list[Movement]:
         query = f"""

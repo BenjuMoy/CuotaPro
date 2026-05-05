@@ -8,6 +8,7 @@ from application.dto import CreatePaymentDTO, CreateStudentDTO, StudentDTO
 from application.events import EventBus, RefreshType
 from application.mappers import to_student_domain
 from core.clock import Clock
+from domain.account.model import Account
 from domain.accounting.values import Money, Period
 from domain.shared.exceptions import ApplicationError, BusinessRuleError
 from domain.student.values import MonthlyFee
@@ -38,35 +39,38 @@ def handle_application_errors(func) -> Callable:
     return wrapper
 
 
-class StudentService:
-    def __init__(self, uow: UnitOfWork, events: EventBus):
+class AccountingService:
+    def __init__(self, uow: UnitOfWork, events: EventBus, clock: Clock | None = None):
         self.uow = uow
+        self.clock = clock or Clock()
         self.event = events
 
     @handle_application_errors
-    def add(self, dto: CreateStudentDTO) -> int:
+    def add_student(self, dto: CreateStudentDTO) -> int:
         student = to_student_domain(dto)
 
         with self.uow as uow:
-            student_id = uow.students.add(student)
+            account = Account(student, [])
+            uow.accounts.save(account)
 
         logger.info(
             "Student created | id=%s last_name=%s first_name=%s fee=%s",
-            student_id,
-            dto.last_name,
-            dto.first_name,
-            dto.monthly_fee,
+            account.student.id,
+            account.student.name.last_name,
+            account.student.name.first_name,
+            account.student.monthly_fee,
         )
 
         self.event.notify(RefreshType.STUDENTS)
-        return student_id
+        return account.student.id
 
     @handle_application_errors
     def update(self, dto: StudentDTO) -> int:
         s = to_student_domain(dto)
 
         with self.uow as uow:
-            uow.students.update(s)
+            account = Account(s, [])
+            uow.accounts.save(account)
 
         logger.info(
             "Student updated | id=%s last_name=%s first_name=%s monthly_fee=%s",
@@ -78,13 +82,6 @@ class StudentService:
 
         self.event.notify(RefreshType.STUDENTS)
         return s.id
-
-
-class AccountingService:
-    def __init__(self, uow: UnitOfWork, events: EventBus, clock: Clock | None = None):
-        self.uow = uow
-        self.clock = clock or Clock()
-        self.event = events
 
     @handle_application_errors
     def toggle_active(self, student_id: int) -> None:
@@ -187,9 +184,9 @@ class AccountingService:
         return count
 
     @handle_application_errors
-    def reverse(self, payment_id: int) -> int:
+    def reverse(self, movement_id: int) -> int:
         with self.uow as uow:
-            orig = uow.movements.get_by_id(payment_id)
+            orig = uow.movements.get_by_id(movement_id)
 
             account = uow.accounts.get(orig.student_id)
             movement = account.reverse(orig.id, self.clock.now())

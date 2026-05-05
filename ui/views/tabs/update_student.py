@@ -292,7 +292,7 @@ class UpdateStudentTab(BaseStudentFormTab):
         self.validate_form()
 
         result = self.actions.run(
-            lambda: self.s.student.update(data),
+            lambda: self.s.accounting.update(data),
             "Se actualizó el estudiante",
         )
 

@@ -153,7 +153,7 @@ class AddStudentTab(BaseStudentFormTab):
             self.add_button.config(text="Guardando...", state="disabled")
 
             result = self.actions.run(
-                lambda: self.s.student.add(data),
+                lambda: self.s.accounting.add_student(data),
                 f"Se agrego al estudiante {data.first_name} {data.last_name}",
             )
 

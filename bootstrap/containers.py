@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from application.application_service import AccountingService, StudentService
+from application.application_service import AccountingService
 from application.cqrs import CQRSService
 from application.events import EventBus
 from application.maintenance_service import MaintenanceService
@@ -11,7 +11,6 @@ from infrastructure.database.unit_of_work import UnitOfWork
 
 @dataclass(frozen=True, slots=True)
 class ServiceContainer:
-    student: StudentService
     accounting: AccountingService
     cqrs: CQRSService
     maintenance: MaintenanceService
