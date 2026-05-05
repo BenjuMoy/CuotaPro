@@ -12,7 +12,7 @@ Guidelines:
 - Return DTOs, never domain objects
 """
 
-from collections import Counter
+from collections import Counter, defaultdict
 
 from application.dto import MovementDTO, StudentDTO, StudentOverview
 from application.mappers import to_movement_dto, to_student_dto, to_student_overview
@@ -21,7 +21,6 @@ from core.clock import Clock
 from domain.account.model import Account
 from domain.accounting.values import Period
 from domain.shared.shared import MovementType, PeriodBalance
-from domain.student.model import Student
 from infrastructure.database.unit_of_work import UnitOfWork
 
 
@@ -93,13 +92,11 @@ class CQRSService:
             return uow.movements.get_last_date_applied_fee()
 
     def get_students_without_fee(self, month: int, year: int) -> list[StudentDTO]:
-        period = Period(month, year)
         with self.uow as uow:
-            accounts = uow.accounts.list_active_accounts()
+            ids = uow.reports.get_students_without_fee(month, year)
+            students = uow.students.list_by_ids(ids)
 
-        return [
-            to_student_dto(acc.student) for acc in accounts if not acc.has_fee(period)
-        ]
+        return [to_student_dto(s) for s in students]
 
     def preview_fee_application(self, month: int, year: int) -> int:
         return len(self.get_students_without_fee(month, year))
@@ -108,9 +105,7 @@ class CQRSService:
         now = self.clock.now()
 
         with self.uow as uow:
-            accounts = uow.accounts.list_active_accounts()
-
-        return all(acc.has_fee(Period(now.month, now.year)) for acc in accounts)
+            return uow.reports.are_fees_applied(now.month, now.year)
 
     # --- Reporting --- #
 
@@ -144,23 +139,29 @@ class CQRSService:
         )
 
     def get_kpi_metrics(self) -> DashboardMetrics:
+        """
+        Returns dashboard KPIs for the current month.
+
+        Metrics:
+        - active_students: number of active accounts
+        - expected_income: sum of monthly fees
+        - collected: payments received this month
+        - total_debt: total outstanding debt
+
+        Note:
+        Currently computed in-memory. Should be moved to DB aggregation.
+        """
         now = self.clock.now()
         with self.uow as uow:
-            accounts = uow.accounts.list_active_accounts()
-
-        expected = sum(a.student.monthly_fee.amount for a in accounts)
-
-        total_debt = sum(abs(acc.balance.amount) for acc in accounts if acc.has_debt())
-
-        collected = sum(
-            acc.total_paid_in_period(Period(now.month, now.year)) for acc in accounts
-        )
+            active, expected, collected, debt = uow.reports.get_kpi_metrics(
+                now.month, now.year
+            )
 
         return DashboardMetrics(
-            active_students=len(accounts),
+            active_students=active,
             expected_income=expected,
             collected=collected,
-            total_debt=total_debt,
+            total_debt=debt,
         )
 
     def get_graphic_metrics(self):
@@ -174,8 +175,6 @@ class CQRSService:
         )
 
     def get_income_trend(self, accounts: list[Account]) -> dict[tuple[int, int], int]:
-        from collections import defaultdict
-
         buckets = defaultdict(int)
 
         for acc in accounts:
@@ -191,28 +190,6 @@ class CQRSService:
         counts = Counter(a.student.teacher.name for a in accounts)
         return {k: int(v) for k, v in sorted(counts.items(), key=lambda x: x[1])}
 
-    def get_debt_distribution(self, accounts: list[Account]) -> dict[str, int]:
-        import math
-
-        buckets = {"Al día": 0, "1 mes": 0, "2 meses": 0, "3+ meses": 0}
-
-        for a in accounts:
-            balance = a.balance.amount
-
-            if balance >= 0:
-                buckets["Al día"] += 1
-
-            else:
-                fee = a.student.monthly_fee.amount
-
-                if fee > 0:
-                    months = math.ceil(abs(balance) / fee)
-
-                    if months == 1:
-                        buckets["1 mes"] += 1
-                    elif months == 2:
-                        buckets["2 meses"] += 1
-                    else:
-                        buckets["3+ meses"] += 1
-
-        return buckets
+    def get_debt_distribution(self) -> dict[str, int]:
+        with self.uow as uow:
+            return uow.reports.get_debt_distribution()
