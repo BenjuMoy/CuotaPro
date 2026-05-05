@@ -260,7 +260,7 @@ class PaymentTab:
 
     def _set_default_payment_values(self, month_list: list[str]) -> None:
         # Set default month to next payable month
-        self.month_combobox.set(month_list[0])
+        self.month_combobox.set(month_list[-1])  # Select oldest debt
 
         # Set default amount to student's monthly_fee
         self.amount_entry.delete(0, "end")
