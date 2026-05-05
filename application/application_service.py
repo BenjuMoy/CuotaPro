@@ -40,6 +40,22 @@ def handle_application_errors(func) -> Callable:
 
 
 class AccountingService:
+    """
+    ### AccountingService
+
+    Coordinates application use cases.
+
+    Responsibilities:
+    - Transaction management (via UnitOfWork)
+    - DTO ↔ Domain mapping
+    - Error translation
+    - Event dispatching
+
+    It MUST NOT:
+    - Contain business rules
+    - Access persistence directly
+    """
+
     def __init__(self, uow: UnitOfWork, events: EventBus, clock: Clock | None = None):
         self.uow = uow
         self.clock = clock or Clock()
@@ -69,7 +85,10 @@ class AccountingService:
         s = to_student_domain(dto)
 
         with self.uow as uow:
-            account = Account(s, [])
+            account = uow.accounts.get(dto.id)
+
+            account.update_student_info(s)
+
             uow.accounts.save(account)
 
         logger.info(
@@ -89,7 +108,7 @@ class AccountingService:
             account = uow.accounts.get(student_id)
             account.toggle_active()
 
-            uow.students.update(account.student)
+            uow.accounts.save(account)
 
         self.event.notify(RefreshType.STUDENTS)
         logger.info("Student with id=%s switched state.", student_id)
@@ -132,7 +151,6 @@ class AccountingService:
         Rules:
         - Only active students are considered
         - A fee is applied only if not already present for the period
-        - Operation may partially succeed (best-effort)
 
         Returns:
             Number of students charged
@@ -154,9 +172,6 @@ class AccountingService:
 
                 uow.accounts.save(a)
                 applied_count += 1
-
-            if applied_count == 0:
-                raise BusinessRuleError("No hay estudiantes para aplicar")
 
         logger.info(
             "Fees applied | period= %s/%s count= %s",

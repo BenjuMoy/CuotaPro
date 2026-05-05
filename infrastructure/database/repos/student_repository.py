@@ -1,7 +1,7 @@
 from sqlite3 import Connection, Cursor
 
 from domain.shared.exceptions import NotFound
-from domain.student.model import Student
+from domain.student.model import StudentProfile
 from infrastructure.database.mappers import row_to_student
 
 STUDENT_COLUMNS = "id, active, last_name, first_name, phone1, phone2, phone3, teacher, book, course, school, year, monthly_fee"
@@ -16,7 +16,7 @@ class StudentRepository:
 
     # --- helpers --- #
 
-    def _fetch_all(self, cursor: Cursor) -> list[Student]:
+    def _fetch_all(self, cursor: Cursor) -> list[StudentProfile]:
         return [row_to_student(row) for row in cursor.fetchall()]
 
     # --- Queries --- #
@@ -26,7 +26,7 @@ class StudentRepository:
         name: str | None = None,
         teacher: str | None = None,
         active: bool | None = None,
-    ) -> list[Student]:
+    ) -> list[StudentProfile]:
         conditions = []
         params = []
 
@@ -63,7 +63,7 @@ class StudentRepository:
         cursor = self.conn.execute(query, params)
         return self._fetch_all(cursor)
 
-    def get_all(self) -> list[Student]:
+    def get_all(self) -> list[StudentProfile]:
         query = f"""
             {BASE_SELECT}
             {ORDER_BY_STUDENT}
@@ -71,7 +71,7 @@ class StudentRepository:
         cursor = self.conn.execute(query)
         return self._fetch_all(cursor)
 
-    def get_by_id(self, student_id: int) -> Student:
+    def get_by_id(self, student_id: int) -> StudentProfile:
         query = f"""
             {BASE_SELECT}
             WHERE id=?
@@ -85,7 +85,7 @@ class StudentRepository:
 
         return row_to_student(row)
 
-    def list_by_ids(self, ids: list[int]) -> list[Student]:
+    def list_by_ids(self, ids: list[int]) -> list[StudentProfile]:
         if not ids:
             return []
 
@@ -111,7 +111,7 @@ class StudentRepository:
         cursor = self.conn.execute(query)
         return cursor.fetchone()["count"]
 
-    def list_active(self) -> list[Student]:
+    def list_active(self) -> list[StudentProfile]:
         query = f"""
             {BASE_SELECT}
             WHERE {ACTIVE_FILTER}

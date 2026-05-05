@@ -5,7 +5,7 @@ from domain.accounting.model import Movement
 from domain.accounting.values import Money, Period
 from domain.shared.exceptions import BusinessRuleError
 from domain.shared.shared import MovementType, PeriodBalance
-from domain.student.model import Student
+from domain.student.model import StudentProfile
 from domain.student.values import MonthlyFee
 
 
@@ -24,7 +24,7 @@ class Account:
     - Payments cannot be made if there is no debt
     """
 
-    def __init__(self, student: Student, movements: list[Movement]):
+    def __init__(self, student: StudentProfile, movements: list[Movement]):
         self.student = student  # entity inside aggregate
         self.movements = movements
         self._effective_cache: list[Movement] | None = None
@@ -108,10 +108,7 @@ class Account:
         if self.student.active and self.balance.is_negative():
             raise BusinessRuleError("No se puede desactivar estudiante con deuda")
 
-        if self.student.active:
-            self.student.deactivate()
-        else:
-            self.student.activate()
+        self.student.active = not self.student.active
 
     # --- Properties --- #
 
@@ -180,3 +177,6 @@ class Account:
 
     def can_apply_fee(self, period: Period) -> bool:
         return not self.has_fee(period)
+
+    def update_student_info(self, student: StudentProfile):
+        self.student = student

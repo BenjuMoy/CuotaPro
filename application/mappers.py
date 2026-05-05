@@ -1,7 +1,7 @@
 from application.dto import CreateStudentDTO, MovementDTO, StudentDTO, StudentOverview
 from domain.account.model import Account
 from domain.accounting.model import Movement
-from domain.student.model import Student
+from domain.student.model import StudentProfile
 from domain.student.values import (
     Book,
     Course,
@@ -13,8 +13,8 @@ from domain.student.values import (
 )
 
 
-def to_student_domain(dto: CreateStudentDTO | StudentDTO) -> Student:
-    return Student(
+def to_student_domain(dto: CreateStudentDTO | StudentDTO) -> StudentProfile:
+    return StudentProfile(
         id=getattr(dto, "id", None),
         active=getattr(dto, "active", True),
         name=StudentName(dto.first_name, dto.last_name),
@@ -30,7 +30,7 @@ def to_student_domain(dto: CreateStudentDTO | StudentDTO) -> Student:
     )
 
 
-def to_student_dto(s: Student) -> StudentDTO:
+def to_student_dto(s: StudentProfile) -> StudentDTO:
     return StudentDTO(
         id=s.id,
         active=s.active,

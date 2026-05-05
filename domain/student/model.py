@@ -10,10 +10,14 @@ from domain.student.values import (
 
 # last_name, first_name, telefons, school, year, teacher, book, course, monthly_fee, balance
 
-# TODO Make this more passive, this is not the aggregate, this is an entity
+# TODO Make this more passive, this is not the aggregate, this is pure data holder
+
+# TODO Make ContactInfo, AcademicInfo, etc?
+
+# TODO make ID only int?
 
 
-class Student:
+class StudentProfile:
     """Represents a student in the system.
 
     Attributes:
@@ -97,11 +101,3 @@ class Student:
         obj.active = active
 
         return obj
-
-    # --- Methods --- #
-
-    def activate(self):
-        self.active = True
-
-    def deactivate(self):
-        self.active = False

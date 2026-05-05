@@ -3,7 +3,7 @@ from sqlite3 import Row
 from domain.accounting.model import Movement
 from domain.accounting.values import Money, Period
 from domain.shared.shared import MovementType
-from domain.student.model import Student
+from domain.student.model import StudentProfile
 from domain.student.values import (
     Book,
     Course,
@@ -19,8 +19,8 @@ from domain.student.values import (
 # -------------------------
 
 
-def row_to_student(row: Row) -> Student:
-    return Student.from_persistence(
+def row_to_student(row: Row) -> StudentProfile:
+    return StudentProfile.from_persistence(
         id=row["id"],
         active=bool(row["active"]),
         name=StudentName(first_name=row["first_name"], last_name=row["last_name"]),
@@ -36,7 +36,7 @@ def row_to_student(row: Row) -> Student:
     )
 
 
-def student_to_params(s: Student) -> dict:
+def student_to_params(s: StudentProfile) -> dict:
     return {
         "active": int(s.active),
         "last_name": s.name.last_name,

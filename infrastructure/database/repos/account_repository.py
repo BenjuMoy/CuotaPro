@@ -4,7 +4,7 @@ from sqlite3 import Connection
 from domain.account.model import Account
 from domain.accounting.model import Movement
 from domain.shared.exceptions import NotFound
-from domain.student.model import Student
+from domain.student.model import StudentProfile
 from infrastructure.database.mappers import student_to_params
 from infrastructure.database.repos.movement_repository import MovementRepository
 from infrastructure.database.repos.student_repository import StudentRepository
@@ -40,7 +40,7 @@ class AccountRepository:
     # --- Helpers --- #
 
     def _build_accounts(
-        self, students: list[Student], movements: list[Movement]
+        self, students: list[StudentProfile], movements: list[Movement]
     ) -> list[Account]:
         movements_by_student: dict[int, list[Movement]] = defaultdict(list)
 
@@ -54,7 +54,7 @@ class AccountRepository:
 
     # -- Commands
 
-    def _add_student(self, s: Student) -> int:
+    def _add_student(self, s: StudentProfile) -> int:
         """Persists student and MUTATES its id (identity assignment)."""
         query = """
             INSERT INTO students (
@@ -85,7 +85,7 @@ class AccountRepository:
         s.id = cursor.lastrowid
         return s.id
 
-    def _update_student(self, s: Student) -> int:
+    def _update_student(self, s: StudentProfile) -> int:
         if s.id is None:
             raise ValueError("Cannot update without ID")
 
@@ -167,11 +167,6 @@ class AccountRepository:
         Side effects:
         - Assigns IDs to new movements
         """
-        if not self.conn.in_transaction:
-            raise RuntimeError(
-                "AccountRepository.save must be used inside a transaction"
-            )
-
         # Persist student changes
         if account.student.id is None:
             student_id = self._add_student(account.student)
@@ -182,8 +177,8 @@ class AccountRepository:
         movements = [m for m in account.movements if m.id is None]
 
         for m in movements:
-            m.id = self._add_movement(m)
             m.student_id = account.student.id
+            m.id = self._add_movement(m)
 
         return account.student.id
 
