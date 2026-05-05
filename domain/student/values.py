@@ -11,6 +11,9 @@ from domain.shared.shared import (
 
 NAME_PATTERN = re.compile(r"^[A-Za-zÁÉÍÓÚÜáéíóúüÑñ\s\-]+$")
 
+# TODO this
+PHONE_PATTERN = re.compile(r"^[0-9+\-\s]+$")
+
 
 @dataclass(frozen=True)
 class StudentName:
