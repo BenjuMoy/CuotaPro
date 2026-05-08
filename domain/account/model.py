@@ -11,17 +11,19 @@ from domain.student.values import MonthlyFee
 
 class Account:
     """
-    Aggregate root managing a student's financial state.
+    Aggregate Root: Account
 
-    Responsibilities:
-    - Track all movements
-    - Enforce accounting rules
-    - Prevent invalid state transitions
+    Owns:
+    - StudentProfile (entity)
+    - Movements (entity collection)
 
     Invariants:
+    - Student cannot be deactivated with debt
+    - Payments only allowed if debt exists
     - A movement can only be reversed once
-    - A student with debt cannot be deactivated
-    - Payments cannot be made if there is no debt
+
+    Consistency boundary:
+    All financial and student state changes must go through this aggregate.
     """
 
     def __init__(self, student: StudentProfile, movements: list[Movement]):
@@ -39,6 +41,11 @@ class Account:
     # -------------------------
 
     def add_payment(self, amount: Money, period: Period, now: datetime) -> Movement:
+        """
+        Rules:
+        - Student must be active
+        - Payment only allowed if balance < 0
+        """
         self.ensure_active()
 
         if not self.balance.is_negative():

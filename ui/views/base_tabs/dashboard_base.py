@@ -1,9 +1,9 @@
+import matplotlib.pyplot as plt
+import ttkbootstrap as ttk
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import ttkbootstrap as ttk
-import matplotlib.pyplot as plt
 
-from ui.views.constants import FONT_TITLE
+from ui.views.constants import FONT_TITLE, NUM_TO_MONTH
 from ui.views.widgets.kpi_card import KpiCard
 
 
@@ -73,7 +73,12 @@ class BaseMetricsTab:
     # CHARTS
     # -------------------------
 
-    def draw_charts(self, income_by_month, teacher_count, debt_bucket):
+    def draw_charts(
+        self,
+        income_by_month: dict[tuple[int, int], int],
+        teacher_count: dict[str, int],
+        debt_bucket: dict[str, int],
+    ):
         if self.chart_frame is None:
             self.chart_frame = ttk.Frame(self.frame)
             self.chart_frame.pack(fill="both", expand=True)
@@ -99,9 +104,9 @@ class BaseMetricsTab:
     # CHARTS IMPLEMENTATION
     # -------------------------
 
-    def _draw_income_chart(self, ax: Axes, data: dict):
+    def _draw_income_chart(self, ax: Axes, data: dict[tuple[int, int], int]):
         items = list(data.items())
-        labels = [f"{m:02d}/{y}" for (m, y), _ in items]
+        labels = [f"{NUM_TO_MONTH[m]} / {y}" for (m, y), _ in items]
         values = [v for _, v in items]
 
         x = range(len(labels))

@@ -71,7 +71,7 @@ class MovementDTO(BaseModel):
 
 class CreatePaymentDTO(BaseModel):
     student_id: int
-    amount: int = Field(gt=0, description="EL monto del pago debe ser positivo")
+    amount: int
     month: int = Field(ge=1, le=12)
     year: int = Field(ge=2000)
 

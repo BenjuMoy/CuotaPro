@@ -3,13 +3,15 @@ import ttkbootstrap as ttk
 from application.events import RefreshType
 from bootstrap.containers import ServiceContainer
 from ui.views.base_tabs.dashboard_base import BaseMetricsTab
-from ui.views.constants import ICON_PATH, TEACHERS
+from ui.views.constants import TEACHERS
 
 CARDS = {
     "students": "👨‍🎓 Estudiantes Activos",
     "teachers": "👩‍🏫 Profesores",
     "collection": "📊 Cobranza del mes",
 }
+
+# TODO pass Callables
 
 BUTTONS = {
     1: ("➕ Agregar un Estudiante", "success"),

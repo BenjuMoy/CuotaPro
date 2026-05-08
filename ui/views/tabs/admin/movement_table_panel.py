@@ -5,7 +5,7 @@ from ttkbootstrap.widgets.tableview import Tableview
 from application.dto import MovementDTO
 from application.events import RefreshType
 from bootstrap.containers import ServiceContainer
-from domain.shared.exceptions import BusinessRuleError, NotFound
+from domain.shared.exceptions import ApplicationError, BusinessRuleError, NotFound
 from domain.shared.shared import MovementType
 from ui.formatters import currency_format
 from ui.views.constants import FONT_BODY, NUM_TO_MONTH, PAD_X, PAD_Y, TYPE_TRANSLATE
@@ -121,7 +121,7 @@ Esta acción no se puede deshacer.
 
             show_toast(self.frame, "Movimiento revertido", "success")
 
-        except (NotFound, BusinessRuleError) as e:
+        except (NotFound, ApplicationError, BusinessRuleError) as e:
             show_toast(self.frame, str(e), "error")
 
         except Exception:

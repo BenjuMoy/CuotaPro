@@ -23,7 +23,7 @@ COLUMNS = [
     {"text": "Nombre"},
     {"text": "Profesor"},
     {"text": "Balance"},
-    {"text": "Ultimo Mes Pagado"},
+    {"text": "Ultima cuota Pagada"},
     {"text": "Estado"},
 ]
 
@@ -116,7 +116,7 @@ Cuota: {o.student.monthly_fee}
 
 --- Financiero ---
 Balance: {currency_format(o.balance)}
-Último mes pagado: {NUM_TO_MONTH.get(o.last_payment.month, "Sin Pagos") if o.last_payment else "Sin Pagos"}"""
+Última cuota pagada: {NUM_TO_MONTH.get(o.last_payment.month, "Sin Pagos") if o.last_payment else "Sin Pagos"}"""
         Messagebox.show_info(
             detalles,
             f"Ficha de {o.student.first_name} {o.student.last_name}",
@@ -130,7 +130,9 @@ Balance: {currency_format(o.balance)}
             o.student.first_name,
             o.student.teacher,
             currency_format(o.balance),
-            NUM_TO_MONTH[o.last_payment.month] if o.last_payment else "Sin Pagos",
+            NUM_TO_MONTH.get(o.last_payment.month, "Sin Pagos")
+            if o.last_payment
+            else "Sin Pagos",
             "✅ Activo" if o.student.active else "🚫 Inactivo",
         )
 

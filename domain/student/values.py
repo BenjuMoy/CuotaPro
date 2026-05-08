@@ -45,6 +45,12 @@ class PhoneNumber:
             return None
         return cls(value)
 
+    @classmethod
+    def from_persistence(cls, value: str):
+        obj = cls.__new__(cls)
+        object.__setattr__(obj, "value", value)
+        return obj
+
 
 @dataclass(frozen=True)
 class MonthlyFee:
@@ -54,6 +60,12 @@ class MonthlyFee:
         if not (1 <= self.amount <= 500000):
             raise AppValidationError("Invalid monthly fee")
 
+    @classmethod
+    def from_persistence(cls, amount: str):
+        obj = cls.__new__(cls)
+        object.__setattr__(obj, "amount", amount)
+        return obj
+
 
 @dataclass(frozen=True)
 class Teacher:
@@ -62,6 +74,12 @@ class Teacher:
     def __post_init__(self):
         if self.name not in VALID_TEACHERS:
             raise AppValidationError("Profesor invalido")
+
+    @classmethod
+    def from_persistence(cls, name: str):
+        obj = cls.__new__(cls)
+        object.__setattr__(obj, "name", name)
+        return obj
 
 
 @dataclass(frozen=True)

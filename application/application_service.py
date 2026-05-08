@@ -173,8 +173,11 @@ class AccountingService:
                 uow.accounts.save(a)
                 applied_count += 1
 
+            if applied_count == 0:
+                raise BusinessRuleError("No hay estudiantes para ")
+
         logger.info(
-            "Fees applied | period= %s/%s count= %s",
+            "Fees applied | period=%s/%s count=%s",
             period.month,
             period.year,
             applied_count,

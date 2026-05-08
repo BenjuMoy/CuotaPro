@@ -10,7 +10,7 @@ from ui.views.helpers_gui import center_window
 @dataclass(frozen=True)
 class AppConfig:
     window_title: str = "Cuota Pro"
-    theme: Literal["darkly", "yeti", "flatly"] = "darkly"
+    theme: Literal["darkly", "yeti", "flatly"] = "yeti"
 
 
 class TKRootFactory:

@@ -44,12 +44,7 @@ FORM_LAYOUT = [
                 type=ttk.Entry,
                 converter=str,
             ),
-            FieldConfig(
-                name="phone3",
-                label="Otro teléfono",
-                type=ttk.Entry,
-                converter=str,
-            ),
+            # FieldConfig(name="phone3", label="Otro teléfono", type=ttk.Entry, converter=str, ),
         ],
     ),
     Section(

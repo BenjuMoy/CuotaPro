@@ -238,7 +238,7 @@ class PaymentTab:
 
         if not balance_by_period:
             self._enable_payment_controls(False)
-            show_toast(self.frame, "No hay cuotas pendientes para pagar", "success")
+            # show_toast(self.frame, "No hay cuotas pendientes para pagar", "success")
             return
 
         month_list = [

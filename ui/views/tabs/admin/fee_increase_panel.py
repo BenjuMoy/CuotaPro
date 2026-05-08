@@ -117,9 +117,7 @@ Afectará a {data[1][1:]} alumnos.
         try:
             self._set_processing(True)
 
-            updated_count = self.s.accounting.increase_monthly_fee(
-                old_monthly_fee, new_monthly_fee
-            )
+            updated_count = self.s.accounting.increase_monthly_fee(new_monthly_fee)
 
             show_toast(
                 self.frame,

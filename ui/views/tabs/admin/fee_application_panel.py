@@ -2,12 +2,12 @@ import logging
 from datetime import datetime
 
 import ttkbootstrap as ttk
-from pydantic import ValidationError
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.style import DANGER
 
+from application.events import RefreshType
 from bootstrap.containers import ServiceContainer
-from domain.shared.exceptions import NotFound
+from domain.shared.exceptions import AppValidationError, BusinessRuleError, NotFound
 from ui.views.constants import FONT_BODY, FONT_HEADER, NUM_TO_MONTH, PAD_X, PAD_Y
 from ui.views.toast import show_toast
 
@@ -20,6 +20,8 @@ class FeeApplicationPanel:
         self._processing = False
 
         self.s = services
+
+        self.s.event.subscribe(RefreshType.STUDENTS, self.refresh_fee_button)
 
         self._create_widgets()
 
@@ -48,13 +50,16 @@ class FeeApplicationPanel:
         self.apply_fees_button.grid(
             row=1, column=0, columnspan=2, padx=PAD_X, pady=PAD_Y
         )
+        debt_count = self.s.cqrs.preview_fee_application()
+        if debt_count == 0:
+            self.apply_fees_button.configure(state="disabled")
 
         period = self.s.cqrs.get_last_fee_date()
 
         if period:
             text = f"Ultimo periodo aplicado: {NUM_TO_MONTH[period.month]} de {period.year}"
         else:
-            text = "Ultimo periodo aplicado: Ningun mes de Ningun año "
+            text = "Ultimo periodo aplicado: No se aplicaron cuotas todavia"
 
         self.aplicar_cuotas_label: ttk.Label = ttk.Label(
             aplicar_cuotas_frame,
@@ -100,7 +105,7 @@ Se generarán cargos automáticamente.
 
             self._refresh_apply_label()
 
-        except (ValidationError, NotFound) as e:
+        except (BusinessRuleError, AppValidationError, NotFound) as e:
             show_toast(self.frame, f"Error: {e}", "error")
             self.apply_fees_button.config(state="normal")
 
@@ -111,7 +116,7 @@ Se generarán cargos automáticamente.
 
         finally:
             self._set_processing(False)
-            self._update_button_state()
+            self.refresh_fee_button()
 
     def _refresh_apply_label(self):
         period = self.s.cqrs.get_last_fee_date()
@@ -130,6 +135,9 @@ Se generarán cargos automáticamente.
         self.frame.config(cursor="watch" if value else "")
         self.frame.update_idletasks()
 
-    def _update_button_state(self):
-        enabled = self.s.cqrs.are_fees_applied()
-        self.apply_fees_button.config(state="normal" if enabled else "disabled")
+    def refresh_fee_button(self):
+        count = self.s.cqrs.preview_fee_application()
+        if count > 0:
+            self.apply_fees_button.configure(state="normal")
+        else:
+            self.apply_fees_button.configure(state="disabled")
